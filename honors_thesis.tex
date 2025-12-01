@@ -1,0 +1,238 @@
+\documentclass[preprint,authoryear]{elsarticle}
+
+\usepackage{amsmath,amssymb}
+\usepackage{booktabs}
+\usepackage{tabularx}
+\usepackage{threeparttable}
+\usepackage{array}
+\usepackage{caption}
+\usepackage{makecell}
+\usepackage{graphicx}
+\usepackage[section]{placeins}
+\usepackage[hidelinks]{hyperref}
+
+\captionsetup{labelfont=bf, font=small}
+\newcolumntype{Y}{>{\centering\arraybackslash}X}
+\newcommand{\sym}[1]{\rlap{$^{#1}$}}
+\newcommand{\est}[3]{\makecell[c]{#1\sym{#3}\\ \footnotesize(#2)}}
+
+\journal{Journal of Health Economics}
+
+\begin{document}
+
+\begin{frontmatter}
+\title{My Title}
+\author[miami]{Joe White\corref{cor1}}
+% \ead{whitejf@miamioh.edu}
+
+% \author[miami]{John Bowblis\corref{cor2}}
+% \ead{bowblijr@miamioh.edu}
+
+\address[miami]{Department of Economics, Miami University, Oxford, OH, USA}
+
+\cortext[cor1]{Corresponding author}
+% \cortext[cor2]{Co-corresponding author}
+
+\begin{abstract}
+\end{abstract}
+
+% \begin{keyword}
+% health economics \sep event study \sep nursing homes
+% \end{keyword}
+\end{frontmatter}
+
+\section{Introduction}
+
+\section{Data}
+
+This paper employs three main data sources, all of which are maintained by the Center for Medicare and Medicaid Services (CMS). The first is the Nursing Home Compare (NHC) Archive, which contains monthly facility-level information on ownership, chain affiliation, certification status, and quality measures. The second is Healthcare Cost Report Information System (HCRIS) which contains annual cost reports submitted by every Medicare certified skilled nursing facility (SNF) in the United States. The cost reports contain information about costs, revenue, and other financial data for each reporting facility. Lasly, we use the Payroll Based Journal (PBJ) system, which provides facility level, monthly staffing hours by staff type.
+
+\subsection{Sample selection}
+
+Our sample is constructed at the facility-year-month level. We create our sample using the following criteria. First, we limit our sample to the 48 contiguous U.S. states from the period Jan 2017 - June 2024. Secondly, the Care Compare Archive data is matched to the HCRIS data on a unique nursing home provider number. Because HCRIS only contains information on SNFs, our sample focuses on SNFs instead of all nursing facilities in general.
+
+%Lastly, if the facilities in our sample have more than one ownership change during our sample period then we only focus on the first change \textbf{ASK DR BOWBLIS ABOUT THIS}
+
+\subsection{Changes in ownership}
+To our knowledge there are no datasets that have information about ownership changes for all homes within the United States. Therefore, we manually assemble this dataset. We collect ownership data from the CMS Care Compare Archive Data from the years 2017 through 2024. We choose this period as it is the most recent data published as well as standardized ownership filing. We identify possible ownership changes during this period, compare results to filings in the Medicare Cost Reports, and assemble a dataset of matching flagged ownership changes. CMS ownership files provide monthly ownership shares for each owner associated with a facility. As a result of the advanced corporate ownership structure detailed previously, it is difficult to discern ownership changes while looking at every ownership level. Therefore, when flagging ownership changes, we look at the highest level of owner type in time period $t$. Highest level is defined as indirect owners, direct owners, and then individuals or organizations with a partnership interest. There are three main criteria we use when defining a change in ownership. First, we define a change in ownership (CHOW) when a majority of ownership shares turn over between month $t-1$ and month $t$. Intuitively, this captures transactions in which control of the facility changes hands, including cases where a new operator acquires most or all shares. Secondly, when ownership percentages are partially or completely missing, we approximate shares by normalizing any reported percentages and, where necessary, assigning equal weights across remaining owners. To reduce false positives from purely legal restructuring, we do not flag a CHOW if at least 80 percent of the ownership stake remains within the same surname family (e.g., a change from “Smith Holdings LLC” to “Smith Family Partners LP”). Lastly, we validate ownership changes reported in the Care Compare ownership files against change of ownership indicators and dates from HCRIS. We retain facilities that either (i) have no ownership change in either source or (ii) have exactly one ownership change in each source with the CHOW date within six months of one another. For these facilities, we define the CHOW month as the first month in which the Care Compare data indicate a change. All dates are converted to calendar months, so changes occurring at the beginning or end of a month are treated identically. 
+
+\subsection{Outcome variables}
+
+Our main outcomes are nursing hours per patient day (HPPD), constructed from the CMS PBJ data. This data includes daily hours worked by each staff type in each facility, together with the daily census from the Minimum Data Set (MDS). For each facility $i$, calendar month $t$, and staff type $s$, we first aggregate daily hours to the monthly level and then compute
+\begin{equation}
+  \text{HPPD}_{i,t}^{(s)} = \frac{H_{i,t}^{(s)}}{R_{i,t}},
+\end{equation}
+where $H_{i,t}^{(s)}$ is the total hours worked by staff type $s$ during month $t$ and $R_{i,t}$ is the total resident days in that facility-month. Total HPPD is defined as the sum of RN, LPN, and CNA HPPD.
+
+We construct two additional measures of quality. First, we define a monthly coverage ratio
+\[
+  C_{i,t} = \frac{\text{DaysReported}_{i,t}}{\text{DaysInMonth}_t},
+\]
+where $\text{DaysReported}_{i,t}$ is the number of distinct days in month $t$ with complete PBJ records for facility $i$. This measure allows us to identify incomplete data in our sample and describe our data completeness. Second, we track gaps in the reporting for each facility. For each observation we compute \textit{gap}, defined as the number of calendar months since the previous PBJ observation for that facility. Finally, we exclude a small number of observations with implausible staffing levels: months in which RN and LPN HPPD are both zero, total HPPD is below 1.5 or above 12, or CNA HPPD exceeds 5.25. These observations are outliers that likely reflect reporting errors rather than genuine variation in staffing. These exclusion criteria align with the criteria outlined in the CMS NHC Technical Users Guide.
+
+\section{Methods}
+
+\begin{equation}
+  Y_{it}^k
+  =
+  \beta_{\text{post}}^{k}\,\textit{Post}_{it}
+  +
+  X_{it}^{\prime}\boldsymbol{\gamma}^{k}
+  +
+  \alpha_i
+  +
+  \lambda_t
+  +
+  \varepsilon_{it}^{k},
+  \label{eq:twfe-post}
+\end{equation}
+
+\begin{equation}
+\label{eq:es_twfe}
+Y_{it}
+=
+\sum_{\tau = -24}^{24}
+    \beta_{\tau}\,
+    \mathbf{1}\!\left\{ \text{event\_time}_{it} = \tau \right\}
+    \cdot \text{Treat}_{i}
++
+X_{it}^{\prime}\gamma
++
+\alpha_i
++
+\lambda_t
++
+\varepsilon_{it}.
+\end{equation}
+
+\section{Results}
+Table~\ref{tab:twfe-post-full} reports the baseline two-way fixed effects estimates of the effect of ownership change on hours per patient day. Across specifications, ownership changes lead to meaningful reductions in nurse hours per patient day. RN staffing declines by approximately 0.03 hours per patient day (roughly 9 percent), CNA staffing falls by 0.06 hours (about 3 percent), and total HPPD decreases by 0.09 hours (roughly 3 percent). LPN staffing shows no statistically significant change. The estimates are nearly identical when excluding anticipatory months, consistent with the event study results.
+
+\begingroup
+\begin{table}[!ht]
+\centering
+\begin{threeparttable}
+\caption{Two-Way Fixed Effects Estimates of \textit{post} on Staffing Outcomes (Baseline)}
+\label{tab:twfe-post-full}
+\small
+\setlength{\tabcolsep}{6pt}
+
+\begin{tabularx}{\textwidth}{@{} l YYYY @{} }
+\toprule
+ & \multicolumn{4}{c}{\textbf{Outcomes}} \\
+\cmidrule(lr){2-5}
+ & \textbf{RN} & \textbf{LPN} & \textbf{CNA} & \textbf{Total} \\
+\midrule
+\multicolumn{5}{@{}l}{\textbf{Panel A}} \\[2pt]
+With anticipation  &  \est{$-0.031$}{$0.005$}{***}  &  \est{$\phantom{-}0.001$}{$0.006$}{}  &  \est{$-0.052$}{$0.009$}{***}  &  \est{$-0.082$}{$0.012$}{***} \\
+Without anticipation  &  \est{$-0.032$}{$0.005$}{***}  &  \est{$\phantom{-}0.000$}{$0.006$}{}  &  \est{$-0.054$}{$0.009$}{***}  &  \est{$-0.086$}{$0.013$}{***} \\
+
+\addlinespace[3pt]
+\multicolumn{5}{@{}l}{\textbf{Panel B}} \\[2pt]
+With anticipation  &  \est{$-0.086$}{$0.016$}{***}  &  \est{$\phantom{-}0.004$}{$0.009$}{}  &  \est{$-0.026$}{$0.005$}{***}  &  \est{$-0.025$}{$0.004$}{***} \\
+Without anticipation  &  \est{$-0.092$}{$0.016$}{***}  &  \est{$\phantom{-}0.003$}{$0.009$}{}  &  \est{$-0.028$}{$0.005$}{***}  &  \est{$-0.026$}{$0.004$}{***} \\
+\bottomrule
+\end{tabularx}
+
+\begin{tablenotes}[flushleft]
+\footnotesize
+\item \textit{Notes:} Each cell reports the coefficient on \textit{post} with two-way clustered standard errors (by facility and month) in parentheses. Panel~A reports levels (HPPD); Panel~B reports logs (HPPD). Samples: \textit{With anticipation} ($N_{\mathrm{levels}}=632,231;\ N_{\mathrm{logs}}=632,231$). \textit{Without anticipation} ($N_{\mathrm{levels}}=628,107;\ N_{\mathrm{logs}}=628,107$).
+\item All specifications include facility and month fixed effects and covariates: \textit{government}, \textit{non-profit}, \textit{chain}, \textit{beds}, \textit{occupancy rate}, \textit{percent Medicare}, \textit{percent Medicaid}, and state case-mix quartile indicators.
+\item Statistical significance: $^{***}p<0.01$, $^{**}p<0.05$, $^{*}p<0.10$.
+\end{tablenotes}
+\end{threeparttable}
+\end{table}
+\endgroup
+
+\FloatBarrier
+
+Table~\ref{tab:twfe-prepost} examines whether these effects differ before and after the COVID-19 pandemic. The magnitude of the decline is roughly halved in the post pandemic period for RN, CNA, and total HPPD, suggesting that pandemic induced shifts in labor markets and staffing substantially reduced the impact of ownership transitions.
+
+\begingroup
+\begin{table}[!ht]
+\centering
+\begin{threeparttable}
+\caption{TWFE Estimates of \textit{post}: Pre- vs Post-pandemic Periods (Without anticipation)}
+\label{tab:twfe-prepost}
+\small
+\setlength{\tabcolsep}{6pt}
+
+\begin{tabularx}{\textwidth}{@{} l YYYY @{} }
+\toprule
+ & \multicolumn{4}{c}{\textbf{Outcomes}} \\
+\cmidrule(lr){2-5}
+ & \textbf{RN} & \textbf{LPN} & \textbf{CNA} & \textbf{Total} \\
+\midrule
+\multicolumn{5}{@{}l}{\textbf{Panel A}} \\[2pt]
+Without anticipation (Pre-pandemic) & \est{$-0.029$}{$0.006$}{***}  &  \est{$-0.016$}{$0.008$}{*}  &  \est{$-0.063$}{$0.013$}{***}  &  \est{$-0.108$}{$0.019$}{***} \\
+Without anticipation (Pandemic) & \est{$-0.018$}{$0.007$}{**}  &  \est{$-0.000$}{$0.008$}{}  &  \est{$-0.041$}{$0.015$}{***}  &  \est{$-0.058$}{$0.020$}{***} \\
+
+\addlinespace[3pt]
+\multicolumn{5}{@{}l}{\textbf{Panel B}} \\[2pt]
+Without anticipation (Pre-pandemic) & \est{$-0.068$}{$0.024$}{***}  &  \est{$-0.009$}{$0.012$}{}  &  \est{$-0.032$}{$0.006$}{***}  &  \est{$-0.033$}{$0.006$}{***} \\
+Without anticipation (Pandemic) & \est{$-0.063$}{$0.021$}{***}  &  \est{$\phantom{-}0.002$}{$0.011$}{}  &  \est{$-0.020$}{$0.008$}{**}  &  \est{$-0.019$}{$0.006$}{***} \\
+\bottomrule
+\end{tabularx}
+
+\begin{tablenotes}[flushleft]
+\footnotesize
+\item \textit{Notes:} Each cell reports the coefficient on \textit{post} with two-way clustered standard errors (by facility and month) in parentheses. Panel~A reports levels (HPPD); Panel~B reports logs (HPPD). Sample sizes: Row~1 ($N_{\mathrm{levels}}=255,005;\ N_{\mathrm{logs}}=255,005$), Row~2 ($N_{\mathrm{levels}}=359,413;\ N_{\mathrm{logs}}=359,413$).
+\item All specifications include facility and month fixed effects and covariates: \textit{government}, \textit{non-profit}, \textit{chain}, \textit{beds}, \textit{occupancy rate}, \textit{percent Medicare}, \textit{percent Medicaid}, and state case-mix quartile indicators.
+\item Statistical significance: $^{***}p<0.01$, $^{**}p<0.05$, $^{*}p<0.10$.
+\item Pre-pandemic 2017/01--2019/12; Pandemic 2020/04--2024/06.
+\end{tablenotes}
+\end{threeparttable}
+\end{table}
+\endgroup
+
+\FloatBarrier
+
+Table~\ref{tab:twfe-chain-nonchain} compares effects for facilities that began the study period as part of a chain and those that did not. Staffing reductions are noticeably larger among non chain facilities. CNA HPPD falls by 0.034 hours in chain facilities and by 0.079 hours in non chains, and total HPPD declines by 0.062 versus 0.113 hours, respectively. On a log scale, these differences translate into substantially larger percentage declines for non-chain facilities. LPN staffing again shows minimal movement.
+
+\begingroup
+\begin{table}[!ht]
+\centering
+\begin{threeparttable}
+\caption{TWFE Estimates of \textit{post}: Chain vs Non-chain Facilities (2017Q1 Baseline, Without anticipation)}
+\label{tab:twfe-chain-nonchain}
+\small
+\setlength{\tabcolsep}{6pt}
+
+\begin{tabularx}{\textwidth}{@{} l YYYY @{} }
+\toprule
+ & \multicolumn{4}{c}{\textbf{Outcomes}} \\
+\cmidrule(lr){2-5}
+ & \textbf{RN} & \textbf{LPN} & \textbf{CNA} & \textbf{Total} \\
+\midrule
+\multicolumn{5}{@{}l}{\textbf{Panel A}} \\[2pt]
+Without anticipation (Chain 2017Q1) & \est{$-0.031$}{$0.007$}{***}  &  \est{$\phantom{-}0.003$}{$0.008$}{}  &  \est{$-0.034$}{$0.011$}{***}  &  \est{$-0.062$}{$0.015$}{***} \\
+Without anticipation (Non-chain 2017Q1) & \est{$-0.037$}{$0.009$}{***}  &  \est{$\phantom{-}0.003$}{$0.011$}{}  &  \est{$-0.079$}{$0.019$}{***}  &  \est{$-0.113$}{$0.025$}{***} \\
+
+\addlinespace[3pt]
+\multicolumn{5}{@{}l}{\textbf{Panel B}} \\[2pt]
+Without anticipation (Chain 2017Q1) & \est{$-0.099$}{$0.021$}{***}  &  \est{$\phantom{-}0.008$}{$0.013$}{}  &  \est{$-0.019$}{$0.006$}{***}  &  \est{$-0.020$}{$0.005$}{***} \\
+Without anticipation (Non-chain 2017Q1) & \est{$-0.085$}{$0.030$}{***}  &  \est{$\phantom{-}0.013$}{$0.017$}{}  &  \est{$-0.037$}{$0.010$}{***}  &  \est{$-0.032$}{$0.008$}{***} \\
+\bottomrule
+\end{tabularx}
+
+\begin{tablenotes}[flushleft]
+\footnotesize
+\item \textit{Notes:} Each cell reports the coefficient on \textit{post} with two-way clustered standard errors (by facility and month) in parentheses. Panel~A reports levels (HPPD); Panel~B reports logs (HPPD). Sample sizes: Row~1 ($N_{\mathrm{levels}}=322,100;\ N_{\mathrm{logs}}=322,100$), Row~2 ($N_{\mathrm{levels}}=243,036;\ N_{\mathrm{logs}}=243,036$).
+\item All specifications include facility and month fixed effects and covariates: \textit{government}, \textit{non-profit}, \textit{chain}, \textit{beds}, \textit{occupancy rate}, \textit{percent Medicare}, \textit{percent Medicaid}, and state case-mix quartile indicators.
+\item Statistical significance: $^{***}p<0.01$, $^{**}p<0.05$, $^{*}p<0.10$.
+\item Baseline chain classification determined by facility status in 2017Q1.
+\end{tablenotes}
+\end{threeparttable}
+\end{table}
+\endgroup
+
+\FloatBarrier
+
+Overall, ownership changes result in sizable and robust reductions in staffing, with heterogeneity across periods and ownership structures. The patterns strongly suggest that ownership transitions worsen staffing conditions for residents, particularly in facilities that were not part of a chain and in the pre pandemic era.
+
+\section{Discussion}
+
+\bibliographystyle{elsarticle-harv}
+\bibliography{refs}
+
+\end{document}
