@@ -43,9 +43,9 @@
 
 \section{Introduction}
 
-\section{Data}
-
-This paper employs three main data sources, all of which are maintained by the Center for Medicare and Medicaid Services (CMS). The first is the Nursing Home Compare (NHC) Archive, which contains monthly facility level information on ownership, chain affiliation, certification status, and quality measures. The second is Healthcare Cost Report Information System (HCRIS) which contains annual cost reports submitted by every Medicare certified skilled nursing facility (SNF) in the United States. The cost reports contain information about costs, revenue, and other financial data for each reporting facility. Lasly, we use the Payroll Based Journal (PBJ) system, which provides facility level, monthly staffing hours by staff type.
+\section{Data and Methods}
+\subsection{Data Sources}
+Three main data sources are utilized, all of which are maintained by the Center for Medicare and Medicaid Services (CMS). The first is the Nursing Home Compare (NHC) Archive, which contains monthly facility level information on ownership, chain affiliation, certification status, and quality measures. The second is Healthcare Cost Report Information System (HCRIS) which contains annual cost reports submitted by every Medicare certified skilled nursing facility (SNF) in the United States. The cost reports contain information about costs, revenue, financial data for each reporting facility, and dates of ownership changes. Lasly, we use the Payroll Based Journal (PBJ) system, which provides facility level, daily staffing information by staff type.
 
 \subsection{Sample selection}
 
@@ -53,10 +53,10 @@ Our sample is constructed at the facility-year-month level. We create our sample
 
 %Lastly, if the facilities in our sample have more than one ownership change during our sample period then we only focus on the first change \textbf{ASK DR BOWBLIS ABOUT THIS}
 
-\subsection{Changes in ownership}
+\subsection{Identifying Ownership Changes}
 To our knowledge there are no datasets that have information about ownership changes for all homes within the United States. Therefore, we manually assemble this dataset. We collect ownership data from the CMS Care Compare Archive Data from the years 2017 through 2024. We choose this period as it is the most recent data published as well as standardized ownership filing. We identify possible ownership changes during this period, compare results to filings in the Medicare Cost Reports, and assemble a dataset of matching flagged ownership changes. CMS ownership files provide monthly ownership shares for each owner associated with a facility. As a result of the advanced corporate ownership structure detailed previously, it is difficult to discern ownership changes while looking at every ownership level. Therefore, when flagging ownership changes, we look at the highest level of owner type in time period $t$. The order, highest to lowest, is defined as indirect owners, direct owners, and then individuals or organizations with a partnership interest. There are three main criteria we use when defining a change in ownership. First, we define a change in ownership (CHOW) when a majority of ownership shares turn over between month $t-1$ and month $t$. Intuitively, this captures transactions in which control of the facility changes hands, including cases where a new operator acquires most or all shares. Secondly, when ownership percentages are partially or completely missing, we approximate shares by normalizing any reported percentages and, where necessary, assigning equal weights across remaining owners. To reduce false positives from purely legal restructuring, we do not flag a CHOW if at least 80 percent of the ownership stake remains within the same surname family (e.g., a change from “Smith Holdings LLC” to “Smith Family Partners LP”). Lastly, we validate ownership changes reported in the NHC ownership files against change of ownership indicators and dates from HCRIS. We retain facilities that either (i) have no ownership change in either source or (ii) have exactly one ownership change in each source with the CHOW date within six months of one another. For these facilities, we define the CHOW month as the first month in which the NHC data indicate a change. All dates are converted to calendar months, so changes occurring at the beginning or end of a month are treated identically. 
 
-\subsection{Outcome variables}
+\subsection{Nursing Staff Levels}
 
 Our main outcomes are nursing hours per patient day (HPPD), constructed from the CMS PBJ data. This data includes daily hours worked by each staff type in each facility, together with the daily census from the Minimum Data Set (MDS). For each facility $i$, calendar month $t$, and staff type $s$, we first aggregate daily hours to the monthly level and then compute
 \begin{equation}
@@ -64,13 +64,15 @@ Our main outcomes are nursing hours per patient day (HPPD), constructed from the
 \end{equation}
 where $H_{i,t}^{(s)}$ is the total hours worked by staff type $s$ during month $t$ and $R_{i,t}$ is the total resident days in that facility-month. Total HPPD is defined as the sum of RN, LPN, and CNA HPPD.
 
-We construct two additional measures of quality. First, we define a monthly coverage ratio
+We construct two additional measures of data quality. First, we define a monthly coverage ratio
 \[
   C_{i,t} = \frac{\text{DaysReported}_{i,t}}{\text{DaysInMonth}_t},
 \]
 where $\text{DaysReported}_{i,t}$ is the number of distinct days in month $t$ with complete PBJ records for facility $i$. This measure allows us to identify incomplete data in our sample and describe our data completeness. Second, we track gaps in the reporting for each facility. For each observation we compute \textit{gap}, defined as the number of calendar months since the previous PBJ observation for that facility. Finally, we exclude a small number of observations with implausible staffing levels: months in which RN and LPN HPPD are both zero, total HPPD is below 1.5 or above 12, or CNA HPPD exceeds 5.25. These observations are outliers that likely reflect reporting errors rather than genuine variation in staffing. These exclusion criteria align with the criteria outlined in the CMS NHC Technical Users Guide.
 
-\section{Methods}
+\subsection{Other Controls}
+
+\subsection{Analytic Approach}
 
 \begin{equation}
   Y_{it}^k
@@ -105,7 +107,10 @@ X_{it}^{\prime}\gamma
 \varepsilon_{it}.
 \end{equation}
 
+\subsubsection{Subgroup Analysis}
+
 \section{Results}
+\subsection{Main Results}
 Table~\ref{tab:twfe-post-full} reports the baseline two-way fixed effects estimates of the effect of ownership change on hours per patient day. Across specifications, ownership changes lead to meaningful reductions in nurse hours per patient day. RN staffing declines by approximately 0.03 hours per patient day (roughly 9 percent), CNA staffing falls by 0.05 hours (about 3 percent), and total HPPD decreases by 0.08 hours (roughly 3 percent). LPN staffing shows no statistically significant change. The estimates are nearly identical when excluding anticipatory months, consistent with the event study results.
 
 \begingroup
@@ -145,6 +150,8 @@ Without anticipation  &  \est{$-0.092$}{$0.016$}{***}  &  \est{$\phantom{-}0.003
 \endgroup
 
 \FloatBarrier
+
+\subsection{Effects Before and During Covid-19 Pandemic}
 
 Table~\ref{tab:twfe-prepost} examines whether these effects differ before and after the COVID-19 pandemic. The magnitude of the decline is roughly halved in the post pandemic period for RN, CNA, and total HPPD, suggesting that pandemic induced shifts in labor markets and staffing substantially reduced the impact of ownership transitions.
 
@@ -186,6 +193,8 @@ Without anticipation (Pandemic) & \est{$-0.063$}{$0.021$}{***}  &  \est{$\phanto
 \endgroup
 
 \FloatBarrier
+
+\subsection{Effects by Chain Status}
 
 Table~\ref{tab:twfe-chain-nonchain} compares effects for facilities that began the study period as part of a chain and those that did not. Staffing reductions are noticeably larger among non chain facilities. CNA HPPD falls by 0.034 hours in chain facilities and by 0.079 hours in non chains, and total HPPD declines by 0.062 versus 0.113 hours, respectively. On a log scale, these differences translate into substantially larger percentage declines for non-chain facilities. LPN staffing again shows minimal movement.
 
