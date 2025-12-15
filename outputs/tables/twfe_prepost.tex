@@ -1,0 +1,37 @@
+\begingroup
+\begin{table}[!ht]
+\centering
+\begin{threeparttable}
+\caption{TWFE Estimates of \textit{post}: Pre- vs Post-pandemic Periods (Without anticipation)}
+\label{tab:twfe-prepost}
+\small
+\setlength{\tabcolsep}{6pt}
+
+\begin{tabularx}{\textwidth}{@{} l YYYY @{} }
+\toprule
+ & \multicolumn{4}{c}{\textbf{Outcomes}} \\
+\cmidrule(lr){2-5}
+ & \textbf{RN} & \textbf{LPN} & \textbf{CNA} & \textbf{Total} \\
+\midrule
+\multicolumn{5}{@{}l}{\textbf{Panel A: Staffing Levels in HPPD}} \\[2pt]
+Pre-Pandemic Period (2017/01 - 2019/12) & \est{$-0.029$}{$0.006$}{***}  &  \est{$-0.016$}{$0.008$}{*}  &  \est{$-0.063$}{$0.013$}{***}  &  \est{$-0.108$}{$0.019$}{***} \\
+Pandemic Period (2020/04 - 2024/06) & \est{$-0.018$}{$0.007$}{**}  &  \est{$-0.000$}{$0.008$}{}  &  \est{$-0.041$}{$0.015$}{***}  &  \est{$-0.058$}{$0.020$}{***} \\
+
+\addlinespace[3pt]
+\multicolumn{5}{@{}l}{\textbf{Panel B: Log Staffing Levels in HPPD}} \\[2pt]
+Pre-Pandemic Period (2017/01 - 2019/12) & \est{$-0.068$}{$0.024$}{***}  &  \est{$-0.009$}{$0.012$}{}  &  \est{$-0.032$}{$0.006$}{***}  &  \est{$-0.033$}{$0.006$}{***} \\
+Pandemic Period (2020/04 - 2024/06) & \est{$-0.063$}{$0.021$}{***}  &  \est{$\phantom{-}0.002$}{$0.011$}{}  &  \est{$-0.020$}{$0.008$}{**}  &  \est{$-0.019$}{$0.006$}{***} \\
+\bottomrule
+\end{tabularx}
+
+\begin{tablenotes}[flushleft]
+\footnotesize
+\item \textit{Notes:} Each cell reports the coefficient on \textit{post} with two-way clustered standard errors (by facility and month) in parentheses. Panel~A reports levels (HPPD); Panel~B reports logs (HPPD). Sample sizes: Row~1 ($N_{\mathrm{levels}}=255,005;\ N_{\mathrm{logs}}=255,005$), Row~2 ($N_{\mathrm{levels}}=359,413;\ N_{\mathrm{logs}}=359,413$).
+\item All specifications include facility and month fixed effects and covariates: \textit{government}, \textit{non-profit}, \textit{chain}, \textit{beds}, \textit{occupancy rate}, \textit{percent Medicare}, \textit{percent Medicaid}, and state case-mix quartile indicators.
+\item Statistical significance: $^{***}p<0.01$, $^{**}p<0.05$, $^{*}p<0.10$.
+\item Pre-pandemic 2017/01--2019/12; Pandemic 2020/04--2024/06.
+\end{tablenotes}
+\end{threeparttable}
+\end{table}
+\endgroup
+

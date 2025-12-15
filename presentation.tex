@@ -1,0 +1,87 @@
+\documentclass{beamer}
+
+\usetheme{Copenhagen}
+
+% -------- Miami University color palette (HEX) --------
+\usepackage{xcolor}
+
+\definecolor{MiamiRed}{HTML}{C41230}      % Primary
+\definecolor{MiamiAccentRed}{HTML}{AD102A}% Accent
+\definecolor{MiamiLightTan}{HTML}{EDECE2}
+\definecolor{MiamiMedTan}{HTML}{CCC9B8}
+\definecolor{MiamiDarkTan}{HTML}{70685C}
+\definecolor{MiamiGray}{HTML}{666666}    % (their “Warm White (Web Only)” label looks swapped; hex is gray)
+\definecolor{MiamiOffWhite}{HTML}{FAF9F7}
+\definecolor{MiamiBlack}{HTML}{000000}
+
+% -------- Core Beamer color settings --------
+% Top/bottom bars, section navigation, etc.
+\setbeamercolor{palette primary}{bg=MiamiRed, fg=white}
+\setbeamercolor{palette secondary}{bg=MiamiAccentRed, fg=white}
+\setbeamercolor{palette tertiary}{bg=MiamiDarkTan, fg=white}
+\setbeamercolor{palette quaternary}{bg=MiamiBlack, fg=white}
+
+% Title + frame titles
+\setbeamercolor{title}{fg=MiamiOffWhite}
+\setbeamercolor{frametitle}{bg=MiamiOffWhite, fg=MiamiRed}
+
+% Body text/background
+\setbeamercolor{normal text}{fg=MiamiBlack, bg=white}
+
+% Itemize bullets
+\setbeamercolor{itemize item}{fg=MiamiRed}
+\setbeamercolor{itemize subitem}{fg=MiamiAccentRed}
+
+% Blocks (theorem-style boxes)
+\setbeamercolor{block title}{bg=MiamiRed, fg=white}
+\setbeamercolor{block body}{bg=MiamiOffWhite, fg=MiamiBlack}
+
+\setbeamercolor{block title alerted}{bg=MiamiAccentRed, fg=white}
+\setbeamercolor{block body alerted}{bg=MiamiLightTan, fg=MiamiBlack}
+
+% Optional: make hyperlinks match brand
+\usepackage{hyperref}
+\hypersetup{
+  colorlinks=true,
+  linkcolor=MiamiRed,
+  urlcolor=MiamiAccentRed,
+  citecolor=MiamiDarkTan
+}
+
+% Optional: remove navigation symbols (cleaner look)
+\setbeamertemplate{navigation symbols}{}
+
+\title[About Beamer] %optional
+{About the Beamer class in presentation making}
+
+\subtitle{A short story}
+
+\author[Joe White] % (optional, for multiple authors)
+{Joe White\inst{1} \and John Bowblis\inst{2}}
+
+\institute[VFU] % (optional)
+{
+  \inst{1}%
+  Department of Economics\\
+  Miami University
+  \and
+  \inst{2}%
+  Department of Economics\\
+  Miami University
+}
+
+\date[VLC 2021] % (optional)
+{Honors Conference, March 2025}
+
+\begin{document}
+
+\begin{frame}
+  \titlepage
+\end{frame}
+
+\begin{frame}
+  \frametitle{Introduction}
+  This is my first slide.
+\end{frame}
+
+\end{document}

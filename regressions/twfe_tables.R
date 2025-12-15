@@ -203,12 +203,12 @@ two_dataset_table_without_only <- function(res1, res2, dat1, dat2, cap, label, r
     "\\cmidrule(lr){2-5}",
     " & \\textbf{RN} & \\textbf{LPN} & \\textbf{CNA} & \\textbf{Total} \\\\",
     "\\midrule",
-    "\\multicolumn{5}{@{}l}{\\textbf{Panel A}} \\\\[2pt]",
+    "\\multicolumn{5}{@{}l}{\\textbf{Panel A: Staffing Levels in HPPD}} \\\\[2pt]",
     paste0(rowlabs[1], " & ", rowA1, " \\\\"),
     paste0(rowlabs[2], " & ", rowA2, " \\\\"),
     "",
     "\\addlinespace[3pt]",
-    "\\multicolumn{5}{@{}l}{\\textbf{Panel B}} \\\\[2pt]",
+    "\\multicolumn{5}{@{}l}{\\textbf{Panel B: Log Staffing Levels in HPPD}} \\\\[2pt]",
     paste0(rowlabs[1], " & ", rowB1, " \\\\"),
     paste0(rowlabs[2], " & ", rowB2, " \\\\"),
     "\\bottomrule",
@@ -247,7 +247,7 @@ tab2 <- two_dataset_table_without_only(
   dat1 = datasets$prepandemic, dat2 = datasets$pandemic,   # FIXED: added dat1/dat2
   cap = "TWFE Estimates of \\textit{post}: Pre- vs Post-pandemic Periods (Without anticipation)",
   label = "tab:twfe-prepost",
-  rowlabs = c("Without anticipation (Pre-pandemic)", "Without anticipation (Pandemic)"),
+  rowlabs = c("Pre-Pandemic Period (2017/01 - 2019/12)", "Pandemic Period (2020/04 - 2024/06)"),
   notes_extra = "Pre-pandemic 2017/01--2019/12; Pandemic 2020/04--2024/06."
 )
 
@@ -255,17 +255,29 @@ tab2 <- two_dataset_table_without_only(
 tab3 <- two_dataset_table_without_only(
   res1 = fits_wo$baseline_chain_2017q1, res2 = fits_wo$baseline_nonchain_2017q1,
   dat1 = datasets$baseline_chain_2017q1, dat2 = datasets$baseline_nonchain_2017q1,  # FIXED
-  cap = "TWFE Estimates of \\textit{post}: Chain vs Non-chain Facilities (2017Q1 Baseline, Without anticipation)",
+  cap = "TWFE Estimates of \\textit{post}: Chain vs Non-chain Facilities (Jan 2017 Baseline, Without anticipation)",
   label = "tab:twfe-chain-nonchain",
-  rowlabs = c("Without anticipation (Chain 2017Q1)", "Without anticipation (Non-chain 2017Q1)"),
-  notes_extra = "Baseline chain classification determined by facility status in 2017Q1."
+  rowlabs = c("Chain January 2017", "Non-chain January 2017"),
+  notes_extra = "Baseline chain classification determined by facility status in January 2017."
 )
 
 # ------------------ write .tex ------------------
+
+# 1) write each table fragment separately (what you'll \input{} in the paper)
+tab1_path <- file.path(out_dir, "twfe_post_full.tex")
+tab2_path <- file.path(out_dir, "twfe_prepost.tex")
+tab3_path <- file.path(out_dir, "twfe_chain_nonchain.tex")
+
+writeLines(tab1, tab1_path, useBytes = TRUE)
+writeLines(tab2, tab2_path, useBytes = TRUE)
+writeLines(tab3, tab3_path, useBytes = TRUE)
+
+# 2) (optional) keep the combined fragment too
 all_fragment <- c(tab1, tab2, tab3)
-frag_path <- file.path(out_dir, "twfe_tables_code.tex")
+frag_path <- file.path(out_dir, "twfe_tables_all.tex")
 writeLines(all_fragment, frag_path, useBytes = TRUE)
 
+# 3) (optional) keep a standalone compilable LaTeX doc for quick QA
 full_doc <- c(
   "\\documentclass[11pt]{article}",
   "\\usepackage[margin=1in]{geometry}",
@@ -284,9 +296,12 @@ full_doc <- c(
   all_fragment,
   "\\end{document}"
 )
-full_path <- file.path(out_dir, "twfe_tables.tex")
+full_path <- file.path(out_dir, "twfe_tables_QA.tex")
 writeLines(full_doc, full_path, useBytes = TRUE)
 
+cat("[write] ", normalizePath(tab1_path, winslash = "\\"), "\n", sep = "")
+cat("[write] ", normalizePath(tab2_path, winslash = "\\"), "\n", sep = "")
+cat("[write] ", normalizePath(tab3_path, winslash = "\\"), "\n", sep = "")
 cat("[write] ", normalizePath(frag_path, winslash = "\\"), "\n", sep = "")
 cat("[write] ", normalizePath(full_path, winslash = "\\"), "\n", sep = "")
 cat("Done.\n")

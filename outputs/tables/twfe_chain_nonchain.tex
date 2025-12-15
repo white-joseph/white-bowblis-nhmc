@@ -1,0 +1,37 @@
+\begingroup
+\begin{table}[!ht]
+\centering
+\begin{threeparttable}
+\caption{TWFE Estimates of \textit{post}: Chain vs Non-chain Facilities (Jan 2017 Baseline, Without anticipation)}
+\label{tab:twfe-chain-nonchain}
+\small
+\setlength{\tabcolsep}{6pt}
+
+\begin{tabularx}{\textwidth}{@{} l YYYY @{} }
+\toprule
+ & \multicolumn{4}{c}{\textbf{Outcomes}} \\
+\cmidrule(lr){2-5}
+ & \textbf{RN} & \textbf{LPN} & \textbf{CNA} & \textbf{Total} \\
+\midrule
+\multicolumn{5}{@{}l}{\textbf{Panel A: Staffing Levels in HPPD}} \\[2pt]
+Chain January 2017 & \est{$-0.031$}{$0.007$}{***}  &  \est{$\phantom{-}0.003$}{$0.008$}{}  &  \est{$-0.034$}{$0.011$}{***}  &  \est{$-0.062$}{$0.015$}{***} \\
+Non-chain January 2017 & \est{$-0.037$}{$0.009$}{***}  &  \est{$\phantom{-}0.003$}{$0.011$}{}  &  \est{$-0.079$}{$0.019$}{***}  &  \est{$-0.113$}{$0.025$}{***} \\
+
+\addlinespace[3pt]
+\multicolumn{5}{@{}l}{\textbf{Panel B: Log Staffing Levels in HPPD}} \\[2pt]
+Chain January 2017 & \est{$-0.099$}{$0.021$}{***}  &  \est{$\phantom{-}0.008$}{$0.013$}{}  &  \est{$-0.019$}{$0.006$}{***}  &  \est{$-0.020$}{$0.005$}{***} \\
+Non-chain January 2017 & \est{$-0.085$}{$0.030$}{***}  &  \est{$\phantom{-}0.013$}{$0.017$}{}  &  \est{$-0.037$}{$0.010$}{***}  &  \est{$-0.032$}{$0.008$}{***} \\
+\bottomrule
+\end{tabularx}
+
+\begin{tablenotes}[flushleft]
+\footnotesize
+\item \textit{Notes:} Each cell reports the coefficient on \textit{post} with two-way clustered standard errors (by facility and month) in parentheses. Panel~A reports levels (HPPD); Panel~B reports logs (HPPD). Sample sizes: Row~1 ($N_{\mathrm{levels}}=322,100;\ N_{\mathrm{logs}}=322,100$), Row~2 ($N_{\mathrm{levels}}=243,036;\ N_{\mathrm{logs}}=243,036$).
+\item All specifications include facility and month fixed effects and covariates: \textit{government}, \textit{non-profit}, \textit{chain}, \textit{beds}, \textit{occupancy rate}, \textit{percent Medicare}, \textit{percent Medicaid}, and state case-mix quartile indicators.
+\item Statistical significance: $^{***}p<0.01$, $^{**}p<0.05$, $^{*}p<0.10$.
+\item Baseline chain classification determined by facility status in January 2017.
+\end{tablenotes}
+\end{threeparttable}
+\end{table}
+\endgroup
+
