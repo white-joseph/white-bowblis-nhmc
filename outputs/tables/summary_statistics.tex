@@ -5,56 +5,44 @@
 \usepackage{threeparttable}
 \usepackage{array}
 \usepackage{caption}
-\usepackage{makecell}
-\usepackage{graphicx}
 \captionsetup{labelfont=bf, font=small}
-
-\newcolumntype{Y}{>{\centering\arraybackslash}X}
 
 \begin{document}
 \begin{table}[!ht]
 \centering
 \begin{threeparttable}
-\caption{Panel Summary Statistics}
+\caption{Summary Statistics}
 \label{tab:sumstats}
 \small
-\setlength{\tabcolsep}{6pt}
+\setlength{\tabcolsep}{8pt}
 
-\begin{tabularx}{\textwidth}{@{} l r r r r r r r r @{} }
-\textbf{Panel A}\\[2pt]
-\toprule
-\textbf{Variable} & \textbf{N} & \textbf{Mean} & \textbf{SD} & \textbf{P25} & \textbf{Median} & \textbf{P75} & \textbf{Min} & \textbf{Max} \\
-\midrule
-Gap from previous months & 632,231 & 0.026 & 0.396 & 0.000 & 0.000 & 0.000 & 0.000 & 78.000 \\
-Coverage ratio & 632,231 & 1.000 & 0.017 & 1.000 & 1.000 & 1.000 & 0.323 & 1.000 \\
-RN HPPD & 632,231 & 0.427 & 0.309 & 0.220 & 0.366 & 0.562 & 0.000 & 9.105 \\
-LPN HPPD & 632,231 & 0.796 & 0.325 & 0.597 & 0.788 & 0.973 & 0.000 & 6.248 \\
-CNA HPPD & 632,231 & 2.100 & 0.548 & 1.741 & 2.049 & 2.413 & 0.000 & 5.248 \\
-Total HPPD & 632,231 & 3.324 & 0.793 & 2.809 & 3.241 & 3.721 & 1.500 & 11.675 \\
-Beds & 632,231 & 108.431 & 57.876 & 70.000 & 100.000 & 128.000 & 15.000 & 874.000 \\
-Occupancy rate (\%) & 632,231 & 76.4 & 15.5 & 67.1 & 79.7 & 88.8 & 0.12 & 100.0 \\
-\% Medicare & 632,231 & 13.0 & 11.1 & 6.1 & 10.0 & 16.0 & 0.00 & 99.4 \\
-\% Medicaid & 632,231 & 60.5 & 20.2 & 51.4 & 64.7 & 74.4 & 0.01 & 99.7 \\
-\bottomrule
-\end{tabularx}
-
-\vspace{0.6em}
-
-\textbf{Panel B}\\[2pt]
 \begin{tabularx}{\textwidth}{@{} l r r @{} }
 \toprule
-\textbf{Category} & \textbf{Count (CCN)} & \textbf{Share (\%)} \\
+\textbf{Variable} & \textbf{Mean} & \textbf{SD} \\
 \midrule
-For-profit  & 5,449 & 69.8 \\
-Non-profit  & 1,436 & 18.4 \\
-Government  & 921 & 11.8 \\
-Chain facilities & 4,874 & 62.4 \\
+\multicolumn{3}{@{}l}{\textbf{Panel A: Outcome variables}} \\[2pt]
+RN HPPD & 0.427 & 0.309 \\
+LPN HPPD & 0.796 & 0.325 \\
+CNA HPPD & 2.100 & 0.548 \\
+Total HPPD & 3.324 & 0.793 \\
+\addlinespace[0.8em]
+\multicolumn{3}{@{}l}{\textbf{Panel B: Control variables}} \\[2pt]
+Government (dummy) & 0.101 & 0.301 \\
+Non-profit (dummy) & 0.171 & 0.377 \\
+Chain affiliation (dummy) & 0.546 & 0.498 \\
+Beds & 108.4 & 57.9 \\
+Occupancy rate (\%) & 76.4 & 15.5 \\
+\% Medicare & 13.0 & 11.1 \\
+\% Medicaid & 60.5 & 20.2 \\
+Acuity quartile 2 (state-month) & 0.231 & 0.422 \\
+Acuity quartile 3 (state-month) & 0.230 & 0.421 \\
+Acuity quartile 4 (state-month) & 0.233 & 0.423 \\
 \bottomrule
 \end{tabularx}
 
 \begin{tablenotes}[flushleft]
 \footnotesize
-\item \textit{Notes:} Rows $=$ 632,231; Facilities $=$ 7,806; Period $=$ 2017/01–2024/06; Average months per facility $=$ 81.0.
+\item \textit{Notes:} Rows $=$ 632,231; Facilities $=$ 7,806; Treated facilities $=$ 1,589; Period $=$ 2017/01–2024/06; Average months per facility $=$ 81.0.
 \end{tablenotes}
 
 \end{threeparttable}

@@ -16,6 +16,18 @@ suppressPackageStartupMessages({
   library(MASS)   # for ginv() in pretrend tests
 })
 
+# ------------------------------ Plot font (Times / newtx-like) ------------------------------
+# This sets base R graphics text (axes labels/ticks) to a Times-like family.
+# Windows typically supports "Times New Roman"; if not, it will fall back to "Times".
+set_plot_font <- function() {
+  fam <- "Times New Roman"
+  # If that family isn't available, base graphics usually still accepts "Times".
+  # (We avoid extra dependencies; keep this simple and robust.)
+  par(family = fam)
+}
+# Apply once globally (also re-applied inside devices below)
+set_plot_font()
+
 # ------------------------------ 0) Load ------------------------------
 panel_fp <- "C:/Repositories/white-bowblis-nhmc/data/clean/panel.csv"
 
@@ -183,12 +195,33 @@ fit_block <- function(tag, data, desired_ref = -1L, print_logs = TRUE,
   save_iplot <- function(model, fname, ylab_txt, main_txt) {
     if (!is.null(save_dir)) {
       dir.create(save_dir, showWarnings = FALSE, recursive = TRUE)
-      png(filename = file.path(save_dir, fname),
-          width = width_px, height = height_px, res = dpi)
+      
+      # force .pdf extension
+      fname_pdf <- sub("\\.png$", ".pdf", fname, ignore.case = TRUE)
+      if (!grepl("\\.pdf$", fname_pdf, ignore.case = TRUE)) {
+        fname_pdf <- paste0(fname_pdf, ".pdf")
+      }
+      
+      grDevices::cairo_pdf(
+        filename = file.path(save_dir, fname_pdf),
+        width  = 9.5,
+        height = 6.2
+      )
       on.exit(dev.off(), add = TRUE)
-      iplot(model, ref = ref, xlim = event_window,
-            xlab = "Months relative to treatment", ylab = ylab_txt,
-            main = main_txt)
+      
+      # Times / newtx-compatible font
+      set_plot_font()
+      
+      iplot(
+        model,
+        ref  = ref,
+        xlim = event_window,
+        xlab = "Months relative to treatment",
+        ylab = ylab_txt,
+        main = "",
+        sub  = ""
+        # main = main_txt  # titles intentionally off
+      )
     }
   }
   
@@ -196,35 +229,43 @@ fit_block <- function(tag, data, desired_ref = -1L, print_logs = TRUE,
   tag_safe <- gsub("[^A-Za-z0-9]+", "_", tolower(tag))
   
   # RN
-  iplot(mods_lvl[["rn_hppd"]],    ref = ref, xlim = event_window,
+  iplot(mods_lvl[["rn_hppd"]], ref = ref, xlim = event_window,
         xlab = "Months relative to treatment", ylab = "RN HPPD",
-        main = paste0("TWFE ES: RN — ", tag))
+        main = "", sub = ""
+        # main = paste0("TWFE ES: RN — ", tag)  # titles OFF
+  )
   save_iplot(mods_lvl[["rn_hppd"]],
-             sprintf("twfe_es_rn_%s.png", tag_safe),
+             sprintf("twfe_es_rn_%s.pdf", tag_safe),
              "RN HPPD", paste0("TWFE ES: RN — ", tag))
   
   # LPN
-  iplot(mods_lvl[["lpn_hppd"]],   ref = ref, xlim = event_window,
+  iplot(mods_lvl[["lpn_hppd"]], ref = ref, xlim = event_window,
         xlab = "Months relative to treatment", ylab = "LPN HPPD",
-        main = paste0("TWFE ES: LPN — ", tag))
+        main = "", sub = ""
+        # main = paste0("TWFE ES: LPN — ", tag)
+  )
   save_iplot(mods_lvl[["lpn_hppd"]],
-             sprintf("twfe_es_lpn_%s.png", tag_safe),
+             sprintf("twfe_es_lpn_%s.pdf", tag_safe),
              "LPN HPPD", paste0("TWFE ES: LPN — ", tag))
   
   # CNA
-  iplot(mods_lvl[["cna_hppd"]],   ref = ref, xlim = event_window,
+  iplot(mods_lvl[["cna_hppd"]], ref = ref, xlim = event_window,
         xlab = "Months relative to treatment", ylab = "CNA HPPD",
-        main = paste0("TWFE ES: CNA — ", tag))
+        main = "", sub = ""
+        # main = paste0("TWFE ES: CNA — ", tag)
+  )
   save_iplot(mods_lvl[["cna_hppd"]],
-             sprintf("twfe_es_cna_%s.png", tag_safe),
+             sprintf("twfe_es_cna_%s.pdf", tag_safe),
              "CNA HPPD", paste0("TWFE ES: CNA — ", tag))
   
   # TOTAL
   iplot(mods_lvl[["total_hppd"]], ref = ref, xlim = event_window,
         xlab = "Months relative to treatment", ylab = "Total HPPD",
-        main = paste0("TWFE ES: Total — ", tag))
+        main = "", sub = ""
+        # main = paste0("TWFE ES: Total — ", tag)
+  )
   save_iplot(mods_lvl[["total_hppd"]],
-             sprintf("twfe_es_total_%s.png", tag_safe),
+             sprintf("twfe_es_total_%s.pdf", tag_safe),
              "Total HPPD", paste0("TWFE ES: Total — ", tag))
   
   invisible(list(levels = mods_lvl, logs = mods_log, ref = ref))
@@ -235,7 +276,6 @@ fit_block <- function(tag, data, desired_ref = -1L, print_logs = TRUE,
 S_full <- df
 
 # (B) WITHOUT anticipation: drop t in {-3,-2,-1} for treated rows
-#     Using your anticipation2 flag: keep only rows with anticipation2 == 0
 S_noant <- df %>% filter(anticipation2 == 0)
 
 # (C) Pre-pandemic and Pandemic windows
@@ -265,6 +305,7 @@ mods_pan_no   <- fit_block("Pandemic (2020Q2–2024Q2) — WITHOUT anticipation"
                            S_pan_noant, desired_ref = -4L, save_dir = out_plots)
 
 # ------------------------------ 8) TWFE robustness: event-window and anticipation-window ------------------------------
+# (unchanged below)
 robust_specs <- list(
   list(
     name        = "noant_win_24",
@@ -287,8 +328,6 @@ robust_specs <- list(
     desired_ref = -4L,
     event_window= c(-12L, 12L)
   ),
-  # Alternative anticipation sets based on event_time:
-  # wider donut: drop t in {-4,-3,-2,-1}
   list(
     name        = "drop_m4_to_m1",
     tag         = "Robustness: drop t in {-4,-3,-2,-1}",
@@ -296,7 +335,6 @@ robust_specs <- list(
     desired_ref = -1L,
     event_window= c(-24L, 24L)
   ),
-  # narrower donut: drop only t in {-2,-1}
   list(
     name        = "drop_m2_to_m1",
     tag         = "Robustness: drop t in {-2,-1}",
@@ -314,7 +352,7 @@ for (sp in robust_specs) {
     tag          = sp$tag,
     data         = sp$data,
     desired_ref  = sp$desired_ref,
-    print_logs   = FALSE,              # keep console cleaner if you want
+    print_logs   = FALSE,
     save_dir     = out_plots,
     event_window = sp$event_window
   )

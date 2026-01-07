@@ -1,0 +1,51 @@
+\documentclass[11pt]{article}
+\usepackage[margin=1in]{geometry}
+\usepackage{booktabs}
+\usepackage{tabularx}
+\usepackage{threeparttable}
+\usepackage{array}
+\usepackage{caption}
+\usepackage{makecell}
+\usepackage{newtxtext}
+\usepackage{newtxmath}
+\captionsetup{labelfont=bf, font=small}
+\newcolumntype{Y}{>{\centering\arraybackslash}X}
+\begin{document}
+\begingroup
+\begin{table}[!ht]
+\centering
+\begin{threeparttable}
+\caption{Pretrend Test Summary \textemdash{} Across Specifications}
+\label{tab:pretrend-tests}
+\small
+\setlength{\tabcolsep}{6pt}
+
+\begin{tabularx}{\textwidth}{@{} l YYYY @{} }
+\toprule
+ & \multicolumn{4}{c}{\textbf{Outcomes}} \\
+\cmidrule(lr){2-5}
+ & \textbf{RN} & \textbf{LPN} & \textbf{CNA} & \textbf{Total} \\
+\midrule
+\multicolumn{5}{@{}l}{\textbf{Panel A: Levels (HPPD)}} \\[2pt]
+With anticipation  &  \makecell[c]{0.0000\\[-1pt]{\footnotesize(0.0000)}}  &  \makecell[c]{0.0100\\[-1pt]{\footnotesize(0.0069)}}  &  \makecell[c]{0.0029\\[-1pt]{\footnotesize(0.0570)}}  &  \makecell[c]{0.0006\\[-1pt]{\footnotesize(0.0084)}} \\
+Without anticipation ($t=-3,-2,-1$ dropped)  &  \makecell[c]{0.0210\\[-1pt]{\footnotesize(0.0210)}}  &  \makecell[c]{0.0132\\[-1pt]{\footnotesize(0.0132)}}  &  \makecell[c]{0.5984\\[-1pt]{\footnotesize(0.5984)}}  &  \makecell[c]{0.2046\\[-1pt]{\footnotesize(0.2046)}} \\
+
+\addlinespace[3pt]
+\multicolumn{5}{@{}l}{\textbf{Panel B: Logs (HPPD)}} \\[2pt]
+With anticipation  &  \makecell[c]{0.0000\\[-1pt]{\footnotesize(0.0001)}}  &  \makecell[c]{0.0032\\[-1pt]{\footnotesize(0.0239)}}  &  \makecell[c]{0.0578\\[-1pt]{\footnotesize(0.0322)}}  &  \makecell[c]{0.0012\\[-1pt]{\footnotesize(0.0057)}} \\
+Without anticipation ($t=-3,-2,-1$ dropped)  &  \makecell[c]{0.6436\\[-1pt]{\footnotesize(0.6436)}}  &  \makecell[c]{0.0104\\[-1pt]{\footnotesize(0.0104)}}  &  \makecell[c]{0.8651\\[-1pt]{\footnotesize(0.8651)}}  &  \makecell[c]{0.3268\\[-1pt]{\footnotesize(0.3268)}} \\
+\bottomrule
+\end{tabularx}
+
+\begin{tablenotes}[flushleft]
+\footnotesize
+\item \textit{Notes:} Each cell reports p-values from joint Wald tests of pre-treatment event-time coefficients (leads) in the TWFE event-study model with two-way clustered standard errors (by facility and month). The first line in each cell is the p-value for the \textit{All-pre} window; the value in parentheses is the p-value for the common \textit{Window} $[-24,-5]$.
+\item \textit{All-pre} window: With anticipation uses $[-24,-2]$; Without anticipation uses $[-24,-5]$ (due to dropping $t=-3,-2,-1$).
+\item Sample sizes: With anticipation ($N_{\mathrm{levels}}=632,231;\ N_{\mathrm{logs}}=632,231$). Without anticipation ($N_{\mathrm{levels}}=628,107;\ N_{\mathrm{logs}}=628,107$).
+\item All specifications include facility and month fixed effects and covariates: \textit{government}, \textit{non-profit}, \textit{chain}, \textit{beds}, \textit{occupancy rate}, \textit{percent Medicare}, \textit{percent Medicaid}, and state case-mix quartile indicators.
+\end{tablenotes}
+\end{threeparttable}
+\end{table}
+\endgroup
+
+\end{document}

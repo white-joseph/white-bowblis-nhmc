@@ -158,29 +158,29 @@ robust_specs[["baseline"]] <- list(
 )
 
 # (2)–(5): Different gap cutoffs, keeping your “no anticipation” rule
-robust_specs[["gap_le_6"]] <- list(
-  label = "(2) Gap $\\leq 6$",
+robust_specs[["sample excludes gap_gt_6"]] <- list(
+  label = "(2) Sample excludes \\textit{gap} $> 6$",
   data  = df %>%
     filter(anticipation2 == 0) %>%
     filter(is.na(gap_from_prev_months) | gap_from_prev_months <= 6)
 )
 
 robust_specs[["gap_le_3"]] <- list(
-  label = "(3) Gap $\\leq 3$",
+  label = "(3) Sample excludes \\textit{gap} $> 3$",
   data  = df %>%
     filter(anticipation2 == 0) %>%
     filter(is.na(gap_from_prev_months) | gap_from_prev_months <= 3)
 )
 
 robust_specs[["gap_le_1"]] <- list(
-  label = "(4) Gap $\\leq 1$",
+  label = "(4) Sample excludes \\textit{gap} $> 1$",
   data  = df %>%
     filter(anticipation2 == 0) %>%
     filter(is.na(gap_from_prev_months) | gap_from_prev_months <= 1)
 )
 
 robust_specs[["gap_eq_0"]] <- list(
-  label = "(5) Gap $= 0$",
+  label = "(5) Sample excludes \\textit{gap} $> 0$",
   data  = df %>%
     filter(anticipation2 == 0) %>%
     filter(is.na(gap_from_prev_months) | gap_from_prev_months == 0)
@@ -250,7 +250,7 @@ robustness_table_fragment <- function(specs, fits, caption, label) {
     "\\cmidrule(lr){3-6}",
     " & \\textbf{N} & \\textbf{RN} & \\textbf{LPN} & \\textbf{CNA} & \\textbf{Total} \\\\",
     "\\midrule",
-    "\\multicolumn{6}{@{}l}{\\textbf{Panel A}} \\\\[2pt]"
+    "\\multicolumn{6}{@{}l}{\\textbf{Panel A: Staffing Levels in HPPD}} \\\\[2pt]"
   )
   
   # Panel A: levels
@@ -263,7 +263,7 @@ robustness_table_fragment <- function(specs, fits, caption, label) {
   
   lines <- c(lines, "",
              "\\addlinespace[3pt]",
-             "\\multicolumn{6}{@{}l}{\\textbf{Panel B}} \\\\[2pt]")
+             "\\multicolumn{6}{@{}l}{\\textbf{Panel B: Log Staffing Levels in HPPD}} \\\\[2pt]")
   
   # Panel B: logs
   for (nm in names(specs)) {
