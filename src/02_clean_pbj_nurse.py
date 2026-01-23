@@ -48,7 +48,7 @@ def normalize_ccn_any(s: pd.Series) -> pd.Series:
 def to_date_from_int_yyyymmdd(s: pd.Series) -> pd.Series:
     return pd.to_datetime(s.astype("Int64"), format="%Y%m%d", errors="coerce")
 
-# -------- fast, vectorized CY_QTR parsing ----------
+# -------- vectorized CY_QTR parsing ----------
 _QRX = re.compile(r"(?i)(?:CY)?\s*(20\d{2})?\s*[- ]?Q(?:TR)?\s*([1-4])|^\s*([1-4])\s*$")
 def normalize_cy_qtr(cy_qtr: pd.Series, workdate: pd.Series) -> pd.Series:
     s = cy_qtr.astype("string")
@@ -102,7 +102,7 @@ def normalize_needed_columns(df_raw: pd.DataFrame) -> pd.DataFrame:
 
     return df[["cms_certification_number","workdate","hrs_rn","hrs_lpn","hrs_cna","mds_census","cy_qtr"]]
 
-# ====================== File → Monthly Aggregation ============================
+# ====================== File -> Monthly Aggregation ============================
 def process_file_monthly(fp: Path) -> pd.DataFrame:
     df = normalize_needed_columns(read_csv_robust(fp))
     df["quarter_row"] = normalize_cy_qtr(df["cy_qtr"], df["workdate"])
@@ -143,7 +143,7 @@ def process_file_monthly(fp: Path) -> pd.DataFrame:
     ym = monthly["year_month_p"].astype("period[M]")
     monthly["year_month"] = ym.dt.year.astype(int).astype(str) + "/" + ym.dt.month.astype(int).astype(str).str.zfill(2)
 
-    # ---- gap_from_prev_months (vectorized) ----
+    # ---- gap_from_prev_months ----
     month_index = (ym.dt.year.astype(int) * 12 + ym.dt.month.astype(int)).astype("Int32")
     monthly = monthly.assign(_month_index=month_index)
     monthly = monthly.sort_values(["cms_certification_number","_month_index"], kind="mergesort")
@@ -192,7 +192,6 @@ def main():
         print(f"[saved] pbj nurse panel → {OUT_FP} (rows=0)")
         return
 
-    # Keep only the columns we want to save
     cols = [
         "cms_certification_number", "quarter", "year_month",
         *(["rn_hours_month","lpn_hours_month","cna_hours_month","total_hours"] if KEEP_HOUR_TOTALS else []),
@@ -202,8 +201,8 @@ def main():
     ]
     monthly = monthly[cols]
 
-    # ---------- GLOBAL sort + gap computation (across all files) ----------
-    # Parse YYYY/MM to a real month key
+    # ---------- Sort and gap ----------
+    # Parse YYYY/MM to a month key
     ord_dt = pd.to_datetime(monthly["year_month"] + "/01", format="%Y/%m/%d", errors="coerce")
     monthly = monthly.assign(_ord=ord_dt,
                              _mi=(ord_dt.dt.year*12 + ord_dt.dt.month).astype("Int32"))
@@ -214,12 +213,12 @@ def main():
     # gap_from_prev_months: 0 if consecutive month; otherwise size of the gap
     monthly["gap_from_prev_months"] = (
         monthly.groupby("cms_certification_number")["_mi"]
-               .diff()               # difference in month index
+               .diff()
                .fillna(1)
-               .astype("Int16") - 1   # convert consecutive (diff=1) → 0
+               .astype("Int16") - 1
     ).clip(lower=0)
 
-    # Drop helpers and ensure final sorted order
+    # Drop helpers and ensure final order
     monthly = monthly.drop(columns=["_ord","_mi"]) \
                      .sort_values(["cms_certification_number","year_month"], kind="mergesort") \
                      .reset_index(drop=True)
