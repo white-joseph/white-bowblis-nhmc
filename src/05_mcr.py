@@ -1,21 +1,7 @@
 #!/usr/bin/env python
 # coding: utf-8
 # -----------------------------------------------------------------------------
-# Medicare Cost Reports → Monthly Controls (no panel build)
-#
-# Output: data/interim/mcr.csv  with columns:
-#   cms_certification_number, quarter, year_month,
-#   pct_medicare, pct_medicaid, num_beds, occupancy_rate,
-#   urban, chain, state, non_profit, government
-#
-# Notes:
-#   • CCN normalized (alphanumeric OK; pad if all digits)
-#   • Monthly expansion across fiscal year [FY_BGN_DT .. FY_END_DT]
-#   • occupancy_rate = patient_days_total / beddays_available (primary),
-#                      fallback = patient_days_total / (num_beds * FY_days)
-#   • urban = 1 if explicit URBAN, 0 if explicit RURAL (else NA left through)
-#   • chain = derived ONLY from MCR_homeoffice (Y/Yes/1 → 1; N/No/0/blank → 0)
-#   • ownership_type buckets → non_profit (1/0), government (1/0); for-profit is ref
+# Medicare Cost Reports -> Monthly Controls
 # -----------------------------------------------------------------------------
 
 import os, re, warnings
@@ -60,7 +46,7 @@ def map_ownership_bucket(code_str: str):
     if code_str is None or (isinstance(code_str, float) and pd.isna(code_str)):
         return None
     s = str(code_str).strip().upper().replace(".0", "")
-    # CMS crosswalk commonly: 1-2 nonprofit; 3-6 for-profit; 7-13 government
+    # 1-2 nonprofit; 3-6 for-profit; 7-13 government
     if s in {"1","2"}: return "Nonprofit"
     if s in {"3","4","5","6"}: return "For-profit"
     if s in {"7","8","9","10","11","12","13"}: return "Government"
@@ -107,7 +93,7 @@ def chain_from_homeoffice(val):
         return 0
 
 # ============================== Load & Select =================================
-# Prefer SAS; fallback to CSV
+# SAS; fallback to CSV
 sas_files = sorted(MCR_DIR.glob("mcr_flatfile_20??.sas7bdat"))
 xpt_files = sorted(MCR_DIR.glob("mcr_flatfile_20??.xpt"))
 csv_files = sorted(MCR_DIR.glob("mcr_flatfile_20??.csv"))
@@ -120,7 +106,6 @@ except Exception:
         print("[read] pyreadstat not available; falling back to CSV-only")
     use_sas = False
 
-# Canonical targets (STRICT to provided names)
 TARGET_SETS = dict(
     PRVDR_NUM      = ["PRVDR_NUM","provnum","prvdr_num","Provider Number"],
     FY_BGN_DT      = ["FY_BGN_DT","fy_bgn_dt","Cost Report Fiscal Year beginning date"],
@@ -217,7 +202,6 @@ raw["chain"] = raw["MCR_homeoffice"].apply(chain_from_homeoffice).astype("Int8")
 raw["num_beds"] = raw["TOT_BEDS"]
 
 # ============================== OUTLIER / MANUAL CORRECTIONS ==================
-# Helpers for period overlap with FY rows
 def _ts_month_start(ym: str) -> pd.Timestamp:
     return pd.Period(ym, "M").to_timestamp("s")
 
@@ -249,7 +233,7 @@ def apply_value_corrections(df: pd.DataFrame, corrections: list[dict]) -> int:
             total += int(m.sum())
     return total
 
-# (A) Current hard-coded corrections for beds
+# (A) Hard-coded corrections for beds
 CORR_BEDS = [
     {"ccn":"015417", "start":"2018/04", "end":"2019/04", "col":"num_beds", "value": 75},
     {"ccn":"056337", "start":"2017/01", "end":"2017/12", "col":"num_beds", "value":142},
@@ -265,7 +249,7 @@ CORR_BEDS = [
 updated_beds = apply_value_corrections(raw, CORR_BEDS)
 print(f"[beds corrections] updated FY rows: {updated_beds}")
 
-# (B) PLACEHOLDER: corrections to raw input fields (e.g., PAT_DAYS_TOT, BEDDAYS_AVAIL, etc.)
+# (B) Placeholder for orrections to raw input fields
 CORR_INPUTS = [
     # Example:
     # {"ccn":"123456", "start":"2020/01", "end":"2020/03", "col":"PAT_DAYS_TOT", "value": 9999},
@@ -274,7 +258,7 @@ updated_inputs = apply_value_corrections(raw, CORR_INPUTS)
 if updated_inputs:
     print(f"[input corrections] updated FY rows: {updated_inputs}")
 
-# Occupancy rate (primary + fallback) — runs AFTER beds corrections
+# Occupancy rate (primary + fallback) —> AFTER beds corrections
 fy_days = (raw["FY_END_DT"] - raw["FY_BGN_DT"]).dt.days.add(1).where(lambda s: s > 0)
 primary = np.where(
     raw["PAT_DAYS_TOT"].notna() & raw["BEDDAYS_AVAIL"].notna() & (raw["BEDDAYS_AVAIL"] > 0),
@@ -292,7 +276,7 @@ raw["occupancy_rate"] = pd.to_numeric(np.where(np.isnan(primary), fallback, prim
 raw["pct_medicare"] = _share(raw["PAT_DAYS_MCR"], raw["PAT_DAYS_TOT"]).clip(0, 100)
 raw["pct_medicaid"] = _share(raw["PAT_DAYS_MCD"], raw["PAT_DAYS_TOT"]).clip(0, 100)
 
-# (C) PLACEHOLDER: corrections to derived outputs (e.g., num_beds, occupancy_rate, pct_* , urban/chain/state)
+# (C) Placeholder for corrections to derived outputs
 CORR_DERIVED = [
     # Example:
     # {"ccn":"123456", "start":"2021/05", "end":"2021/07", "col":"occupancy_rate", "value": 88.0},
@@ -329,7 +313,7 @@ monthly = (pd.concat(rows, ignore_index=True)
                "num_beds","occupancy_rate","pct_medicare","pct_medicaid","ownership_type"
            ]))
 
-# Deduplicate overlaps within CCN×month (same behavior as before)
+# Deduplicate overlaps within CCN×month
 monthly = (monthly.sort_values(["cms_certification_number","month"])
                  .groupby(["cms_certification_number","month"], as_index=False)
                  .agg({
@@ -343,7 +327,7 @@ monthly = (monthly.sort_values(["cms_certification_number","month"])
                      "ownership_type": lambda s: s.dropna().iloc[0] if s.dropna().size else pd.NA,
                  }))
 
-# Ownership dummies (For-profit as reference)
+# Ownership dummies (For-profit is reference)
 ot = monthly["ownership_type"].astype("string").str.strip().str.lower()
 ot = (ot.str.replace(r"[\s_]+", "-", regex=True)
          .str.replace(r"^non[- ]?profit$", "nonprofit", regex=True)
@@ -361,7 +345,7 @@ for c in ["pct_medicare","pct_medicaid","occupancy_rate"]:
     monthly[c] = pd.to_numeric(monthly[c], errors="coerce").clip(0, 100)
 monthly["num_beds"] = pd.to_numeric(monthly["num_beds"], errors="coerce")
 
-# Reorder / keep only requested columns
+# Reorder
 keep = [
     "cms_certification_number", "quarter", "year_month",
     "pct_medicare", "pct_medicaid", "num_beds", "occupancy_rate",
