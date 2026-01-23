@@ -1,18 +1,18 @@
 #!/usr/bin/env python
 # coding: utf-8
 # -----------------------------------------------------------------------------
-# chow.py — Minimal CHOW exports, with explicit universes + facility signatures
+# chow.py —> CHOW exports, with universes + facility signatures
 #
-# Outputs (unchanged + new):
+# Outputs:
 #   1) data/interim/chow_nh_compare.csv              (universe = CCNs in ownership.csv)
 #   2) data/interim/chow_mcr.csv                     (universe = CCNs in MCR files)
 #   3) data/interim/chow.csv                         (inner join of the two universes)
-#   4) data/interim/facility_signatures_long.csv     (NEW: long format owner groups)
-#   5) data/interim/facility_signatures_wide_preview.csv (NEW: wide QC preview)
+#   4) data/interim/facility_signatures_long.csv     (long format owner groups)
+#   5) data/interim/facility_signatures_wide_preview.csv (wide QC preview)
 #
-# Ownership CHOW criteria: UNCHANGED from your logic
+# Ownership CHOW criteria:
 #   - turnover >= 50% (percent-overlap when available; else names-based fallback)
-#   - surname override: if >=80% surname-family control persists → NOT a CHOW
+#   - surname override: if >=80% surname-family control persists -> NOT a CHOW
 #   - window: to_start >= 2017-01-01
 # -----------------------------------------------------------------------------
 
@@ -33,27 +33,25 @@ INTERIM_DIR = PROJECT_ROOT / "data" / "interim"
 INTERIM_DIR.mkdir(parents=True, exist_ok=True)
 
 # Inputs
-OWNERSHIP_FP = INTERIM_DIR / "ownership.csv"  # produced by your ownership pipeline
+OWNERSHIP_FP = INTERIM_DIR / "ownership.csv"
 MCR_DIR      = RAW_DIR / "medicare-cost-reports"
 MCR_PATTERNS = ["mcr_flatfile_20??.csv", "mcr_flatfile_20??.sas7bdat", "mcr_flatfile_20??.xpt", "mcr_flatfile_20??.XPT"]
 
-# Outputs (existing)
+# Outputs
 OWN_OUT   = INTERIM_DIR / "chow_nh_compare.csv"
 MCR_OUT   = INTERIM_DIR / "chow_mcr.csv"
 MERGE_OUT = INTERIM_DIR / "chow.csv"
-
-# NEW facility signatures outputs
 SIG_LONG_OUT = INTERIM_DIR / "facility_signatures_long.csv"
 SIG_WIDE_OUT = INTERIM_DIR / "facility_signatures_wide_preview.csv"
 
-# Window & thresholds (match your existing logic)
+# Window & thresholds
 CUTOFF_DATE = pd.Timestamp("2017-01-01")
-TURNOVER_THRESH = 0.50  # 50% or greater → CHOW
+TURNOVER_THRESH = 0.50
 SURNAME_MIN_FRACTION_KEEP = 0.80
 USE_SURNAME_OVERRIDE = True
-LEVEL_PRIORITY = ["indirect", "direct", "partnership"]  # prefer indirect snapshots
+LEVEL_PRIORITY = ["indirect", "direct", "partnership"]
 
-# ============================== Common helpers ================================
+# ============================== Helpers ================================
 ORG_MARKERS_RE = re.compile(r"\b(LLC|INC|CORP|CORPORATION|L\.L\.C\.|L\.P\.|LP|LLP|PLC|COMPANY|CO\.?|HOLDINGS?|GROUP|TRUST|FUND|CAPITAL|PARTNERS(hip)?|HEALTH|CARE|AUTHORITY|HOSPITAL|CENTER|NURSING|HOME|OPERATING|MANAGEMENT)\b", re.I)
 TOKEN_RE = re.compile(r"[^\w\s]")
 SUFFIXES = r'\b(INC|INCORPORATED|CORP|CORPORATION|LLC|L\.L\.C\.|L\.P\.|LP|LLP|PLC|CO|COMPANY|HOLDINGS?|PARTNERS?|PARTNERSHIP|CAPITAL|INVESTMENTS?|TRUST|GROUP)\b'
@@ -192,7 +190,7 @@ def pivot_dates_wide(df: pd.DataFrame, id_col: str, date_col: str, prefix: str, 
             wide[c] = pd.to_datetime(wide[c], errors="coerce").dt.strftime("%Y-%m-%d")
     return wide
 
-# ============================== MCR helpers/reader ============================
+# ============================== MCR helpers ============================
 def read_mcr_three_cols() -> pd.DataFrame:
     files = []
     seen = set()
@@ -315,7 +313,7 @@ def build_chow_from_ownership() -> tuple[pd.DataFrame, pd.DataFrame]:
     own["owner_name_norm"] = own["owner_name"].map(clean_owner_name)
     own["level"] = own["role"].map(level_bucket)
 
-    # Build snapshots at each (CCN, association_date), prefer Indirect→Direct→Partnership
+    # Build snapshots at each (CCN, association_date), Indirect -> Direct -> Partnership
     rows = []
     for (ccn, adate), g in own.groupby(["cms_certification_number","association_date"], sort=True):
         chosen = None
@@ -338,7 +336,6 @@ def build_chow_from_ownership() -> tuple[pd.DataFrame, pd.DataFrame]:
 
     snaps = pd.DataFrame(rows).sort_values(["cms_certification_number","association_date"]).reset_index(drop=True)
     if snaps.empty:
-        # still return a shell so the base-universe join works
         return pd.DataFrame(columns=["cms_certification_number","n_chow_nh_compare"]), own_ccns
 
     # Compute transitions & CHOW flags
@@ -403,7 +400,7 @@ def build_chow_from_ownership() -> tuple[pd.DataFrame, pd.DataFrame]:
     out = out.sort_values("cms_certification_number").reset_index(drop=True)
     return out, own_ccns
 
-# ============================== (NEW) Facility signatures =====================
+# ============================== Facility signatures =====================
 def build_facility_signatures() -> tuple[pd.DataFrame, pd.DataFrame]:
     """
     Pure add-on for manual review: constructs long owner-group regimes + a wide preview.
@@ -425,7 +422,7 @@ def build_facility_signatures() -> tuple[pd.DataFrame, pd.DataFrame]:
     df["owner_name_norm"] = df["owner_name"].map(clean_owner_name)
     df["level"] = df["role"].map(level_bucket)
 
-    # ---- Snapshot per (CCN, date) with level priority ----
+    # ---- Snapshot per (CCN, date) with levels ----
     snapshots = []
     for (ccn, adate), g in df.groupby(["cms_certification_number","association_date"], sort=True):
         chosen = None
@@ -453,7 +450,6 @@ def build_facility_signatures() -> tuple[pd.DataFrame, pd.DataFrame]:
 
     snaps_df = pd.DataFrame(snapshots).sort_values(["cms_certification_number","association_date"]).reset_index(drop=True)
     if snaps_df.empty:
-        # Write empty shells and return
         empty_long = pd.DataFrame(columns=[
             "cms_certification_number","group_n","start","end","source_level",
             "names_list","pcts_list","owner_count","hhi"
@@ -464,7 +460,6 @@ def build_facility_signatures() -> tuple[pd.DataFrame, pd.DataFrame]:
         print(f"[save] signatures wide → {SIG_WIDE_OUT}  rows=0")
         return empty_long, pd.DataFrame(columns=["cms_certification_number"])
 
-    # ---- Group into stable regimes using TURNOVER_THRESH (unchanged rule) ----
     def hhi_from_map(wm: dict) -> float:
         return round(sum((p/100.0)**2 for p in wm.values()), 4)
 
@@ -517,7 +512,7 @@ def build_facility_signatures() -> tuple[pd.DataFrame, pd.DataFrame]:
 
     long_df = pd.DataFrame(long_rows).sort_values(["cms_certification_number","group_n"]).reset_index(drop=True)
 
-    # ---- Wide QC preview (first 8 groups per CCN) ----
+    # ---- Wide QC preview ----
     def as_label(names_json, pcts_json, k=12):
         names = json.loads(names_json)
         pcts  = json.loads(pcts_json)
@@ -578,13 +573,12 @@ def build_chow_from_mcr() -> tuple[pd.DataFrame, pd.DataFrame]:
 
 # ============================== MERGE & SAVE ==================================
 def main():
-    # --- NEW: build facility signatures for manual review (does not affect CHOW logic) ---
     try:
         build_facility_signatures()
     except Exception as e:
         print(f"[warn] facility signatures step skipped: {e}")
 
-    # Build OWN and MCR tables + capture each source universe (UNCHANGED)
+    # Build OWN and MCR tables + capture each universe
     own_wide, own_ccns = build_chow_from_ownership()
     mcr_wide, mcr_ccns = build_chow_from_mcr()
 
