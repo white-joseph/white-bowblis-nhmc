@@ -15,6 +15,7 @@
 \usepackage{pdflscape}
 \usepackage{newtxtext}
 \usepackage{newtxmath}
+\usepackage{soul,color}
 \usepackage[hidelinks]{hyperref}
 
 \captionsetup{labelfont=bf, font=small}
@@ -40,6 +41,9 @@
 % \cortext[cor2]{Co-corresponding author}
 
 \begin{abstract}
+
+Ownership generally $\rightarrow$ Non-price/labor outcomes $\rightarrow$ Healthcare $\rightarrow$ Nursing homes $\rightarrow$ My paper
+
 \end{abstract}
 
 % \begin{keyword}
@@ -49,13 +53,15 @@
 
 \section{Introduction}
 
-Ownership transitions, through acquisitions, sales, and mergers, have become increasingly common as consolidation in the long-term care sector has grown. Much of the existing literature examines how consolidation affects prices, costs, and market power, while substantially less is known about how ownership changes influence inputs that influence patient outcomes, such as nurse staffing. Evidence on quality effects following ownership changes is mixed, and staffing outcomes in particular have received limited attention, despite their central role in care delivery.
+Ownership transitions, through acquisitions, sales, and mergers have become increasingly common across many sectors of the economy, especially in healthcare. There is extensive industrial organization research that focuses on ownership changes, motivated by concerns over market power, competition, and consumer welfare. Much of this literature focuses on mergers and acquisitions and how they affect prices, costs, and market structure, finding that they can substantially reshape competitive conditions across many different industries. This research has generated important insights into these areas and has played a central role in informing antitrust policy, specifically around mergers and acquisitions. In focusing primarily on prices and costs, there is a limited understanding about how ownership changes and transitions impact firms along other outcomes. In particular, less is known about how changes in ownership influence internal firm decisions and inputs to production that can have economic implications extending beyond prices and costs. As a result, while existing literature gives us a good framework for understanding the competitive effects ownership changes, there are important questions to be answered about non-price outcomes. \\
 
-Nursing labor represents one of the largest operating expenses for nursing homes and is a primary determinant of care quality, safety, and resident outcomes. Staffing is a central input in the production of nursing home care. As a result, staffing levels are a natural margin along which facilities may adjust in response to changes in financial incentives, managerial priorities, or organizational structure. Understanding how staffing responds to major organizational changes is therefore critical for evaluating the consequences of consolidation and ownership transitions in long-term care.
+Much of the existing literature on ownership changes examines how they affect prices, costs, and market power, while little is known about how ownership changes influence inputs to labor supply that directly influence patient outcomes. Existing studies that do focus on non-price outcomes are limited and focus on outcomes such as innovation and sustainability \citep{haucap_stiebale_2023}, product characteristics \citep{fan_2013}, X,Y, and Z. There is also little evidence on how ownership changes impact internal decisions for supply of labor. Literature that does look at labor outcomes suggest a significant decline in employment and wages if an establishment undergoes and ownership change compared to those who do not \citep{lichtenberg_siegel_1990}. In their study, Lichtenberg and Siegel use data on employees who primarily work in business administration and research and development roles. The data for their study is decently outdated though, as their study period takes place from 1977 through 1982. There have been many major events and labor market transformations that would likely have changed labor market conditions between their study period and the one we use for our paper. Nevertheless, they find that employment declines by roughly 16 percent following an ownership change. One piece of the study that is similar to ours and is to our benefit is that it looks at ownership changes in general, and not just mergers and acquisitions. Where we aim to contribute to the literature is using updated data along with newer empirical techniques that this study does not utilize. Another paper that studies the affects of ownership changes on labor outcomes finds mixed results \citep{mcguckin_nguyen_2001}. They find that following an ownership change are not a way for firms to cut jobs and that typical ownership changes actually increase employment. The difference between this study and the earlier one by Lichtenberg and Siegel is that this looks at blue collar workers rather than white collar ones. These labor adjustments in response to ownership changes may be especially important in sectors where labor inputs are tightly linked to service quality, such as healthcare. \\
 
-Nursing homes provide a particularly important setting in which to study the staffing effects of ownership change. They serve a medically vulnerable population, operate under heavy regulatory oversight, and rely intensively on skilled and semi-skilled nursing labor. Changes in ownership may alter managerial objectives, financial constraints, and labor practices in ways that directly affect staffing decisions. These dynamics are especially relevant for policymakers and regulators concerned with access to care, workforce stability, and patient outcomes in long-term care markets.
+Within healthcare markets ownership changes can have particularly important economic and policy relevant consequences. Healtchare providers operate under extensive regulation, serve vulnerable populations, and rely on very skilled labor. All of these characteristics distinguish healthcare from many of the other industries studied in the merger and ownership change literature. Unlike settings where prices and ouputs are free to adjust, healthcare markets are often characterized by administered prices and regulatory constraints that can limit price competetition. As a result, changes in ownership may not only alter pricing or financial performance, but also internal organizational decisions that have a direct impact on the quality and accessibility of care. Literature on ownership changes in the healthcare industry are limited, and instead study markets such as craft beer \citep{fan_yang_2022} etc... Studies that do focus on healthcare markets study things such as pricing, utilization, spending, market power, and is usually focused on physician and hospital markets. \hl{examples}. Evidence on non-price outcomes is limited and offers mixed results, \hl{examples}. \\
 
-Using detailed administrative data from the Centers for Medicare and Medicaid Services (CMS), we study the causal effect of ownership changes on nursing hours per patient day. Exploiting staggered ownership transitions and a difference-in-differences event study design, we document significant declines in staffing following ownership changes. These effects vary by staff type, pandemic period, and baseline chain affiliation, highlighting the role of organizational structure and labor market conditions in shaping staffing adjustments after ownership transitions.
+Nursing homes provide a particularly important setting in which to study the staffing effects of ownership change. They serve a medically vulnerable population, operate under heavy regulatory oversight, and rely intensively on skilled and semi-skilled nursing labor. Changes in ownership may alter managerial objectives, financial constraints, and labor practices in ways that directly affect staffing decisions. These dynamics are especially relevant for policymakers and regulators concerned with access to care, workforce stability, and patient outcomes in long-term care markets. Nursing labor represents one of the largest operating expenses for nursing homes and is a primary determinant of care quality, safety, and resident outcomes. Staffing is a central input in the production of nursing home care and is extremely important to patient outcomes. There are many different patient outcomes that staffing is central to, the first being mortality. There are significant negative effects to inpatient mortality with shortages and decreases in university degree holding nurse staff \citep{kelly_et_al_2026}. Another patient outcome that nurses play a key role in is avoidable critical conditions. There are statistically significant differences in patients avoiding critical conditions when they had adequate nurse staff vs when they did not \citep{udina_et_al_2025}. A systematic review found that for registered nurses specifically,across the board studies show that higher staffing lead to reduced mortality \citep{dallora_et_al_2022}. As a result, staffing levels are a natural margin along which facilities may adjust in response to changes in financial incentives, managerial priorities, or organizational structure. As discussed previously, labor market outcomes as a result of ownership changes are very understudied. The gap in the literature that we aim to fill is understanding how nurse staffing responds after an ownership change, something that has not yet been looked at. Understanding how staffing responds to major organizational changes is therefore critical for evaluating the consequences of consolidation and ownership transitions in long-term care.\\
+
+Using detailed administrative data from the Centers for Medicare and Medicaid Services (CMS), we study the causal effect of ownership changes on nursing hours per patient day. Exploiting staggered ownership transitions and a difference-in-differences event study design, we document significant declines in staffing following ownership changes. These effects vary by staff type, pre vs post-pandemic, and baseline chain affiliation, highlighting the role of organizational structure and labor market conditions in shaping staffing adjustments after ownership transitions.\\
 
 \section{Data and Methods}
 \subsection{Data Sources}
@@ -81,11 +87,11 @@ Using these verified ownership changes, the analytic sample included Nursing Hom
 
 Our main dependent variables are measures of nursing staff levels. The nursing staff types we use in our study are registered nurses (RNs), licensed practical nurses (LPNs), and certified nursing assistants (CNAs). RNs are the most highly trained nursing staff and are responsible for assessment, care planning, medication administration, and supervision of other nursing personnel. LPNs provide basic medical care under the supervision of RNs and physicians, including monitoring vital signs and administering certain treatments. CNAs provide the majority of direct daily care to residents, assisting with activities of daily living. Because these staff types differ in training, scope of practice, and compensation, changes in staffing composition may reflect different organizational responses to ownership changes. We therefore examine each staff category separately, as well as total nursing hours per patient day. 
 
-Nursing staff levels were calculated from PBJ data, which reports the number of hours worked and the census for each type of nursing staff on a daily basis. We used this information to calculate nursing staff levels in hours per patient day (HPPD) as follows: for each facility $i$, calendar month $t$, and staff type $s$, we first aggregate daily hours to the monthly level and then compute
+Nursing staff levels were calculated from PBJ data, which reports the number of hours worked and the census for each type of nursing staff on a daily basis. We used this information to calculate nursing staff levels in hours per patient day (HPPD) as follows: for each facility $i$, calendar month $t$, and staff type, we first aggregate daily hours to the monthly level and then compute
 \begin{equation}
-  \text{HPPD}_{i,t}^{(s)} = \frac{H_{i,t}^{(s)}}{R_{i,t}},
+  \text{HPPD}_{i,t} = \frac{H_{i,t}}{R_{i,t}},
 \end{equation}
-where $H_{i,t}^{(s)}$ is the total hours worked by staff type $s$ during month $t$ and $R_{i,t}$ is the total resident days in that facility-month. Total HPPD is defined as the sum of RN, LPN, and CNA HPPD.
+where $H_{i,t}$ is the total hours worked by the staff type during month $t$ and $R_{i,t}$ is the total resident days in that facility-month. Total HPPD is defined as the sum of RN, LPN, and CNA HPPD.
 
 We construct two additional measures of data quality. First, we define a monthly coverage ratio
 \[
@@ -282,6 +288,8 @@ Ownership changes may have different implications for staffing depending on a fa
 
 \section{Discussion}
 
+Our results give new evidence that ownership changes in nursing homes lead to statistically significant declines in staffing levels among RNs, CNAs, and total nurse staffing, which suggests that as new ownership takes over labor inputs are a key area of adjustment. In a sector that has many fixed prices and costs as well as extensive regular, the easiest margin for ownership to cut operating costs is staff. Figure~\ref{fig:event_study_main_landscape} shows that RN, CNA, and total nurse staffing sharply falls around 3 months before the transfer of ownership is filed and stays consistent at the decreased level of staffing.
+
 \section{Appendix}
 
 \input{outputs/tables/twfe_robustness_summary_code.tex}
@@ -290,6 +298,7 @@ Ownership changes may have different implications for staffing depending on a fa
 \input{outputs/tables/pretrend_pvals_by_tau_fragment.tex}
 \FloatBarrier
 
+\nocite{*}
 \bibliographystyle{elsarticle-harv}
 \bibliography{refs}
 
