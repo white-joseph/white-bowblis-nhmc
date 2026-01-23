@@ -2,9 +2,6 @@
 # coding: utf-8
 # -----------------------------------------------------------------------------
 # Build Final Panel (outer join) + CHOW filter + treatment/post/event time + case-mix
-# + date window + within-quarter fills (AFTER final panel) + gap indicator
-# + bridge-fill for equal values around NA runs + unified beds (num_beds -> beds_prov)
-# Also writes an analytical panel with HPPD + hospital filters.
 # -----------------------------------------------------------------------------
 
 import os, re, warnings
@@ -99,7 +96,7 @@ def make_case_mix_bins_and_dummies(panel: pd.DataFrame, cm_col: str, state_col: 
         out["cm_quart_state"] = pd.Series([pd.NA]*len(out), dtype="Int16")
         out["cm_decil_state"] = pd.Series([pd.NA]*len(out), dtype="Int16")
 
-    # Dummies (drop bin=1 as reference; add missing)
+    # Dummies
     def dums(df, col, prefix):
         miss = df[col].isna().astype("Int8").rename(f"{prefix}_missing")
         d = pd.get_dummies(df[col], prefix=prefix, dtype="Int8")
@@ -148,9 +145,8 @@ def coalesce_suffix_duplicates(df: pd.DataFrame) -> pd.DataFrame:
             out = out.drop(columns=dups)
     return out
 
-# -------- Bridge-fill helper: fill NA runs only if surrounded by equal values --
+# -------- Fill NA only if surrounded by equal values --
 def _fill_between_equal_series(s: pd.Series, numeric: bool = True, tol: float = 1e-9) -> pd.Series:
-    # Work on ndarray for speed
     arr = s.to_numpy(copy=True)
     n = len(arr)
     is_na = pd.isna(arr)
@@ -162,7 +158,6 @@ def _fill_between_equal_series(s: pd.Series, numeric: bool = True, tol: float = 
         start = i
         while i < n and is_na[i]:
             i += 1
-        # NA run is [start, i-1]
         prev_val = arr[start - 1] if start - 1 >= 0 else np.nan
         next_val = arr[i] if i < n else np.nan
         if not pd.isna(prev_val) and not pd.isna(next_val):
@@ -177,7 +172,6 @@ def _fill_between_equal_series(s: pd.Series, numeric: bool = True, tol: float = 
 def bridge_fill_equal(panel: pd.DataFrame, cols: list[str], group_key: str, numeric: bool) -> pd.DataFrame:
     if not cols:
         return panel
-    # sort for stable month order within each CCN
     panel = panel.sort_values([group_key, "year_month"], kind="mergesort")
     def _apply(g):
         for c in cols:
@@ -256,7 +250,7 @@ base["treatment"] = (
         .astype(int)
 )
 
-# Robust month-difference calculation (avoid MonthEnd offsets)
+# Month-difference calculation
 base["event_time"] = np.nan
 mask = first_p.notna()
 ym_y = pd.Series(ym_periods.year,  index=base.index)
@@ -363,21 +357,13 @@ if _fill_cols:
             pass
 
 # ============================== Bridge-fill between equal endpoints ===========
-# For numerics (use np.isclose): num_beds, beds_prov, occupancy_rate, pct_medicare, pct_medicaid
 bridge_numeric = [c for c in ["num_beds","beds_prov","occupancy_rate","pct_medicare","pct_medicaid"] if c in panel.columns]
 panel = bridge_fill_equal(panel, bridge_numeric, group_key="cms_certification_number", numeric=True)
 
-# For dummies (exact equals): binary_quarter_fill (which already includes cm dummies)
 bridge_binary = [c for c in binary_quarter_fill if c in panel.columns]
 panel = bridge_fill_equal(panel, bridge_binary, group_key="cms_certification_number", numeric=False)
 
 # ============================== Unified 'beds' variable (override <15) ========
-# Goal:
-#  • Prefer a plausible bed count >= 15.
-#  • If beds_prov >= 15, use beds_prov.
-#  • Else if num_beds >= 15, use num_beds.
-#  • Else (both < 15 or missing), keep the best available (for now), then drop in analytical.
-
 # Ensure numeric
 for c in ["num_beds", "beds_prov"]:
     if c in panel.columns:
@@ -386,14 +372,14 @@ for c in ["num_beds", "beds_prov"]:
 nb  = panel["num_beds"]   if "num_beds"   in panel.columns else pd.Series(np.nan, index=panel.index)
 bp  = panel["beds_prov"]  if "beds_prov"  in panel.columns else pd.Series(np.nan, index=panel.index)
 
-# Choose >=15 if available; prefer provider value when it’s valid (often more reliable)
+# Choose >=15 if available; prefer provider value when it’s valid
 use_bp = bp.where(bp >= 15)
 use_nb = nb.where(nb >= 15)
 
 # Start with beds_prov (>=15), else num_beds (>=15)
 beds_clean = use_bp.fillna(use_nb)
 
-# If neither candidate is >=15, fall back to whichever is non-missing (may be <15). We'll drop later in analytical.
+# If neither candidate is >=15, fall back to whichever is non-missing (may be <15). 
 fallback = nb.where(nb.notna(), bp)  # prefer num_beds if present, else beds_prov
 beds_clean = beds_clean.where(beds_clean.notna(), fallback)
 
@@ -415,7 +401,6 @@ else:
     panel["gap"] = pd.Series([pd.NA]*len(panel), dtype="Int8")
 
 # ============================== Final types, save PBJ panel ===================
-# Keep beds fields as numeric floats (no Int64 casting) to match prior behavior
 for c in ["num_beds","beds_prov","beds","occupancy_rate","pct_medicare","pct_medicaid"]:
     if c in panel.columns:
         panel[c] = pd.to_numeric(panel[c], errors="coerce")
@@ -470,7 +455,7 @@ if {"rn_hppd", "lpn_hppd", "cna_hppd", "total_hppd"}.issubset(analytical.columns
         f"total>12={m_total_high.sum():,}, cna>5.25={m_cna_high.sum():,})"
     )
 
-# ---- NEW: Drop implausible bed counts (<15) after our override logic ----
+# ---- Drop implausible bed counts (<15) ----
 if "beds" in analytical.columns:
     before = len(analytical)
     analytical = analytical.loc[~(analytical["beds"] < 15)].copy()
