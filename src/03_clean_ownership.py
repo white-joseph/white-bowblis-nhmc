@@ -1,19 +1,8 @@
 #!/usr/bin/env python
 # coding: utf-8
-# -----------------------------------------------------------------------------
-# CMS Ownership — Extract (filename match) → Standardize → Combine
-# - CCN cleaning matches provider script:
-#     * preserve alphanumeric CCNs (e.g., '05A125', '37E624', '150E11')
-#     * drop scientific notation / junk (anything containing '.' or '+')
-#     * keep only [A-Z0-9]; uppercase; if purely numeric → zero-pad to 6
-#     * require length between 5 and 7 after cleaning (else drop)
-# - Filter OUT rows month-by-month where provider_resides_in_hospital == True
-#   using provider_resides_in_hospital_panel.csv (merge on CCN + month 'date')
-# - Final tweaks per spec:
-#     * processing_date → reformatted to year_month (YYYY/MM), and processing_date removed
-#     * quarter (YYYYQ#) derived from year_month
-# - Output: data/interim/ownership.csv
-# -----------------------------------------------------------------------------
+# =============================================================================
+# CMS Ownership —> Extract -> Standardize -> Combine
+# =============================================================================
 
 import os, re, csv, zipfile, shutil, tempfile, warnings
 from io import BytesIO
@@ -31,18 +20,16 @@ NH_ZIP_DIR  = RAW_DIR / "nh-compare"
 OWN_DIR     = RAW_DIR / "ownership-files"
 OWN_DIR.mkdir(parents=True, exist_ok=True)
 
-# NEW: interim output directory
 INTERIM_DIR = PROJECT_ROOT / "data" / "interim"
 INTERIM_DIR.mkdir(parents=True, exist_ok=True)
 
-# Provider outputs produced by your provider pipeline
+# Provider outputs 
 PROV_DIR         = RAW_DIR / "provider-info-files"
-HOSP_PANEL_CSV   = PROV_DIR / "provider_resides_in_hospital_panel.csv"    # TRUE-only panel (date = month start)
+HOSP_PANEL_CSV   = PROV_DIR / "provider_resides_in_hospital_panel.csv"
 
-# Final output path/name (changed)
 COMBINED_CSV = INTERIM_DIR / "ownership.csv"
 
-# Behavior flags
+# Flags
 DRY_RUN        = False          # True = preview only
 NAME_STYLE     = "yyyy_mm"      # "mm_yyyy" or "yyyy_mm"
 DO_STANDARDIZE = True           # standardize in-place before combine
@@ -122,14 +109,14 @@ def safe_to_datetime(series: pd.Series) -> pd.Series:
 
     return out
 
-# =============== CCN cleaner (matches provider cleaning logic) ===============
+# =============== CCN cleaner (matches provider cleaning) ===============
 def clean_ccn_raw(val: object) -> object:
     """
     Preserve alphanumeric CCNs; drop scientific notation/junk.
     Rules:
       - If value contains '.' or '+': drop (scientific notation or corrupted)
       - Keep only [A-Za-z0-9]; uppercase
-      - If purely digits → left-pad to 6
+      - If purely digits -> left-pad to 6
       - Require length between 5 and 7 after cleaning, else drop
     """
     if val is None:
@@ -234,7 +221,7 @@ def extract_by_filename_only():
         if len(notes) > 25:
             print(f"  ... and {len(notes)-25} more")
 
-# =================== 2) STANDARDIZE IN-PLACE (7 cols + roles) =================
+# =================== 2) STANDARDIZE IN-PLACE =================
 CANON_MAP = {
     # CCN
     "provnum": "cms_certification_number",
@@ -242,7 +229,7 @@ CANON_MAP = {
     "cms certification number (ccn)": "cms_certification_number",
     "cms certification number": "cms_certification_number",
     "provider id": "cms_certification_number",
-    # Provider (not kept now, but map anyway)
+    # Provider
     "provider name": "provider_name",
     "provname": "provider_name",
     # Role
@@ -300,7 +287,7 @@ def normalize_month_df(df: pd.DataFrame, fname: str) -> pd.DataFrame:
     ren = {c: CANON_MAP.get(norm_header(c), c) for c in df.columns}
     df = df.rename(columns=ren)
 
-    # 2) role filter → DIRECT / INDIRECT / PARTNERSHIP
+    # 2) role filter -> DIRECT / INDIRECT / PARTNERSHIP
     role_raw = df.get("role")
     if role_raw is None:
         role_raw = pd.Series(pd.NA, index=df.index)
@@ -314,7 +301,7 @@ def normalize_month_df(df: pd.DataFrame, fname: str) -> pd.DataFrame:
     df = df.loc[mask_keep].copy()
     df["role"] = role_out.loc[mask_keep].values
 
-    # 3) ownership % → numeric 0..100 (auto-scale 0..1 → 0..100)
+    # 3) ownership % -> numeric 0..100 (auto-scale 0..1 -> 0..100)
     if "ownership_percentage" in df.columns:
         pct = (df["ownership_percentage"].astype(str)
                .str.replace("%","",regex=False)
@@ -326,17 +313,17 @@ def normalize_month_df(df: pd.DataFrame, fname: str) -> pd.DataFrame:
             val = val * 100.0
         df["ownership_percentage"] = val
 
-    # 4) CCN → cleaned
+    # 4) CCN -> cleaned
     if "cms_certification_number" in df.columns:
         df["cms_certification_number"] = df["cms_certification_number"].map(clean_ccn_raw)
 
-    # 5) dates → datetime64
+    # 5) dates -> datetime64
     if "processing_date" in df.columns:
         df["processing_date"] = safe_to_datetime(df["processing_date"])
     if "association_date" in df.columns:
         df["association_date"] = safe_to_datetime(df["association_date"])
 
-    # 6) synth processing_date from filename if missing anywhere
+    # 6) processing_date from filename if missing anywhere
     y, m = parse_ym_from_fname(fname)
     if y and m:
         synth = pd.Timestamp(year=y, month=m, day=1)
@@ -358,7 +345,7 @@ def normalize_month_df(df: pd.DataFrame, fname: str) -> pd.DataFrame:
                 df[dc] = safe_to_datetime(df[dc])
             df[dc] = df[dc].dt.strftime("%Y-%m-%d")
 
-    # 7) keep only requested columns (create if missing)
+    # 7) keep only columns
     for col in KEEP_COLS:
         if col not in df.columns:
             df[col] = pd.NA
@@ -371,7 +358,7 @@ def normalize_month_df(df: pd.DataFrame, fname: str) -> pd.DataFrame:
     if dropped:
         print(f"  [ccn] dropped {dropped:,} row(s) with invalid/missing CCN in {fname}")
 
-    # 9) drop exact duplicates on the keep set (within file)
+    # 9) drop exact duplicates
     df = df.drop_duplicates(KEEP_COLS)
 
     return df
@@ -388,7 +375,7 @@ def standardize_in_place_and_combine():
     if not files:
         raise FileNotFoundError(f"No ownership_*.csv files found in {OWN_DIR}")
 
-    # In-place rewrite (overwrite file contents)
+    # In-place rewrite
     rewritten = 0
     for fp in files:
         try:
@@ -418,7 +405,7 @@ def standardize_in_place_and_combine():
         combined = pd.concat(frames, ignore_index=True)
 
         # ---- Build ownership 'date' as month start mirroring provider panel ----
-        # Prefer processing_date; fall back to association_date; both are strings → parse
+        # Prefer processing_date; fall back to association_date; both are strings -> parse
         proc = pd.to_datetime(combined.get("processing_date"), errors="coerce")
         assoc = pd.to_datetime(combined.get("association_date"), errors="coerce")
         date_used = proc.fillna(assoc)
@@ -487,7 +474,7 @@ def standardize_in_place_and_combine():
         qnum = ((proc_dt.dt.month - 1)//3 + 1).astype("Int64")
         combined["quarter"] = proc_dt.dt.year.astype("Int64").astype("string") + "Q" + qnum.astype("string")
 
-        # Drop helper 'date' and replace processing_date with year_month per spec
+        # Drop helper 'date' and replace processing_date with year_month
         combined = combined.drop(columns=["date", "processing_date"])
 
         # Keep same columns as before, but with year_month (and new quarter added)
@@ -499,7 +486,7 @@ def standardize_in_place_and_combine():
         extras = [c for c in combined.columns if c not in desired]
         combined = combined[desired + extras]
 
-        # Optional: sort for readability by CCN then year_month if present
+        # Sort for readability by CCN then year_month if present
         if "year_month" in combined.columns:
             ord_dt = pd.to_datetime(combined["year_month"] + "/01", format="%Y/%m/%d", errors="coerce")
             combined = combined.assign(_ord=ord_dt) \
@@ -507,13 +494,13 @@ def standardize_in_place_and_combine():
                                .drop(columns=["_ord"]) \
                                .reset_index(drop=True)
 
-        # Save to interim as ownership.csv
+        # Save
         combined.to_csv(COMBINED_CSV, index=False)
         print(f"[save] ownership panel → {COMBINED_CSV}  ({len(combined):,} rows)")
 
 # =============================== RUN PIPELINE =================================
 if __name__ == "__main__":
-    # 1) Extract monthly ownership CSVs (overwrites if present)
+    # 1) Extract monthly ownership CSVs
     extract_by_filename_only()
 
     # 2) Standardize in place + Combine (with month-by-month hospital filter)
