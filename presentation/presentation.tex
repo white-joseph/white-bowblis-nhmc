@@ -1,0 +1,106 @@
+\documentclass{beamer}
+
+\usepackage{amsmath}
+
+\usetheme{Boadilla}
+\usecolortheme{seahorse}
+\title[Ownership Changes]{Decomposing the effect of Ownership Changes on Nursing Home Staffing}
+\author{Joseph White}
+\institute{Miami University}
+\date{\today}
+
+\begin{document}
+\frame{\titlepage}
+
+\begin{frame}{Sources and Sample Selection}
+\begin{itemize}
+	\item Center for Medicare and Medicaid Services (CMS)
+	\begin{itemize}
+		\item Nursing Home Compare (NHC) Archive
+		\item Healthcare Cost Report Information System (HCRIS)
+		\item Payroll Based Journal (PBJ)
+	\end{itemize}
+	\item Facility-month-year level
+	\item 48 Contiguous U.S. States over the period January 2017 to June 2024
+	\item Freestanding facilities
+	\begin{itemize}
+	\item Hospital based facilities make up 12\% of all facilities in the U.S.
+	\end{itemize}
+\end{itemize}
+\end{frame}
+
+\begin{frame}{Identifying Ownership Changes - Background}
+\begin{itemize}
+	\item HCRIS ownership change flag
+	\begin{itemize}
+		\item May reflect purely legal restructuring
+	\end{itemize}
+	\item We validate using ownership data in the NHC archive
+	\begin{itemize}
+		\item Reports every level of ownership, management through direct owners
+		\item Limited Liability Corporations
+	\end{itemize}
+	\item We identify ownership changes at the highest level of ownership
+\end{itemize}
+\end{frame}
+
+\begin{frame}{Identifying Ownership Changes - Criteria}
+\begin{enumerate}
+	\item Majority (50\%) of ownership transfers from month $t-1$ to month $t$
+	\item Partial percentages we normalize and missing we assign equal weights across
+	\item We don't flag ownership changes when 80\% stake remains in the same family or for 		changes in legal names (e.g., a change from “Smith Holdings LLC” to “Smith Family 				Partners LP”)
+	\item Our sample then included facilities that facilities that:
+	\begin{enumerate}
+		\item Have no ownership changes in either dataset
+		\item Have exactly one change in each dataset within six months of each other
+	\end{enumerate}
+	\item For these facilities we define the change month as the first month the NHC archive 	indicates a change
+\end{enumerate}
+\end{frame}
+
+\begin{frame}{Dependent Variables - Nurse Staffing Levels}
+\begin{itemize}
+	\item The staff types we look at are RN's, LPN's, CNA's, and total staffing
+	\item PBJ
+	\item Hours per patient day (HPPD) for each staff type $s$, facility $i$, and period $t$
+\end{itemize}
+
+\begin{equation}
+  \text{HPPD}_{i,t} = \frac{H_{s,i,t}}{R_{s,i,t}},
+\end{equation}
+
+where $H_{s,i,t}$ is the total hours worked by the staff type $s$ during month $t$ for facility $i$ and $R_{s,i,t}$ is the total resident days in that facility month 
+\end{frame}
+
+\begin{frame}{Dependent Variables - Nurse Staffing Levels}
+\begin{itemize}
+	\item We exclude a small number of observations to align with the implausible criteria 		outlined in the CMS NHC Technical Users Guide where:
+	\begin{enumerate}
+		\item RN and LPN HPPD are both 0 or
+		\item Total HPPD is below 1.5 or above 12 or
+		\item CNA HPPD exceeds 5.25
+	\end{enumerate}
+\end{itemize}
+\end{frame}
+
+\begin{frame}{Sample Construction}
+%\small
+\begin{itemize}
+  \item Initial universe: all CMS-certified nursing homes
+  \item Restrict to freestanding facilities
+  \item Merge PBJ staffing, HCRIS, and NHC ownership data
+  \item Drop implausible staffing observations (CMS PBJ rules)
+  \item Final analytic sample:
+    \begin{itemize}
+      \item 7,806 facilities
+      \item 632,231 facility-month observations
+    \end{itemize}
+\end{itemize}
+\end{frame}
+
+\begin{frame}{Summary Statistics}
+
+\end{frame}
+
+\end{document}
+
