@@ -29,7 +29,7 @@
 
 \begin{frontmatter}
 \title{My Title}
-\author[miami]{Joe White\corref{cor1}}
+\author[miami]{Joseph White\corref{cor1}}
 \ead{whitejf@miamioh.edu}
 
 % \author[miami]{John Bowblis\corref{cor2}}
@@ -172,7 +172,7 @@ In both subgroup analyses, we estimate the same specifications as in equations~\
 
 Table~\ref{tab:sumstats} reports summary statistics for the main analysis sample. The final sample consists of approximately 7,806 unique skilled nursing facilities and 632,231 facility-month observations spanning January 2017 through June 2024. Of these facilities,1589 experience an ownership change during the sample period.
 
-\input{outputs/tables/summary_statistics_code.tex}
+\input{C:/Repositories/white-bowblis-nhmc/outputs/tables/summary_statistics_code.tex}
 \FloatBarrier
 
 \subsection{Parallel Trends}
@@ -181,7 +181,7 @@ The identifying assumption underlying our event-study design is that, absent an 
 
 Table~\ref{tab:pretrend-pvals-by-tau} reports p-values for individual pre-treatment event-time coefficients across outcomes, separately for specifications that include all observations (Panel~A) and for specifications that exclude the anticipatory period immediately preceding ownership changes (Panel~B). Under the parallel trends assumption, we would expect pre-treatment coefficients to be statistically indistinguishable from zero, implying relatively large p-values and no systematic pattern of significance across pre-treatment periods.
 
-\input{outputs/tables/pretrend_wald_tests_fragment.tex}
+\input{C:/Repositories/white-bowblis-nhmc/outputs/tables/pretrend_wald_tests_fragment.tex}
 \FloatBarrier
 
 In Panel~A, which includes the full sample and uses $\tau=-1$ as the reference period, we observe widespread statistical significance in the pre-treatment coefficients for several staffing outcomes, particularly for registered nurses and total nursing hours. This indicates the presence of differential staffing trends prior to the ownership transition. The persistence and clustering of significant p-values well before the ownership change suggest that staffing adjustments begin before the formal transition date, consistent with anticipatory behavior by facilities.
@@ -206,12 +206,12 @@ RN staffing declines immediately following ownership changes and remains far bel
 % Row 1
 \begin{subfigure}[t]{0.49\linewidth}
   \centering
-  \includegraphics[width=\linewidth]{outputs/plots/twfe_es_rn_without_anticipation_drop_3_1_.pdf}
+  \includegraphics[width=\linewidth]{C:/Repositories/white-bowblis-nhmc/outputs/plots/twfe_es_rn_without_anticipation_drop_3_1_.pdf}
   \caption{Registered Nurses (RN)}
 \end{subfigure}\hfill
 \begin{subfigure}[t]{0.49\linewidth}
   \centering
-  \includegraphics[width=\linewidth]{outputs/plots/twfe_es_lpn_without_anticipation_drop_3_1_.pdf}
+  \includegraphics[width=\linewidth]{C:/Repositories/white-bowblis-nhmc/outputs/plots/twfe_es_lpn_without_anticipation_drop_3_1_.pdf}
   \caption{Licensed Practical Nurses (LPN)}
 \end{subfigure}
 
@@ -220,12 +220,12 @@ RN staffing declines immediately following ownership changes and remains far bel
 % Row 2
 \begin{subfigure}[t]{0.49\linewidth}
   \centering
-  \includegraphics[width=\linewidth]{outputs/plots/twfe_es_cna_without_anticipation_drop_3_1_.pdf}
+  \includegraphics[width=\linewidth]{C:/Repositories/white-bowblis-nhmc/outputs/plots/twfe_es_cna_without_anticipation_drop_3_1_.pdf}
   \caption{Certified Nursing Assistants (CNA)}
 \end{subfigure}\hfill
 \begin{subfigure}[t]{0.49\linewidth}
   \centering
-  \includegraphics[width=\linewidth]{outputs/plots/twfe_es_total_without_anticipation_drop_3_1_.pdf}
+  \includegraphics[width=\linewidth]{C:/Repositories/white-bowblis-nhmc/outputs/plots/twfe_es_total_without_anticipation_drop_3_1_.pdf}
   \caption{Total Nursing Hours}
 \end{subfigure}
 
@@ -246,21 +246,21 @@ All specifications include control variables and facility and month fixed effect
 
 To summarize these dynamic effects with a single average treatment estimate, Table~\ref{tab:twfe-post-full} reports two-way fixed effects estimates of the ownership change effect (i.e., Equation~\ref{eq:twfe-post}). Panel A reports results in levels, while Panel B reports logged results. Consistent with the event study results, ownership changes lead to meaningful reductions in staffing levels. RN staffing declines by approximately 0.03 hours per patient day (roughly 9 percent), CNA staffing falls by about 0.05 hours (approximately 3 percent), and total staffing decreases by 0.08 hours per patient day (roughly 3 percent). LPN staffing shows no statistically significant change. Estimates are nearly identical whether the observations for the three month period before the ownership change occurred is included or excluded from the model.
 
-\input{outputs/tables/twfe_post_full.tex}
+\input{C:/Repositories/white-bowblis-nhmc/outputs/tables/twfe_post_full.tex}
 \FloatBarrier
 
 \subsection{Effects Before and During Covid-19 Pandemic}
 
 Table~\ref{tab:twfe-prepost} examines whether these effects differ before and after the COVID-19 pandemic. The magnitude of the decline is roughly halved in the post pandemic period for RN, CNA, and total HPPD, suggesting that pandemic induced shifts in labor markets and staffing substantially reduced the impact of ownership transitions.
 
-\input{outputs/tables/twfe_prepost.tex}
+\input{C:/Repositories/white-bowblis-nhmc/outputs/tables/twfe_prepost.tex}
 \FloatBarrier
 
 \subsection{Effects by Chain Status}
 
 Table~\ref{tab:twfe-chain-nonchain} compares effects for facilities that began the study period as part of a chain and those that did not. Staffing reductions are noticeably larger among non chain facilities. CNA HPPD falls by 0.034 hours in chain facilities and by 0.079 hours in non chains, and total HPPD declines by 0.062 versus 0.113 hours, respectively. On a log scale, these differences translate into substantially larger percentage declines for non-chain facilities. LPN staffing again shows minimal movement.
 
-\input{outputs/tables/twfe_chain_nonchain.tex}
+\input{C:/Repositories/white-bowblis-nhmc/outputs/tables/twfe_chain_nonchain.tex}
 \FloatBarrier
 
 Overall, ownership changes lead to sizable and persistent reductions in nursing staffing, with effects concentrated among RN, CNA, and total hours per patient day. These reductions are larger prior to the COVID-19 pandemic and among facilities that were not part of a chain at baseline. Together, the event study and TWFE results indicate that ownership transitions systematically worsen staffing conditions in nursing homes rather than inducing temporary adjustments.
@@ -310,10 +310,10 @@ Closing
 
 \section{Appendix}
 
-\input{outputs/tables/twfe_robustness_summary_code.tex}
+\input{C:/Repositories/white-bowblis-nhmc/outputs/tables/twfe_robustness_summary_code.tex}
 \FloatBarrier
 
-\input{outputs/tables/pretrend_pvals_by_tau_fragment.tex}
+\input{C:/Repositories/white-bowblis-nhmc/outputs/tables/pretrend_pvals_by_tau_fragment.tex}
 \FloatBarrier
 
 \nocite{*}
