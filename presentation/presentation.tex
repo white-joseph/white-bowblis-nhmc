@@ -1,6 +1,6 @@
 \documentclass{beamer}
 
-\usepackage{amsmath}
+\usepackage{amsmath, xcolor}
 
 \usetheme{Boadilla}
 \usecolortheme{whale}
@@ -12,7 +12,7 @@
 \begin{document}
 \frame{\titlepage}
 
-\begin{frame}{Sources and Sample Selection}
+\begin{frame}[t]{Sources and Sample Selection}
 \begin{itemize}
 	\item Center for Medicare and Medicaid Services (CMS)
 	\begin{itemize}
@@ -29,7 +29,7 @@
 \end{itemize}
 \end{frame}
 
-\begin{frame}{Identifying Ownership Changes - Background}
+\begin{frame}[t]{Identifying Ownership Changes - Background}
 \begin{itemize}
 	\item HCRIS ownership change flag
 	\begin{itemize}
@@ -44,7 +44,7 @@
 \end{itemize}
 \end{frame}
 
-\begin{frame}{Identifying Ownership Changes - Criteria}
+\begin{frame}[t]{Identifying Ownership Changes - Criteria}
 \begin{enumerate}
 	\item Majority (50\%) of ownership transfers from month $t-1$ to month $t$
 	\item Partial percentages we normalize and missing we assign equal weights across
@@ -58,7 +58,7 @@
 \end{enumerate}
 \end{frame}
 
-\begin{frame}{Dependent Variables - Nurse Staffing Levels}
+\begin{frame}[t]{Dependent Variables - Nurse Staffing Levels}
 \begin{itemize}
 	\item The staff types we look at are RN's, LPN's, CNA's, and total staffing
 	\item PBJ
@@ -66,13 +66,18 @@
 \end{itemize}
 
 \begin{equation}
-  \text{HPPD}_{i,t} = \frac{H_{s,i,t}}{R_{s,i,t}},
+\textcolor{red}{
+  \text{HPPD}_{i,t}
+  =
+  \frac{H_{s,i,t}}{R_{s,i,t}}
+}
 \end{equation}
+
 
 where $H_{s,i,t}$ is the total hours worked by the staff type $s$ during month $t$ for facility $i$ and $R_{s,i,t}$ is the total resident days in that facility month 
 \end{frame}
 
-\begin{frame}{Dependent Variables - Nurse Staffing Levels}
+\begin{frame}[t]{Dependent Variables - Nurse Staffing Levels}
 \begin{itemize}
 	\item We exclude a small number of observations to align with the implausible criteria 		outlined in the CMS NHC Technical Users Guide where:
 	\begin{enumerate}
@@ -83,7 +88,7 @@ where $H_{s,i,t}$ is the total hours worked by the staff type $s$ during month $
 \end{itemize}
 \end{frame}
 
-\begin{frame}{Sample Construction}
+\begin{frame}[t]{Sample Construction}
 %\small
 \begin{itemize}
   \item Initial universe: all CMS-certified nursing homes
