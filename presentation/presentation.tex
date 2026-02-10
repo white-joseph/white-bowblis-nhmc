@@ -1,10 +1,10 @@
 \documentclass{beamer}
 
-\usepackage{amsmath, xcolor}
+\usepackage{amsmath, xcolor, booktabs}
 
 \usetheme{Boadilla}
 \usecolortheme{whale}
-\title[Ownership Changes]{My Title}
+\title[Title]{Title}
 \author{Joseph White}
 \institute{Miami University}
 \date{\today}
@@ -21,7 +21,7 @@
 		\item Payroll Based Journal (PBJ)
 	\end{itemize}
 	\item Facility-month-year level
-	\item 48 Contiguous U.S. States over the period January 2017 to June 2024
+	\item 48 Contiguous U.S. States over the period January 2017 -- June 2024
 	\item Freestanding facilities
 	\begin{itemize}
 	\item Hospital based facilities make up 12\% of all facilities in the U.S.
@@ -40,7 +40,67 @@
 		\item Reports every level of ownership, management through direct owners
 		\item Limited Liability Corporations
 	\end{itemize}
-	\item We identify ownership changes at the highest level of ownership
+	\item We identify ownership changes at the highest level of ownership present
+	\item Indirect $\Longrightarrow$ Direct $\Longrightarrow$ Partnership Interest
+	\item ESTES JAMES (84\%); BURCHFIELD JOHN (10\%); LEE CLAUDE (6\%) $\rightarrow$ JAMES N 	ESTES JR FAMILY DYNASTY TR NO 2 (50\%); JENNIFER E AGEE FAMILY DYNASTY TR NO 2 (50\%)
+\end{itemize}
+\end{frame}
+
+\begin{frame}[t]{Identifying Ownership Changes: Example (Family Continuity)}
+\begin{itemize}
+  \item Ownership records often reflect legal restructuring within the same individual or family
+
+  \item \textbf{Example from the data:}
+  \begin{itemize}
+    \item \textit{Before:}
+    \begin{itemize}
+      \item ESTES JAMES (84\%)
+      \item BURCHFIELD JOHN (10\%)
+      \item LEE CLAUDE (6\%)
+    \end{itemize}
+
+    \item \textit{After:}
+    \begin{itemize}
+      \item JAMES N ESTES JR FAMILY DYNASTY TR NO 2 (50\%)
+      \item JENNIFER E AGEE FAMILY DYNASTY TR NO 2 (50\%)
+    \end{itemize}
+  \end{itemize}
+
+  \item Despite the restructuring:
+  \begin{itemize}
+    \item Control remains within the Estes family
+    \item No meaningful change in economic ownership
+  \end{itemize}
+
+  \item We do \textbf{not} flag this as an ownership change
+\end{itemize}
+\end{frame}
+
+\begin{frame}[t]{Why Ownership Is Non-Trivial: Example}
+\small
+\centering
+
+\begin{tabular}{llll}
+\toprule
+\textbf{Ownership Level} & \textbf{Entity Type} & \textbf{Owner Name} & \textbf{Share} \\
+\midrule
+\multicolumn{4}{l}{\textit{Direct ownership}} \\
+Organization & LLC & BREDLEGS HOLDINGS LLC        & 25\% \\
+Organization & LLC & ROCK HILL ACQUISITION III LLC & 75\% \\
+\addlinespace[0.6em]
+\multicolumn{4}{l}{\textit{Indirect ownership}} \\
+Individual & Person & LALLY, THOMAS   & 25\% \\
+Individual & Person & LITT, ALAN      & 25\% \\
+Individual & Person & LITT, JONATHAN  & 25\% \\
+Individual & Person & STURM, JOSHUA   & 25\% \\
+\bottomrule
+\end{tabular}
+
+\vspace{0.8em}
+
+\begin{itemize}
+  \item Ownership is layered across direct and indirect entities
+  \item Economic control is not obvious from direct ownership alone
 \end{itemize}
 \end{frame}
 
@@ -88,23 +148,16 @@ where $H_{s,i,t}$ is the total hours worked by the staff type $s$ during month $
 \end{itemize}
 \end{frame}
 
-\begin{frame}[t]{Sample Construction}
+\begin{frame}[t]{Summary Statistics}
 %\small
 \begin{itemize}
-  \item Initial universe: all CMS-certified nursing homes
-  \item Restrict to freestanding facilities
-  \item Merge PBJ staffing, HCRIS, and NHC ownership data
-  \item Drop implausible staffing observations (CMS PBJ rules)
-  \item Final analytic sample:
+  \item Manual fine tuning and cleaning
+  \item Final sample:
     \begin{itemize}
       \item 7,806 facilities
-      \item 632,231 facility-month observations
+      \item 632,231 month observations
     \end{itemize}
 \end{itemize}
-\end{frame}
-
-\begin{frame}{Summary Statistics}
-
 \end{frame}
 
 \end{document}
