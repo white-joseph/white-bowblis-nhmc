@@ -205,21 +205,7 @@ if (has_event_time) {
   )
 }
 
-# (8) For-profit only (reference ownership group)
-robust_specs[["for_profit_only"]] <- list(
-  label = "(8) For-profit only",
-  data  = df %>%
-    filter(anticipation2 == 0) %>%             # no anticipation
-    filter(government == 0, non_profit == 0)   # for-profit = reference
-)
-
-# (9) Non-profit only
-robust_specs[["non_profit_only"]] <- list(
-  label = "(9) Non-profit only",
-  data  = df %>%
-    filter(anticipation2 == 0) %>%             # no anticipation
-    filter(non_profit == 1)                    # non-profit ownership
-)
+# NOTE: Removed (8) For-profit only and (9) Non-profit only per request.
 
 cat("\n[info] Number of robustness specs:", length(robust_specs), "\n")
 
@@ -321,6 +307,7 @@ full_doc <- c(
   rob_frag,
   "\\end{document}"
 )
+
 full_path <- file.path(out_dir, "twfe_robustness_summary.tex")
 writeLines(full_doc, full_path, useBytes = TRUE)
 

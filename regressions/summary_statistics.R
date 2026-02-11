@@ -11,6 +11,7 @@
 #   - No gap/coverage ratio
 #   - Ownership/chain summarized at observation level (not CCN level)
 #   - Sample sizes in table notes
+#   - Table notes define all abbreviations so the table is standalone
 
 suppressPackageStartupMessages({
   library(dplyr)
@@ -136,7 +137,8 @@ make_panel_rows <- function(vars, panel_title) {
   
   c(
     paste0("\\multicolumn{3}{@{}l}{\\textbf{", panel_title, "}} \\\\[2pt]"),
-    tbl %>% transmute(line = paste0(VarLabel, " & ", MeanStr, " & ", SDStr, " \\\\")) %>% pull(line)
+    tbl %>% transmute(line = paste0(VarLabel, " & ", MeanStr, " & ", SDStr, " \\\\"))
+    %>% pull(line)
   )
 }
 
@@ -149,6 +151,24 @@ ccns_str   <- fmt_int(overview$ccns)
 trt_str    <- fmt_int(overview$treated_ccns)
 period_str <- paste0(overview$min_year_month, "–", overview$max_year_month)
 avgm_str   <- fmt_dec(overview$avg_months_per_ccn, 1)
+
+# ---- Expanded, standalone notes with abbreviations ----
+notes_line <- paste0(
+  "\\item \\textit{Notes:} The unit of observation is facility--month. ",
+  "HPPD denotes hours per patient day. ",
+  "RN, LPN, and CNA denote registered nurses, licensed practical nurses, and certified nursing assistants, respectively. ",
+  "Total HPPD is the sum of RN, LPN, and CNA HPPD. ",
+  "Occupancy rate is the ratio of residents to certified beds (percent). ",
+  "\\% Medicare and \\% Medicaid are the shares of residents covered by Medicare and Medicaid, respectively. ",
+  "Government and Non-profit are ownership-type indicator variables (for-profit omitted category). ",
+  "Chain affiliation is an indicator for membership in a multi-facility chain. ",
+  "Acuity quartiles are state--month quartiles of resident acuity (case-mix) with quartile 1 omitted. ",
+  "Rows $=$ ", rows_str,
+  "; Facilities $=$ ", ccns_str,
+  "; Treated facilities $=$ ", trt_str,
+  "; Period $=$ ", period_str,
+  "; Average months per facility $=$ ", avgm_str, "."
+)
 
 # ---- Table fragment ----
 fragment <- c(
@@ -172,11 +192,7 @@ fragment <- c(
   "",
   "\\begin{tablenotes}[flushleft]",
   "\\footnotesize",
-  paste0("\\item \\textit{Notes:} Rows $=$ ", rows_str,
-         "; Facilities $=$ ", ccns_str,
-         "; Treated facilities $=$ ", trt_str,
-         "; Period $=$ ", period_str,
-         "; Average months per facility $=$ ", avgm_str, "."),
+  notes_line,
   "\\end{tablenotes}",
   "",
   "\\end{threeparttable}",
