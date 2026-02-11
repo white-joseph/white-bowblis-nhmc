@@ -172,6 +172,58 @@ one_table_fragment_with_without <- function(res, dat_all, caption, label, notes_
   )
 }
 
+# NEW: Table 1 builder that outputs WITHOUT anticipation ONLY (same style)
+one_table_fragment_without_only <- function(res_wo, dat_all, caption, label, notes_extra=NULL) {
+  dat_wo <- filter(dat_all, anticipation2 == 0)
+  
+  Ns_without <- list(
+    levels = format(nrow(dat_wo), big.mark=","),
+    logs   = format(sum(rowSums(!is.na(dat_wo[, paste0("ln_", sub("_hppd$","", outs_order)), drop=FALSE])) > 0), big.mark=",")
+  )
+  
+  row_A <- build_row(res_wo$level)
+  row_B <- build_row(res_wo$log)
+  
+  c(
+    "\\begingroup",
+    "\\begin{table}[!ht]",
+    "\\centering",
+    "\\begin{threeparttable}",
+    sprintf("\\caption{%s}", caption),
+    sprintf("\\label{%s}", label),
+    "\\small",
+    "\\setlength{\\tabcolsep}{6pt}",
+    "",
+    "\\begin{tabularx}{\\textwidth}{@{} l YYYY @{} }",
+    "\\toprule",
+    " & \\multicolumn{4}{c}{\\textbf{Outcomes}} \\\\",
+    "\\cmidrule(lr){2-5}",
+    " & \\textbf{RN} & \\textbf{LPN} & \\textbf{CNA} & \\textbf{Total} \\\\",
+    "\\midrule",
+    "\\multicolumn{5}{@{}l}{\\textbf{Panel A: Staffing Levels in HPPD}} \\\\[2pt]",
+    paste0("Without anticipation  &  ", row_A, " \\\\"),
+    "",
+    "\\addlinespace[3pt]",
+    "\\multicolumn{5}{@{}l}{\\textbf{Panel B: Log Staffing Levels in HPPD}} \\\\[2pt]",
+    paste0("Without anticipation  &  ", row_B, " \\\\"),
+    "\\bottomrule",
+    "\\end{tabularx}",
+    "",
+    "\\begin{tablenotes}[flushleft]",
+    "\\footnotesize",
+    sprintf("\\item \\textit{Notes:} Each cell reports the coefficient on \\textit{post} with two-way clustered standard errors (by facility and month) in parentheses. Panel~A reports levels (HPPD); Panel~B reports logs (HPPD). Sample: \\textit{Without anticipation} ($N_{\\mathrm{levels}}=%s;\\ N_{\\mathrm{logs}}=%s$).",
+            Ns_without$levels, Ns_without$logs),
+    "\\item All specifications include facility and month fixed effects and covariates: \\textit{government}, \\textit{non-profit}, \\textit{chain}, \\textit{beds}, \\textit{occupancy rate}, \\textit{percent Medicare}, \\textit{percent Medicaid}, and state case-mix quartile indicators.",
+    "\\item Statistical significance: $^{***}p<0.01$, $^{**}p<0.05$, $^{*}p<0.10$.",
+    if (!is.null(notes_extra)) paste0("\\item ", notes_extra) else NULL,
+    "\\end{tablenotes}",
+    "\\end{threeparttable}",
+    "\\end{table}",
+    "\\endgroup",
+    ""
+  )
+}
+
 two_dataset_table_without_only <- function(res1, res2, dat1, dat2, cap, label, rowlabs, notes_extra=NULL) {
   Ns1 <- list(
     levels = format(nrow(dat1), big.mark=","),
@@ -230,21 +282,21 @@ two_dataset_table_without_only <- function(res1, res2, dat1, dat2, cap, label, r
 }
 
 # ------------------ run models ------------------
-fits_all <- lapply(datasets, fit_block_with_and_without)   # for Table 1
-fits_wo  <- lapply(datasets, fit_block_without_only)       # for Tables 2 & 3
+fits_all <- lapply(datasets, fit_block_with_and_without)   # (kept in case you use elsewhere)
+fits_wo  <- lapply(datasets, fit_block_without_only)       # Tables 1, 2, 3 will use this now
 
-# -------- Table 1: Baseline overall (with vs without) --------
-tab1 <- one_table_fragment_with_without(
-  res      = fits_all$full,
+# -------- Table 1: Baseline overall (WITHOUT anticipation only) --------
+tab1 <- one_table_fragment_without_only(
+  res_wo   = fits_wo$full,
   dat_all  = datasets$full,
-  caption  = "Two-Way Fixed Effects Estimates of \\textit{post} on Staffing Outcomes (Baseline)",
+  caption  = "Two-Way Fixed Effects Estimates of \\textit{post} on Staffing Outcomes (Baseline, Without anticipation)",
   label    = "tab:twfe-post-full"
 )
 
 # -------- Table 2: Pre vs Post (without only) --------
 tab2 <- two_dataset_table_without_only(
   res1 = fits_wo$prepandemic, res2 = fits_wo$pandemic,
-  dat1 = datasets$prepandemic, dat2 = datasets$pandemic,   # FIXED: added dat1/dat2
+  dat1 = datasets$prepandemic, dat2 = datasets$pandemic,
   cap = "TWFE Estimates of \\textit{post}: Pre- vs Post-pandemic Periods (Without anticipation)",
   label = "tab:twfe-prepost",
   rowlabs = c("Pre-Pandemic Period (2017/01 - 2019/12)", "Pandemic Period (2020/04 - 2024/06)"),
@@ -254,7 +306,7 @@ tab2 <- two_dataset_table_without_only(
 # -------- Table 3: Chain vs Non-chain (without only) --------
 tab3 <- two_dataset_table_without_only(
   res1 = fits_wo$baseline_chain_2017q1, res2 = fits_wo$baseline_nonchain_2017q1,
-  dat1 = datasets$baseline_chain_2017q1, dat2 = datasets$baseline_nonchain_2017q1,  # FIXED
+  dat1 = datasets$baseline_chain_2017q1, dat2 = datasets$baseline_nonchain_2017q1,
   cap = "TWFE Estimates of \\textit{post}: Chain vs Non-chain Facilities (Jan 2017 Baseline, Without anticipation)",
   label = "tab:twfe-chain-nonchain",
   rowlabs = c("Chain January 2017", "Non-chain January 2017"),
@@ -263,7 +315,6 @@ tab3 <- two_dataset_table_without_only(
 
 # ------------------ write .tex ------------------
 
-# 1) write each table fragment separately (what you'll \input{} in the paper)
 tab1_path <- file.path(out_dir, "twfe_post_full.tex")
 tab2_path <- file.path(out_dir, "twfe_prepost.tex")
 tab3_path <- file.path(out_dir, "twfe_chain_nonchain.tex")
@@ -272,12 +323,12 @@ writeLines(tab1, tab1_path, useBytes = TRUE)
 writeLines(tab2, tab2_path, useBytes = TRUE)
 writeLines(tab3, tab3_path, useBytes = TRUE)
 
-# 2) (optional) keep the combined fragment too
+# combined fragment
 all_fragment <- c(tab1, tab2, tab3)
 frag_path <- file.path(out_dir, "twfe_tables_all.tex")
 writeLines(all_fragment, frag_path, useBytes = TRUE)
 
-# 3) (optional) keep a standalone compilable LaTeX doc for quick QA
+# standalone QA doc
 full_doc <- c(
   "\\documentclass[11pt]{article}",
   "\\usepackage[margin=1in]{geometry}",
