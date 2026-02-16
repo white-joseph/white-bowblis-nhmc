@@ -160,5 +160,145 @@ where $H_{s,i,t}$ is the total hours worked by the staff type $s$ during month $
 \end{itemize}
 \end{frame}
 
+\begin{frame}[t]{Data Sources and Unit of Observation}
+\begin{itemize}
+  \item \textbf{Nursing Home Compare (NHC) Archive}
+  \begin{itemize}
+    \item Monthly ownership roster with \textit{every reported ownership layer} (managing org $\rightarrow$ direct owners $\rightarrow$ indirect owners)
+    \item Used to \textbf{identify} and \textbf{date} ownership changes using ownership shares
+  \end{itemize}
+
+  \item \textbf{Healthcare Cost Report Information System (HCRIS)}
+  \begin{itemize}
+    \item Annual cost report information + \textbf{ownership change flag}
+    \item Used as an \textbf{initial flag} that a change may have occurred
+  \end{itemize}
+
+  \item \textbf{Payroll Based Journal (PBJ)}
+  \begin{itemize}
+    \item Payroll-reported staffing hours by staff type
+    \item Used to construct \textbf{hours per patient day (HPPD)} outcomes
+  \end{itemize}
+
+  \item \textbf{Sample frame:} facility-month panel, 48 contiguous states, Jan 2017 -- Jun 2024
+\end{itemize}
+\end{frame}
+
+\begin{frame}[t]{Identifying Ownership Changes: Why Ownership Is Non-Trivial}
+\small
+\begin{itemize}
+  \item Ownership is often \textbf{layered} (organizations owning organizations), so economic control is not obvious from direct owners alone
+  \item NHC reports ownership at multiple levels (managing org, direct, and indirect owners)
+\end{itemize}
+
+\vspace{0.5em}
+\centering
+\begin{tabular}{llll}
+\toprule
+\textbf{Ownership Level} & \textbf{Entity Type} & \textbf{Owner Name} & \textbf{Share} \\
+\midrule
+\multicolumn{4}{l}{\textit{Direct ownership}} \\
+Organization & LLC & BREDLEGS HOLDINGS LLC         & 25\% \\
+Organization & LLC & ROCK HILL ACQUISITION III LLC & 75\% \\
+\addlinespace[0.6em]
+\multicolumn{4}{l}{\textit{Indirect ownership}} \\
+Individual & Person & LALLY, THOMAS   & 25\% \\
+Individual & Person & LITT, ALAN      & 25\% \\
+Individual & Person & LITT, JONATHAN  & 25\% \\
+Individual & Person & STURM, JOSHUA   & 25\% \\
+\bottomrule
+\end{tabular}
+
+\vspace{0.6em}
+\begin{itemize}
+  \item We identify ownership changes at the \textbf{highest level of ownership present}
+\end{itemize}
+\end{frame}
+
+\begin{frame}[t]{Identifying Ownership Changes: Example (Legal Restructuring)}
+\begin{itemize}
+  \item HCRIS ownership change flags may reflect \textbf{purely legal restructuring} (not a real transfer of control)
+  \item NHC ownership rosters allow us to verify whether economic control changes
+
+  \vspace{0.5em}
+  \item \textbf{Example from the data (same family control):}
+  \begin{itemize}
+    \item \textit{Before:} ESTES JAMES (84\%); BURCHFIELD JOHN (10\%); LEE CLAUDE (6\%)
+    \item \textit{After:} JAMES N ESTES JR FAMILY DYNASTY TR NO 2 (50\%); JENNIFER E AGEE FAMILY DYNASTY TR NO 2 (50\%)
+  \end{itemize}
+
+  \item Interpretation: restructuring into trusts/vehicles, but \textbf{control remains within the same family}
+  \item We do \textbf{not} treat this as a meaningful ownership change
+\end{itemize}
+\end{frame}
+
+\begin{frame}[t]{Identifying Ownership Changes: Definition and Sample}
+\begin{itemize}
+  \item \textbf{Step 1 (flag):} HCRIS ownership change flag identifies candidate change events
+  \item \textbf{Step 2 (validate \& date):} NHC ownership rosters identify whether control changes and when
+
+  \vspace{0.5em}
+  \item \textbf{Ownership change definition (NHC):}
+  \begin{itemize}
+    \item An ownership change occurs between $t-1$ and $t$ when \textbf{majority control (50\%)} transfers
+    \item Partial / missing shares are normalized; missing ownership shares are assigned equal weights within a level
+    \item We do not flag changes driven by name changes or within-family reclassification (e.g., trust/LLC relabeling)
+  \end{itemize}
+
+  \vspace{0.5em}
+  \item \textbf{Final sample restriction (agreement):}
+  \begin{itemize}
+    \item Facilities with \textbf{(0,0)} changes in both datasets, or \textbf{(1,1)} with dates within 6 months
+    \item Change month is the first month NHC indicates a change
+  \end{itemize}
+\end{itemize}
+\end{frame}
+
+\begin{frame}[t]{Dependent Variables: Nurse Staffing (PBJ)}
+\begin{itemize}
+  \item PBJ reports payroll-based staffing hours by staff category
+  \item We study four staffing measures:
+  \begin{itemize}
+    \item \textbf{Registered Nurses (RN)}: clinical assessment, medication administration, supervision
+    \item \textbf{Licensed Practical Nurses (LPN)}: clinical support, medication-related tasks (scope varies by state)
+    \item \textbf{Certified Nursing Assistants (CNA)}: direct daily care (bathing, feeding, mobility)
+    \item \textbf{Total nursing staff}: RN + LPN + CNA
+  \end{itemize}
+
+  \vspace{0.4em}
+  \item Outcome is \textbf{hours per patient day (HPPD)}: staffing intensity standardized by resident census
+\end{itemize}
+
+\vspace{0.2em}
+\[
+\text{HPPD}_{s,i,t}=\frac{H_{s,i,t}}{\text{ResidentDays}_{i,t}}
+\]
+\end{frame}
+
+\begin{frame}[t]{PBJ Cleaning and Final Sample}
+\begin{itemize}
+  \item We apply CMS technical guidance to remove implausible staffing reports:
+  \begin{enumerate}
+    \item RN HPPD = 0 \textbf{and} LPN HPPD = 0
+    \item Total HPPD $< 1.5$ or $> 12$
+    \item CNA HPPD $> 5.25$
+  \end{enumerate}
+
+  \vspace{0.5em}
+  \item Additional restrictions:
+  \begin{itemize}
+    \item Drop facilities with beds $< 15$
+    \item Drop hospital-based facilities
+  \end{itemize}
+
+  \vspace{0.5em}
+  \item \textbf{Final sample:}
+  \begin{itemize}
+    \item 7,806 facilities
+    \item 632,231 facility-month observations
+  \end{itemize}
+\end{itemize}
+\end{frame}
+
 \end{document}
 

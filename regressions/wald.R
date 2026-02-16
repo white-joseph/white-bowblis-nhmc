@@ -160,7 +160,7 @@ test_wo_12 <- c(-WIN_C, -5L)
 
 specs <- list(
   with_anticip = list(
-    row_label = "With anticipation",
+    row_label = "2 Year Full Pre-Window",
     dat = dat_with_24,
     WIN = WIN_A,
     ref = ref_with_24,
@@ -168,7 +168,7 @@ specs <- list(
     test_to   = test_with_24[2]
   ),
   wo_anticip_24 = list(
-    row_label = "Without anticipation (-24)",
+    row_label = "2 Year Window with Donut",
     dat = dat_wo_24,
     WIN = WIN_A,
     ref = ref_wo_24,
@@ -176,7 +176,7 @@ specs <- list(
     test_to   = test_wo_24[2]
   ),
   wo_anticip_12 = list(
-    row_label = "Without anticipation (-12)",
+    row_label = "1 Year Window with Donut",
     dat = dat_wo_12,
     WIN = WIN_C,
     ref = ref_wo_12,
@@ -236,19 +236,19 @@ wald_label   <- "tab:pretrend-wald-tests"
 # Notes: spell out tested windows + refs for each row (keeps table standalone)
 notes_windows <- paste0(
   "\\item Tested windows and reference periods: ",
-  "With anticipation tests $\\tau=", specs$with_anticip$test_from, "$ to $\\tau=", specs$with_anticip$test_to,
+  "2 Year Full Pre-Window tests $\\tau=", specs$with_anticip$test_from, "$ to $\\tau=", specs$with_anticip$test_to,
   "$ with reference $\\tau=", specs$with_anticip$ref, "$; ",
-  "Without anticipation (-24) tests $\\tau=", specs$wo_anticip_24$test_from, "$ to $\\tau=", specs$wo_anticip_24$test_to,
+  "2 Year Window with Donut tests $\\tau=", specs$wo_anticip_24$test_from, "$ to $\\tau=", specs$wo_anticip_24$test_to,
   "$ with reference $\\tau=", specs$wo_anticip_24$ref, "$ (dropping $\\tau=-3,-2,-1$); ",
-  "Without anticipation (-12) tests $\\tau=", specs$wo_anticip_12$test_from, "$ to $\\tau=", specs$wo_anticip_12$test_to,
+  "1 Year Window with Donut tests $\\tau=", specs$wo_anticip_12$test_from, "$ to $\\tau=", specs$wo_anticip_12$test_to,
   "$ with reference $\\tau=", specs$wo_anticip_12$ref, "$ (dropping $\\tau=-3,-2,-1$)."
 )
 
 notes_N <- paste0(
   "\\item Sample sizes (rows): ",
-  "With anticipation ($N=", format(N_rows$with_anticip, big.mark=","), "$); ",
-  "Without anticipation (-24) ($N=", format(N_rows$wo_anticip_24, big.mark=","), "$); ",
-  "Without anticipation (-12) ($N=", format(N_rows$wo_anticip_12, big.mark=","), "$)."
+  "2 Year Full Pre-Window ($N=", format(N_rows$with_anticip, big.mark=","), "$); ",
+  "2 Year Window with Donut ($N=", format(N_rows$wo_anticip_24, big.mark=","), "$); ",
+  "1 Year Window with Donut ($N=", format(N_rows$wo_anticip_12, big.mark=","), "$)."
 )
 
 wald_tab <- c(
