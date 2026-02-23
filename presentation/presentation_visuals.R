@@ -1,7 +1,14 @@
+# C:/Repositories/white-bowblis-nhmc/presentation/presentation_visuals.R
+# PURPOSE:
+#   Plot validated ownership changes over time aggregated to QUARTERS.
+#
+# OUTPUT:
+#   C:/Repositories/white-bowblis-nhmc/presentation/validated_changes_by_quarter.pdf
+#   C:/Repositories/white-bowblis-nhmc/presentation/validated_changes_by_quarter.png
+
 suppressPackageStartupMessages({
   library(readr)
   library(dplyr)
-  library(tidyr)
   library(stringr)
   library(lubridate)
   library(ggplot2)
@@ -11,90 +18,22 @@ CHOW_FP <- "C:/Repositories/white-bowblis-nhmc/data/interim/chow.csv"
 OUT_DIR <- "C:/Repositories/white-bowblis-nhmc/presentation"
 dir.create(OUT_DIR, recursive = TRUE, showWarnings = FALSE)
 
-# ------------------------------ Plot font (Times / newtx-like) ------------------------------
-# Match the style idea from your TWFE script but for ggplot objects.
-set_plot_font_gg <- function() {
-  fam <- "Times New Roman"
-  theme_set(theme_minimal(base_size = 12, base_family = fam))
-  # If Times New Roman isn't available, ggplot will typically fall back; if you want:
-  # theme_set(theme_minimal(base_size = 12, base_family = "Times"))
-}
-set_plot_font_gg()
+theme_set(theme_minimal(base_size = 14, base_family = "Times New Roman"))
 
 df <- read_csv(CHOW_FP, show_col_types = FALSE)
 
 # -----------------------------
-# Helpers
+# Helper: first valid Date across candidate columns for a single row (as a named list)
 # -----------------------------
-bin_0_1_2p <- function(x) {
-  if (is.na(x)) return(NA_character_)
-  x <- as.integer(x)
-  if (x <= 0) return("0")
-  if (x == 1) return("1")
-  return("2+")
-}
-
-first_valid_date <- function(row_df, cols) {
+first_valid_date_row <- function(row_list, cols) {
   for (c in cols) {
-    if (c %in% names(row_df)) {
-      d <- suppressWarnings(as.Date(row_df[[c]][1]))
+    if (!is.null(row_list[[c]])) {
+      d <- suppressWarnings(as.Date(row_list[[c]]))
       if (!is.na(d)) return(d)
     }
   }
   as.Date(NA)
 }
-
-# -----------------------------
-# Cross-tab (0/1/2+) + "white tiles" plot with red boxes
-# -----------------------------
-df <- df %>%
-  mutate(
-    nhc_bin = vapply(n_chow_nh_compare, bin_0_1_2p, character(1)),
-    mcr_bin = vapply(n_chow_mcr,       bin_0_1_2p, character(1))
-  )
-
-ct <- df %>%
-  count(nhc_bin, mcr_bin, name = "n") %>%
-  mutate(
-    nhc_bin = factor(nhc_bin, levels = c("0","1","2+")),
-    mcr_bin = factor(mcr_bin, levels = c("0","1","2+"))
-  ) %>%
-  complete(nhc_bin, mcr_bin, fill = list(n = 0)) %>%
-  arrange(nhc_bin, mcr_bin)
-
-cat("\n=== Cross-tab (0/1/2+) ===\n")
-print(ct %>% pivot_wider(names_from = mcr_bin, values_from = n))
-
-rects <- tibble::tribble(
-  ~xmin, ~xmax, ~ymin, ~ymax,
-  0.5,   1.5,   0.5,   1.5,   # (0,0)
-  1.5,   2.5,   1.5,   2.5    # (1,1)
-)
-
-p_ct <- ggplot(ct, aes(x = mcr_bin, y = nhc_bin)) +
-  geom_tile(fill = "white", color = "grey70", linewidth = 0.6) +
-  geom_text(aes(label = format(n, big.mark = ",")), size = 4) +
-  geom_rect(
-    data = rects,
-    aes(xmin = xmin, xmax = xmax, ymin = ymin, ymax = ymax),
-    inherit.aes = FALSE,
-    fill = NA,
-    color = "red",
-    linewidth = 1.2
-  ) +
-  labs(
-    x = "HCRIS/MCR changes (0 / 1 / 2+)",
-    y = "NHC changes (0 / 1 / 2+)",
-    title = "Cross-tab of Ownership Changes: NHC vs HCRIS/MCR"
-  ) +
-  theme(
-    panel.grid = element_blank()
-  )
-
-ggsave(
-  filename = file.path(OUT_DIR, "crosstab_nhc_vs_mcr_white_redboxes.pdf"),
-  plot = p_ct, width = 7, height = 5, device = cairo_pdf
-)
 
 # -----------------------------
 # Validated changes: exactly 1 in NHC AND 1 in MCR
@@ -106,23 +45,26 @@ if (length(date_cols_nhc) == 0) stop("No NHC date columns found (expected nh_com
 if (length(date_cols_mcr) == 0) stop("No MCR date columns found (expected mcr_chow_*_date).")
 
 df_11 <- df %>%
-  filter(n_chow_nh_compare == 1, n_chow_mcr == 1) %>%
-  mutate(row_id = row_number())
+  filter(n_chow_nh_compare == 1, n_chow_mcr == 1)
 
 cat(sprintf("\nValidated 1x1 facilities: %s\n", format(nrow(df_11), big.mark = ",")))
 
+# Compute dates without rowwise()/cur_data()
+rows <- split(df_11, seq_len(nrow(df_11)))
+nhc_dates <- as.Date(vapply(rows, first_valid_date_row, as.Date(NA), cols = date_cols_nhc))
+mcr_dates <- as.Date(vapply(rows, first_valid_date_row, as.Date(NA), cols = date_cols_mcr))
+
 df_11 <- df_11 %>%
-  rowwise() %>%
   mutate(
-    nhc_date = first_valid_date(cur_data(), date_cols_nhc),
-    mcr_date = first_valid_date(cur_data(), date_cols_mcr),
+    nhc_date = nhc_dates,
+    mcr_date = mcr_dates,
     date_gap_days = as.integer(nhc_date - mcr_date)
-  ) %>%
-  ungroup()
+  )
 
 cat("\nDate gap (NHC - MCR) in days, summary:\n")
 print(summary(df_11$date_gap_days))
 
+# Study window
 start <- as.Date("2017-01-01")
 end   <- as.Date("2024-06-30")
 
@@ -135,59 +77,52 @@ cat(sprintf(
 ))
 
 # -----------------------------
-# Bar chart by MONTH
+# Aggregate to QUARTER
 # -----------------------------
 df_11_win <- df_11_win %>%
-  mutate(year_month = format(floor_date(nhc_date, "month"), "%Y-%m"))
+  mutate(qtr_date = floor_date(nhc_date, unit = "quarter"))
 
-all_months <- tibble(year_month = format(seq(from = floor_date(start, "month"),
-                                             to   = floor_date(end, "month"),
-                                             by   = "month"), "%Y-%m"))
+all_quarters <- tibble(
+  qtr_date = seq(from = floor_date(start, "quarter"),
+                 to   = floor_date(end, "quarter"),
+                 by   = "quarter")
+)
 
-monthly <- df_11_win %>%
-  count(year_month, name = "n") %>%
-  right_join(all_months, by = "year_month") %>%
-  mutate(n = replace_na(n, 0L)) %>%
-  arrange(year_month)
+quarterly <- df_11_win %>%
+  count(qtr_date, name = "n") %>%
+  right_join(all_quarters, by = "qtr_date") %>%
+  mutate(n = ifelse(is.na(n), 0L, n)) %>%   # no replace_na() needed
+  arrange(qtr_date) %>%
+  mutate(qtr_label = paste0(year(qtr_date), " Q", quarter(qtr_date)))
 
-p_m <- ggplot(monthly, aes(x = year_month, y = n)) +
+cat("\n=== Quarterly validated change counts (NHC=1 & MCR=1, within window) ===\n")
+print(quarterly %>% select(qtr_label, n))
+
+# -----------------------------
+# Plot
+# -----------------------------
+p_q <- ggplot(quarterly, aes(x = qtr_date, y = n)) +
   geom_col() +
+  scale_x_date(
+    date_breaks = "1 year",
+    date_labels = "%Y"
+  ) +
   labs(
     x = NULL,
     y = "# validated ownership changes",
-    title = "Validated Ownership Changes by Month (NHC=1 and HCRIS/MCR=1)"
+    title = "Validated Ownership Changes by Quarter (NHC=1 and HCRIS/MCR=1)"
   ) +
-  theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust = 1, size = 7))
-
-ggsave(
-  filename = file.path(OUT_DIR, "validated_changes_by_month.pdf"),
-  plot = p_m, width = 10, height = 4, device = cairo_pdf
-)
-
-# -----------------------------
-# Bar chart by YEAR
-# -----------------------------
-yearly <- df_11_win %>%
-  mutate(year = year(nhc_date)) %>%
-  count(year, name = "n") %>%
-  right_join(tibble(year = 2017:2024), by = "year") %>%
-  mutate(n = replace_na(n, 0L)) %>%
-  arrange(year)
-
-p_y <- ggplot(yearly, aes(x = factor(year), y = n)) +
-  geom_col() +
-  labs(
-    x = "Year",
-    y = "# validated ownership changes",
-    title = "Validated Ownership Changes by Year (NHC=1 and HCRIS/MCR=1)"
+  theme(
+    panel.grid.minor = element_blank(),
+    axis.text.x = element_text(size = 11)
   )
 
-ggsave(
-  filename = file.path(OUT_DIR, "validated_changes_by_year.pdf"),
-  plot = p_y, width = 7, height = 4, device = cairo_pdf
-)
+out_pdf <- file.path(OUT_DIR, "validated_changes_by_quarter.pdf")
+out_png <- file.path(OUT_DIR, "validated_changes_by_quarter.png")
 
-cat("\n=== Yearly validated change counts (NHC=1 & MCR=1, within window) ===\n")
-print(yearly)
+ggsave(filename = out_pdf, plot = p_q, width = 10, height = 4.2, device = cairo_pdf)
+ggsave(filename = out_png, plot = p_q, width = 10, height = 4.2, dpi = 300)
 
-cat(sprintf("\nSaved figures to: %s\nDone.\n", normalizePath(OUT_DIR)))
+cat(sprintf("\nSaved:\n- %s\n- %s\nDone.\n",
+            normalizePath(out_pdf),
+            normalizePath(out_png)))

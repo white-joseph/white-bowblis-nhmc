@@ -14,6 +14,81 @@
 \begin{document}
 \frame{\titlepage}
 
+% =========================================================
+% INTRODUCTION + BACKGROUND (UPDATED)
+% =========================================================
+
+% =========================================================
+% INTRODUCTION + BACKGROUND (RQ EARLIER)
+% =========================================================
+
+\begin{frame}[t]{Motivation: Ownership Changes Beyond Market Structure}
+\begin{itemize}%[<+->]
+  \item Ownership transitions are common in healthcare.
+  \item IO research often emphasizes \textbf{prices, market power, and concentration}.
+  \item But many transitions do \textbf{not} change the set of providers in a market.
+  \item In those cases, effects operate through \textbf{internal production decisions}:
+  management practices and especially \textbf{staffing inputs}.
+\end{itemize}
+\end{frame}
+
+\begin{frame}[t]{Research Question}
+\begin{itemize}%[<+->]
+  \item \textbf{Research question:} How do nurse staffing levels respond to ownership changes in nursing homes?
+  \item Do responses differ across staff type or organizational structure?
+  \item Do responses differ pre vs post pandemic?
+  \item Why we care: staffing is the primary input into care, so ownership changes can affect \textbf{quality} even when market structure is unchanged.
+\end{itemize}
+\end{frame}
+
+\begin{frame}[t]{Why Nursing Homes?}
+\begin{itemize}%[<+->]
+  \item Nursing home care is labor-intensive and heavily regulated.
+  \item \textbf{Nursing labor is the main input} into care and a major operating cost.
+  \item Staffing is a natural adjustment margin after ownership change, but it’s constrained by:
+  \begin{itemize}
+    \item compliance,
+    \item resident outcomes,
+    \item demand/occupancy
+  \end{itemize}
+\end{itemize}
+\end{frame}
+
+\begin{frame}[t]{Nursing Staff Types}
+\begin{itemize}%[<+->]
+  \item We study four staffing measures:
+  \begin{itemize}
+    \item \textbf{RN (Registered Nurses):} clinical assessment, care planning, meds, supervision
+    \item \textbf{LPN (Licensed Practical Nurses):} routine clinical tasks, meds under RN oversight
+    \item \textbf{CNA (Certified Nursing Assistants):} direct daily care
+    \item \textbf{Total nursing:} RN + LPN + CNA
+  \end{itemize}
+  \item Ownership change can affect \textbf{levels} (total hours) and \textbf{mix} (skill composition).
+\end{itemize}
+\end{frame}
+
+\begin{frame}[t]{The Cost--Quality Tradeoff in Staffing}
+\begin{itemize}%[<+->]
+  \item Owners can raise quality through:
+  \begin{itemize}
+    \item \textbf{Quantity} of staffing and/or
+    \item \textbf{Quality / skill mix}
+  \end{itemize}
+  \item Either margin increases costs
+  \item But \textbf{revenues are relatively flat in the short run}
+  \item So owners face a tradeoff: \textbf{higher quality vs. tighter margins}.
+\end{itemize}
+\end{frame}
+
+\begin{frame}[t]%{Why Staffing Could Rise or Fall After a Transition}
+\begin{itemize}%[<+->]
+  \item \textbf{Cost pressures:} tighter budgets / debt service can push cost cutting.
+  \item \textbf{Reorganization:} standardized policies may shift RN/LPN/CNA composition.
+  \item \textbf{Quality objective:} owners with stronger quality/compliance goals may increase staffing.
+  \item Net effect is ambiguous $\Rightarrow$ \textbf{empirical question}.
+\end{itemize}
+\end{frame}
+
 \begin{frame}[t]{Data Sources and Unit of Observation}
 \begin{itemize}
   \item \textbf{Healthcare Cost Report Information System (HCRIS)}
@@ -169,10 +244,10 @@ Individual & Person & STURM, JOSHUA   & 25\% \\
 \end{itemize}
 \end{frame}
 
-\begin{frame}{Validated Ownership Changes Over Time (Yearly)}
+\begin{frame}{Validated Ownership Changes Over Time (Quarterly)}
 \centering
 \vspace{0.2em}
-\includegraphics[width=0.92\linewidth]{C:/Repositories/white-bowblis-nhmc/presentation/validated_changes_by_year.pdf}
+\includegraphics[width=0.92\linewidth]{C:/Repositories/white-bowblis-nhmc/presentation/validated_changes_by_quarter.pdf}
 
 \vspace{0.4em}
 \end{frame}
@@ -206,7 +281,7 @@ Y_{it} =
 % METHODS: Identification Assumption + Threat
 % =========================
 \begin{frame}[t]{Identification Assumption}
-\begin{itemize}[<+->]
+\begin{itemize}%[<+->]
   \item \textbf{Parallel trends:} absent an ownership change, treated facilities would have followed the same staffing trends as facilities not yet treated.
   \vspace{0.4em}
   \item \textbf{Primary threat: anticipation / timing mismatch}
@@ -220,7 +295,7 @@ Y_{it} =
 % METHODS: Motivation for Donut (put BEFORE donut)
 % =========================
 \begin{frame}[t]{Why Anticipation is Plausible in Ownership Transitions}
-\begin{itemize}[<+->]
+\begin{itemize}%[<+->]
   \item Ownership changes are not instantaneous: negotiations and operational handoffs occur before the recorded change month
   \item Staffing can adjust during transition planning (turnover, hiring freezes, contract renegotiations)
   \item Administrative “event dates” may reflect reporting/legal dates, not the first operational change
@@ -232,7 +307,7 @@ Y_{it} =
 % METHODS: Donut Specification (now it feels motivated)
 % =========================
 \begin{frame}[t]{Main Specification: Donut Event Study}
-\begin{itemize}[<+->]
+\begin{itemize}%[<+->]
   \item To handle this, we exclude months $\tau \in \{-3,-2,-1\}$
   \item We use $\tau=-4$ as the reference period
   \item Post change coefficients compare to a pre-period less likely to be influenced by transition activity
