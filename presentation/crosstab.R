@@ -167,7 +167,7 @@ p_ct <- ggplot(ct, aes(x = mcr_bin, y = nhc_bin)) +
   labs(
     x = "Count of changes in HCRIS",
     y = "Count of changes in NHC",
-    title = "Cross-tab of Ownership Changes: NHC vs HCRIS"
+    title = "Cross-tab of Ownership Changes"
   ) +
   theme(
     panel.grid = element_blank(),

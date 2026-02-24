@@ -109,12 +109,13 @@ p_q <- ggplot(quarterly, aes(x = qtr_date, y = n)) +
   ) +
   labs(
     x = NULL,
-    y = "# validated ownership changes",
-    title = "Validated Ownership Changes by Quarter (NHC=1 and HCRIS/MCR=1)"
+    y = "Number of Ownership Changes",
+    title = "Ownership Changes by Quarter"
   ) +
   theme(
     panel.grid.minor = element_blank(),
-    axis.text.x = element_text(size = 11)
+    axis.text.x = element_text(size = 11),
+    plot.title = element_text(hjust = 0.45)
   )
 
 out_pdf <- file.path(OUT_DIR, "validated_changes_by_quarter.pdf")

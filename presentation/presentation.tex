@@ -1,6 +1,8 @@
 \documentclass{beamer}
 
-\usepackage{amsmath, xcolor, booktabs, graphicx, booktabs, threeparttable, tabularx, array}
+\usepackage{amsmath, xcolor, booktabs, graphicx, booktabs, threeparttable, tabularx, array, tikz, amssymb}
+\usetikzlibrary{positioning}
+\usetikzlibrary{trees,arrows.meta}
 \newcolumntype{Y}{>{\centering\arraybackslash}X}
 
 
@@ -13,10 +15,6 @@
 
 \begin{document}
 \frame{\titlepage}
-
-% =========================================================
-% INTRODUCTION + BACKGROUND (UPDATED)
-% =========================================================
 
 % =========================================================
 % INTRODUCTION + BACKGROUND (RQ EARLIER)
@@ -35,8 +33,10 @@
 \begin{frame}[t]{Research Question}
 \begin{itemize}%[<+->]
   \item \textbf{Research question:} How do nurse staffing levels respond to ownership changes in nursing homes?
+  \begin{itemize}
   \item Do responses differ across staff type or organizational structure?
-  \item Do responses differ pre vs post pandemic?
+  \item Do responses differ pre vs post-pandemic?
+  \end{itemize}
   \item Why we care: staffing is the primary input into care, so ownership changes can affect \textbf{quality} even when market structure is unchanged.
 \end{itemize}
 \end{frame}
@@ -80,7 +80,7 @@
 \end{itemize}
 \end{frame}
 
-\begin{frame}[t]%{Why Staffing Could Rise or Fall After a Transition}
+\begin{frame}[t]{Why Staffing Could Rise or Fall After a Transition}
 \begin{itemize}%[<+->]
   \item \textbf{Cost pressures:} tighter budgets / debt service can push cost cutting.
   \item \textbf{Reorganization:} standardized policies may shift RN/LPN/CNA composition.
@@ -93,30 +93,40 @@
 \begin{itemize}
   \item \textbf{Healthcare Cost Report Information System (HCRIS)}
   \begin{itemize}
-    \item Annual cost report information + \textbf{ownership change flag}
-    \item \textbf{Initial flag} that a change may have occurred
+    \item Annual cost report information
+    \item Contains information about costs, revenue, financial data and dates of ownership change
   \end{itemize}
-  \pause
   \item \textbf{Nursing Home Compare (NHC) Archive}
   \begin{itemize}
-    \item Monthly ownership panel with every reported ownership layer (managing org $\rightarrow$ direct owners $\rightarrow$ indirect owners)
-    \item Used to \textbf{identify} and \textbf{date} ownership changes using ownership shares
+    \item Contains ownership information as well as information on chain affiliation
 	\end{itemize}
-\pause
 	\item \textbf{Payroll Based Journal (PBJ)}
 	\begin{itemize}
     \item Payroll-reported staffing hours by staff type
     \item Used to construct outcome variables
 	\end{itemize}
-\pause
-  \item  facility-month panel, 48 contiguous states, Jan 2017 -- Jun 2024
+
+  \item \textbf{Facility-month panel, 48 contiguous states, Jan 2017 -- Jun 2024}
 \end{itemize}
 \end{frame}
 
-\begin{frame}[t]{Identifying Ownership Changes: Why Ownership Is Non-Trivial}
+\begin{frame}[t]{Identifying Ownership Changes: Step 1}
 \small
 \begin{itemize}
-  \item Ownership is often \textbf{layered} (organizations owning organizations)
+  \item \textbf{Starting point (HCRIS):} includes a variable indicating \textbf{whether and when} an ownership change occurred.
+  \vspace{0.35em}
+  \item \textbf{Challenge:} ownership is often \textbf{layered} (organizations owning organizations), so an administrative flag may not map cleanly to an \textbf{economic change in control}.
+  \vspace{0.35em}
+  \item \textbf{Check:} NHC archive provides owner identities and structure:
+  \begin{itemize}
+    \item \textbf{Owner name}, \textbf{ownership level}, and \textbf{owner type}
+  \end{itemize}
+\end{itemize}
+\end{frame}
+
+\begin{frame}[t]{Ownership Level Challenge}
+\small
+\begin{itemize}
   \item We identify ownership changes at the \textbf{highest level of ownership present}
 \end{itemize}
 
@@ -124,7 +134,7 @@
 \centering
 \begin{tabular}{llll}
 \toprule
-\textbf{Ownership Level} & \textbf{Entity Type} & \textbf{Owner Name} & \textbf{Share} \\
+\textbf{Ownership Level} & \textbf{Type} & \textbf{Owner Name} & \textbf{Share} \\
 \midrule
 \multicolumn{4}{l}{\textit{Direct ownership}} \\
 Organization & LLC & BREDLEGS HOLDINGS LLC         & 25\% \\
@@ -142,60 +152,36 @@ Individual & Person & STURM, JOSHUA   & 25\% \\
 
 \end{frame}
 
-\begin{frame}[t]{Identifying Ownership Changes: Example (Legal Restructuring)}
+\begin{frame}[t]{Identifying Ownership Changes: Step 2}
+\small
 \begin{itemize}
-  \item HCRIS ownership change flags may reflect \textbf{purely legal restructuring}
-  \item NHC ownership data allows us to verify whether economic control changes
+  \item \textbf{Validate \& date using NHC:}
+  \begin{itemize}
+    \item Track ownership shares over time within the highest reported ownership level
+    \item Define a change when \textbf{majority control (50\%)} transfers between $t-1$ and $t$
+    \item We do not flag changes driven by name changes or within-family reclassification
+  \end{itemize}
 
-  \vspace{0.5em}
+  \vspace{0.35em}
+
   \item \textbf{Example from the data:}
-	\begin{itemize}
-    		\item \textit{Before:}
-    		\begin{itemize}
-      		\item ESTES JAMES (84\%)
-      		\item BURCHFIELD JOHN (10\%)
-      		\item LEE CLAUDE (6\%)
-    		\end{itemize}
-
-    		\item \textit{After:}
-    		\begin{itemize}
-     		\item JAMES N ESTES JR FAMILY DYNASTY TR NO 2 (50\%)
-     		\item JENNIFER E AGEE FAMILY DYNASTY TR NO 2 (50\%)
+  \begin{itemize}
+    \item \textit{Before:}
+    \begin{itemize}
+      \item ESTES JAMES (84\%)
+      \item BURCHFIELD JOHN (10\%)
+      \item LEE CLAUDE (6\%)
     \end{itemize}
-  \end{itemize}
 
-  \item We do \textbf{not} treat this as a meaningful ownership change
-\end{itemize}
-\end{frame}
+    \item \textit{After:}
+    \begin{itemize}
+      \item JAMES N ESTES JR FAMILY DYNASTY TR NO 2 (50\%)
+      \item JENNIFER E AGEE FAMILY DYNASTY TR NO 2 (50\%)
+    \end{itemize}
 
-\begin{frame}[t]{Identifying Ownership Changes: Definition and Sample}
-\begin{itemize}
-  \item \textbf{Step 1 (flag):} HCRIS ownership change flag identifies candidate change events
-  \item \textbf{Step 2 (validate \& date):} NHC ownership panel identifies whether control changes and when
-
-  \vspace{0.5em}
-  \item \textbf{Ownership change criteria (NHC):}
-  \begin{itemize}
-    \item An ownership change occurs between $t-1$ and $t$ when \textbf{majority control (50\%)} transfers
-    \item Partial / missing shares are normalized; missing ownership shares are assigned equal weights within a level
-    \item We do not flag changes driven by name changes or within-family reclassification (e.g., trust/LLC relabeling)
-  \end{itemize}
-
-  \vspace{0.5em}
-  \item \textbf{Final sample restriction):}
-  \begin{itemize}
-    \item Facilities with \textbf{(0,0)} changes in both datasets, or \textbf{(1,1)} with dates within 6 months
-    \item Change month is the first month NHC indicates a change
+    \item We do \textbf{not} treat this as a meaningful ownership change
   \end{itemize}
 \end{itemize}
-\end{frame}
-
-\begin{frame}{Ownership Change Agreement: NHC vs HCRIS}
-\centering
-\vspace{0.2em}
-\includegraphics[width=0.82\linewidth]{C:/Repositories/white-bowblis-nhmc/presentation/crosstab_hybrid_panel00_11_chow_rest.pdf}
-
-\vspace{0.4em}
 \end{frame}
 
 \begin{frame}[t]{Dependent Variables: Nurse Staffing (PBJ)}
@@ -218,33 +204,40 @@ Individual & Person & STURM, JOSHUA   & 25\% \\
 \]
 \end{frame}
 
-\begin{frame}[t]{PBJ Cleaning and Final Sample}
+\begin{frame}[t]{Final Sample Construction}
+\small
 \begin{itemize}
-  \item We apply CMS technical guidance to remove implausible staffing reports:
-  \begin{enumerate}
-    \item RN HPPD = 0 \textbf{and} LPN HPPD = 0
-    \item Total HPPD $< 1.5$ or $> 12$
-    \item CNA HPPD $> 5.25$
-  \end{enumerate}
-
-  \vspace{0.5em}
-  \item Additional restrictions:
+  \item \textbf{Validated ownership-change sample (HCRIS $\leftrightarrow$ NHC):}
   \begin{itemize}
-    \item Drop facilities with beds $< 15$
-    \item Drop hospital-based facilities
+    \item Keep facilities with \textbf{(0,0)} changes in both datasets, or \textbf{(1,1)} with dates within 6 months
+    \item Event month is the \textbf{first month} NHC indicates a change
   \end{itemize}
 
-  \vspace{0.5em}
-  \item \textbf{Final sample:}
+  \vspace{0.35em}
+  \item \textbf{CMS implausible staffing}
   \begin{itemize}
-    \item 7,806 facilities
-    \item 632,231 facility-month observations
-    \item 1,589 facilities undergo a change of ownership, about 20\% of the final sample
+    \item RN HPPD $=0$ \textbf{and} LPN HPPD $=0$
+    \item Total HPPD $<1.5$ or $>12$
+    \item CNA HPPD $>5.25$
   \end{itemize}
+
+  \vspace{0.35em}
+  \item \textbf{Additional restrictions:} beds $<15$; hospital-based facilities
+
+  \vspace{0.35em}
+  \item \textbf{Final sample:} 7,806 facilities; 632,231 facility-months; 1,589 are treated, about 2\% of the final sample
 \end{itemize}
 \end{frame}
 
-\begin{frame}{Validated Ownership Changes Over Time (Quarterly)}
+\begin{frame}{Ownership Change Agreement: NHC vs HCRIS}
+\centering
+\vspace{0.2em}
+\includegraphics[width=0.82\linewidth]{C:/Repositories/white-bowblis-nhmc/presentation/crosstab_hybrid_panel00_11_chow_rest.pdf}
+
+\vspace{0.4em}
+\end{frame}
+
+\begin{frame}{Ownership Changes Over Time (Quarterly)}
 \centering
 \vspace{0.2em}
 \includegraphics[width=0.92\linewidth]{C:/Repositories/white-bowblis-nhmc/presentation/validated_changes_by_quarter.pdf}
@@ -255,81 +248,95 @@ Individual & Person & STURM, JOSHUA   & 25\% \\
 % =========================
 % METHODS: Strategy + Equation (combined)
 % =========================
+% =========================================================
+% Slide 1: Event-study DiD
+% =========================================================
 \begin{frame}[t]{Empirical Strategy: Event-Study Difference-in-Differences}
 \small
 \begin{itemize}
-  \item \textbf{Design:} staggered-adoption DiD event study around ownership transitions
-  \item Identification comes from \textbf{within-facility changes} relative to facilities not yet treated
-\end{itemize}
-
-\vspace{0.2em}
-\begin{equation}
-Y_{it} =
-\sum_{\tau=-24}^{24} \beta_{\tau}\,\mathbf{1}\{event\_time_{it}=\tau\}\cdot Treat_i
-+ X'_{it}\gamma + \alpha_i + \lambda_t + \varepsilon_{it}.
-\end{equation}
-
-\vspace{0.15em}
-\begin{itemize}
-  \item $Y_{it}$: staffing outcome measured in \textbf{HPPD}
-  \item $\alpha_i$ facility FE, $\lambda_t$ month FE; $X'_{it}$ controls (beds, occupancy, payer mix, ownership type, chain, acuity)
-  \item Standard errors clustered at the facility level
+  \item \textbf{Design:} staggered-adoption DiD around ownership transitions
+  \item \textbf{Variation:} within-facility staffing changes relative to facilities \textit{not yet treated}
+  \vspace{0.35em}
+  \item \textbf{Event study (dynamic effects):}
+  \[
+  Y_{it} =
+  \sum_{\tau=-24}^{24} \beta_{\tau}\,\mathbf{1}\{event\_time_{it}=\tau\}\cdot Treat_i
+  + X'_{it}\gamma + \alpha_i + \lambda_t + \varepsilon_{it}.
+  \]
+  \vspace{0.2em}
+  \item \textbf{Key objects:}
+  \begin{itemize}
+    \item $Y_{it}$: staffing outcome in \textbf{HPPD} (RN, LPN, CNA, Total)
+    \item $\beta_{\tau}$: effect at event time $\tau$ (relative to the reference period)
+    \item $\alpha_i$ facility FE; $\lambda_t$ month FE; $X_{it}$ controls (beds, occupancy, payer mix, ownership type, chain, acuity)
+    \item SEs clustered at the facility level
+  \end{itemize}
 \end{itemize}
 \end{frame}
 
-% =========================
-% METHODS: Identification Assumption + Threat
-% =========================
-\begin{frame}[t]{Identification Assumption}
-\begin{itemize}%[<+->]
+% =========================================================
+% Slide 2: TWFE DiD
+% =========================================================
+\begin{frame}[t]{Empirical Strategy: TWFE Difference-in-Differences}
+\small
+\begin{itemize}
+  \item \textbf{Goal:} summarize the \textbf{average} staffing change after an ownership transition
+  \vspace{0.35em}
+  \item \textbf{TWFE DiD (headline effect):}
+  \[
+  Y_{it}=\beta\,Post_{it} + X'_{it}\gamma + \alpha_i + \lambda_t + \varepsilon_{it}
+  \]
+  \vspace{0.2em}
+  \item \textbf{Key objects:}
+  \begin{itemize}
+    \item $Post_{it}=1$ in all months after a change ($=0$ before)
+    \item $\beta$: \textbf{average post-change effect} on staffing (HPPD)
+    \item Same fixed effects and controls as the event-study specification
+    \item SEs clustered at the facility level
+  \end{itemize}
+\end{itemize}
+\end{frame}
+
+\begin{frame}[t]{Identification: Parallel Trends}
+\small
+\begin{itemize}
   \item \textbf{Parallel trends:} absent an ownership change, treated facilities would have followed the same staffing trends as facilities not yet treated.
   \vspace{0.4em}
-  \item \textbf{Primary threat: anticipation / timing mismatch}
+  \item \textbf{Why anticipation is plausible in ownership transitions}
   \begin{itemize}
-    \item Staffing may adjust before the recorded transition month.
+    \item Changes are not instantaneous: negotiations and operational handoffs precede the recorded month
+    \item Staffing can adjust during planning (turnover, hiring freezes, renegotiated contracts)
+    \item Recorded dates may reflect administrative/legal timing, not first operational change
   \end{itemize}
+  \vspace{0.35em}
+  \item \textbf{Implication:} months just before $\tau=0$ may violate parallel trends.
 \end{itemize}
 \end{frame}
 
-% =========================
-% METHODS: Motivation for Donut (put BEFORE donut)
-% =========================
-\begin{frame}[t]{Why Anticipation is Plausible in Ownership Transitions}
-\begin{itemize}%[<+->]
-  \item Ownership changes are not instantaneous: negotiations and operational handoffs occur before the recorded change month
-  \item Staffing can adjust during transition planning (turnover, hiring freezes, contract renegotiations)
-  \item Administrative “event dates” may reflect reporting/legal dates, not the first operational change
-  \item \textbf{Implication:} months immediately before $\tau=0$ may violate parallel trends
-\end{itemize}
+\begin{frame}[t]{Evidence of violation in the Pre-Period}
+\small
+\centering
+\includegraphics[width=0.92\linewidth]{C:/Repositories/white-bowblis-nhmc/presentation/twfe_es_total_preonly_tau_m24_to_0_highlight_anticipation.pdf}
+
 \end{frame}
 
-% =========================
-% METHODS: Donut Specification (now it feels motivated)
-% =========================
-\begin{frame}[t]{Main Specification: Donut Event Study}
-\begin{itemize}%[<+->]
-  \item To handle this, we exclude months $\tau \in \{-3,-2,-1\}$
-  \item We use $\tau=-4$ as the reference period
-  \item Post change coefficients compare to a pre-period less likely to be influenced by transition activity
-\end{itemize}
-\end{frame}
-
-% =========================
-% METHODS: Parallel Trends Assessment (setup)
-% =========================
-\begin{frame}[t]{Assessing Parallel Trends}
+\begin{frame}[t]{Main Specification: Donut Event Study + Pre-trend Test}
+\small
 \begin{itemize}
-  \item We test parallel trends using a joint Wald test of
-  \[
-    H_0:\ \beta_{\tau}=0\ \ \forall\ \tau<0.
-  \]
-  \vspace{0.3em}
-  \pause
-  \item \textbf{Takeaway:}
+  \item \textbf{Donut event study:} mitigate this influence by excluding months just before the recorded transition.
+  \vspace{0.35em}
+  \item \textbf{Implementation}
   \begin{itemize}
-    \item With the full pre-window (including $\tau=-3,-2,-1$), pre-trends show evidence of violation.
-    \item Excluding anticipatory months (donut) yields pre-trends more consistent with parallel trends.
+    \item Exclude $\tau \in \{-3,-2,-1\}$
+    \item Use $\tau=-4$ as the reference period
   \end{itemize}
+  \vspace{0.35em}
+  \item \textbf{Parallel Trends:} joint Wald test of pre-period leads
+  \[
+    H_0:\ \beta_{\tau}=0 \quad \forall\ \tau<0
+  \]
+  \vspace{0.2em}
+  \item \textbf{Takeaway:} full pre-window shows evidence of pre-trends; the donut specification is more consistent with parallel trends.
 \end{itemize}
 \end{frame}
 
@@ -362,20 +369,101 @@ Y_{it} =
 \end{threeparttable}
 \end{frame}
 
+% =========================================================
+% PART A: MAIN EVENT-STUDY RESULTS (your four figures)
+% =========================================================
 
-% =========================
-% METHODS/RESULTS BRIDGE: Summary DiD (put AFTER you show ES plots, or keep here as bridge)
-% =========================
-\begin{frame}[t]{Summary Effect: TWFE Difference-in-Differences}
+\begin{frame}[t]{Main Results: Event Study (RN HPPD)}
+
+\vspace{0.15em}
+\centering
+\includegraphics[width=0.92\linewidth]{C:/Repositories/white-bowblis-nhmc/outputs/plots/twfe_es_rn_without_anticipation_drop_3_1_.pdf}
+\end{frame}
+
+\begin{frame}[t]{Main Results: Event Study (LPN HPPD)}
+
+\vspace{0.15em}
+\centering
+\includegraphics[width=0.92\linewidth]{C:/Repositories/white-bowblis-nhmc/outputs/plots/twfe_es_lpn_without_anticipation_drop_3_1_.pdf}
+\end{frame}
+
+\begin{frame}[t]{Main Results: Event Study (CNA HPPD)}
+
+\vspace{0.15em}
+\centering
+\includegraphics[width=0.92\linewidth]{C:/Repositories/white-bowblis-nhmc/outputs/plots/twfe_es_cna_without_anticipation_drop_3_1_.pdf}
+\end{frame}
+
+\begin{frame}[t]{Main Results: Event Study (Total Nursing HPPD)}
+
+\vspace{0.15em}
+\centering
+\includegraphics[width=0.92\linewidth]{C:/Repositories/white-bowblis-nhmc/outputs/plots/twfe_es_total_without_anticipation_drop_3_1_.pdf}
+\end{frame}
+
+% =========================================================
+% PART B: HEADLINE SUMMARY (choose ONE: bar chart or table)
+% =========================================================
+
+% --- Option 1: Bar graph (recommended for slides)
+\begin{frame}[t]{Average Post-Change Staffing (TWFE DiD)}
 \small
-\[
-Y_{it}=\beta\,Post_{it} + X'_{it}\gamma + \alpha_i + \lambda_t + \varepsilon_{it}
-\]
 \begin{itemize}
-	\item $Post_{it} = 0$ before an ownership change and $=1$ in all months after a change
-  \item $\beta$ summarizes the average post-change staffing effect
-  \item Quantifies average changes for cleaner and relevant results
+  \item TWFE DiD summarizes the \textbf{average} staffing change after an ownership transition
 \end{itemize}
+\vspace{0.2em}
+\centering
+\end{frame}
+
+\begin{frame}[t]{Heterogeneity: Chain vs Non-Chain Facilities}
+
+\vspace{0.2em}
+\centering
+% Replace with your heterogeneity plot or TWFE bars for chain/non-chain
+\includegraphics[width=0.92\linewidth]{C:/Repositories/white-bowblis-nhmc/presentation/twfe_post_chain_nonchain_hppd_bars.pdf}
+\end{frame}
+
+\begin{frame}[t]{Heterogeneity: Pre vs Pos-Pandemic}
+
+\vspace{0.2em}
+\centering
+% Replace with your heterogeneity plot or TWFE bars for chain/non-chain
+\includegraphics[width=0.92\linewidth]{C:/Repositories/white-bowblis-nhmc/presentation/twfe_post_prepandemic_pandemic_hppd_bars.pdf}
+\end{frame}
+
+% --- Option 2: Raw table (compact) instead of bars
+% Comment out Option 1 above and use this if you prefer tables on slides.
+%
+% \begin{frame}[t]{Headline Effect: Average Post-Change Staffing (TWFE DiD)}
+% \small
+% \begin{itemize}
+%   \item TWFE DiD estimates the \textbf{average} post-change effect: $Post_{it}=1$ after ownership transition
+% \end{itemize}
+% \vspace{0.25em}
+% \centering
+% \begin{tabular}{lcccc}
+% \toprule
+%  & \textbf{RN} & \textbf{LPN} & \textbf{CNA} & \textbf{Total} \\
+% \midrule
+% Post ($\beta$) &  &  &  &  \\
+%  & \footnotesize ( ) & \footnotesize ( ) & \footnotesize ( ) & \footnotesize ( ) \\
+% \bottomrule
+% \end{tabular}
+% \vspace{0.25em}
+% \footnotesize
+% Facility and month FE; controls; SEs clustered at facility. Outcome in HPPD.
+% \end{frame}
+
+% =========================================================
+% PART C: ROBUSTNESS / CHECKS (pick 1–2 slides)
+% =========================================================
+
+% --- Anticipation / donut sensitivity (figure-based)
+\begin{frame}[t]{Robustness: Anticipation and the Donut Window}
+\end{frame}
+
+% --- Additional robustness (summary-only, quick)
+\begin{frame}[t]{Additional Robustness Checks (Summary)}
 \end{frame}
 
 \end{document}
