@@ -22,23 +22,23 @@
 
 \begin{frame}[t]{Motivation: Ownership Changes Beyond Market Structure}
 \begin{itemize}%[<+->]
-  \item Ownership transitions are common in healthcare.
-  \item IO research often emphasizes \textbf{prices, market power, and concentration}.
-  \item But many transitions do \textbf{not} change the set of providers in a market.
-  \item In those cases, effects operate through \textbf{internal production decisions}:
-  management practices and especially \textbf{staffing inputs}.
+  \item Ownership changes are very common
+  
+  \begin{itemize}
+  	\item (1) Mergers and Acquisitions
+  	\item (2) New Management
+  \end{itemize}
+  \item This second type of changes does \textbf{not} change the set of providers in a market.
+  \item Instead, effects operate through \textbf{internal production decisions}
 \end{itemize}
 \end{frame}
 
-\begin{frame}[t]{Research Question}
-\begin{itemize}%[<+->]
-  \item \textbf{Research question:} How do nurse staffing levels respond to ownership changes in nursing homes?
-  \begin{itemize}
-  \item Do responses differ across staff type or organizational structure?
-  \item Do responses differ pre vs post-pandemic?
-  \end{itemize}
-  \item Why we care: staffing is the primary input into care, so ownership changes can affect \textbf{quality} even when market structure is unchanged.
-\end{itemize}
+\begin{frame}{Ownership Changes Over Time (Quarterly)}
+\centering
+\vspace{0.2em}
+\includegraphics[width=0.92\linewidth]{C:/Repositories/white-bowblis-nhmc/presentation/validated_changes_by_quarter.pdf}
+
+\vspace{0.4em}
 \end{frame}
 
 \begin{frame}[t]{Why Nursing Homes?}
@@ -51,12 +51,35 @@
     \item resident outcomes,
     \item demand/occupancy
   \end{itemize}
+  \item Stats: How many nursing homes, How many people a year are in nursing homes, Lifetime prevalence of using a nursing home, etc...
+  \item Start there $\uparrow$ and then move to how the data is good, there are lots of them, etc...
+\end{itemize}
+\end{frame}
+
+\begin{frame}[t]{Staffing is Important}
+
+\begin{itemize}
+	\item Why we care: staffing is the primary input into care, so ownership changes can affect
+	\textbf{quality} even when market structure is unchanged.
+	\item This is where its good to have citations about how important staffing is to patients
+\end{itemize}
+
+\end{frame}
+
+\begin{frame}{Research Question}
+\begin{itemize}%[<+->]
+  \item \textbf{Research question:} How do nurse staffing levels respond to ownership changes in nursing homes?
+  \begin{itemize}
+  \item Do responses differ across staff type 
+  \item Do responses differ if a nursing home is part of a chain or not?
+  \item Do responses differ pre vs post-pandemic?
+  \end{itemize}
 \end{itemize}
 \end{frame}
 
 \begin{frame}[t]{Nursing Staff Types}
 \begin{itemize}%[<+->]
-  \item We study four staffing measures:
+  \item We study 3 staffing types:
   \begin{itemize}
     \item \textbf{RN (Registered Nurses):} clinical assessment, care planning, meds, supervision
     \item \textbf{LPN (Licensed Practical Nurses):} routine clinical tasks, meds under RN oversight
@@ -98,11 +121,11 @@
   \end{itemize}
   \item \textbf{Nursing Home Compare (NHC) Archive}
   \begin{itemize}
-    \item Contains ownership information as well as information on chain affiliation
+    \item Contains ownership information as well as facility characteristics
 	\end{itemize}
 	\item \textbf{Payroll Based Journal (PBJ)}
 	\begin{itemize}
-    \item Payroll-reported staffing hours by staff type
+    \item Payroll-reported nurse staffing hours by staff type
     \item Used to construct outcome variables
 	\end{itemize}
 
@@ -117,11 +140,10 @@
   \vspace{0.35em}
   \item \textbf{Challenge:} ownership is often \textbf{layered} (organizations owning organizations), so an administrative flag may not map cleanly to an \textbf{economic change in control}.
   \vspace{0.35em}
-  \item \textbf{Check:} NHC archive provides owner identities and structure:
-  \begin{itemize}
-    \item \textbf{Owner name}, \textbf{ownership level}, and \textbf{owner type}
-  \end{itemize}
+  \item HCRIS might not contain all ownership changes, or it may contain those with no meaningful economic change, so we have to verify using the NHC Archive data.
 \end{itemize}
+
+
 \end{frame}
 
 \begin{frame}[t]{Ownership Level Challenge}
@@ -184,14 +206,22 @@ Individual & Person & STURM, JOSHUA   & 25\% \\
 \end{itemize}
 \end{frame}
 
+\begin{frame}{Ownership Change Agreement: NHC vs HCRIS}
+\centering
+\vspace{0.2em}
+\includegraphics[width=0.82\linewidth]{C:/Repositories/white-bowblis-nhmc/presentation/crosstab_hybrid_panel00_11_chow_rest.pdf}
+
+\vspace{0.4em}
+\end{frame}
+
 \begin{frame}[t]{Dependent Variables: Nurse Staffing (PBJ)}
 \begin{itemize}
   \item We study four staffing measures:
   \begin{itemize}
-    \item \textbf{Registered Nurses (RN)}: clinical assessment, medication administration, supervision
-    \item \textbf{Licensed Practical Nurses (LPN)}: clinical support, medication-related tasks
-    \item \textbf{Certified Nursing Assistants (CNA)}: direct daily care (bathing, feeding, mobility)
-    \item \textbf{Total nursing staff}: RN + LPN + CNA
+    \item RN HPRD
+    \item LPN HPRD
+    \item CNA HPRD
+    \item Total HPRD
   \end{itemize}
 
   \vspace{0.4em}
@@ -227,22 +257,6 @@ Individual & Person & STURM, JOSHUA   & 25\% \\
   \vspace{0.35em}
   \item \textbf{Final sample:} 7,806 facilities; 632,231 facility-months; 1,589 are treated, about 2\% of the final sample
 \end{itemize}
-\end{frame}
-
-\begin{frame}{Ownership Change Agreement: NHC vs HCRIS}
-\centering
-\vspace{0.2em}
-\includegraphics[width=0.82\linewidth]{C:/Repositories/white-bowblis-nhmc/presentation/crosstab_hybrid_panel00_11_chow_rest.pdf}
-
-\vspace{0.4em}
-\end{frame}
-
-\begin{frame}{Ownership Changes Over Time (Quarterly)}
-\centering
-\vspace{0.2em}
-\includegraphics[width=0.92\linewidth]{C:/Repositories/white-bowblis-nhmc/presentation/validated_changes_by_quarter.pdf}
-
-\vspace{0.4em}
 \end{frame}
 
 % =========================
@@ -354,15 +368,15 @@ Individual & Person & STURM, JOSHUA   & 25\% \\
 \toprule
  & \textbf{Total (Levels)} & \textbf{Total (Logs)} \\
 \midrule
-2 Year Full Pre-Window     & $51.22$ (23) [0.0006] & $49.22$ (23) [0.0012] \\
-2 Year Window with Donut   & $24.92$ (20) [0.2046] & $22.26$ (20) [0.3268] \\
-1 Year Window with Donut   & $6.08$ (8)  [0.6387]  & $6.33$ (8)  [0.6102] \\
+2 Year Full Pre-Window     & 0.0006 & 0.0012 \\
+2 Year Window with Donut   & 0.2046 & 0.3268 \\
+1 Year Window with Donut   & 0.6387 & 0.6102 \\
 \bottomrule
 \end{tabular}
 
 \begin{tablenotes}[flushleft]
 \footnotesize
-\item \textit{Notes:} Joint Wald $\chi^2$ test of $H_0:\beta_\tau=0$ for all pre-treatment coefficients. Cells report $\chi^2$ (df) [p-value].
+\item \textit{Notes:} Joint Wald $\chi^2$ test of $H_0:\beta_\tau=0$ for all pre-treatment coefficients. Cells report p-value.
 \item Donut excludes $\tau\in\{-3,-2,-1\}$; reference period is $\tau=-4$.
 \item Full outcome-by-staff-type table available in appendix.
 \end{tablenotes}
