@@ -271,7 +271,7 @@ Individual & Person & STURM, JOSHUA   & 25\% \\
   \item \textbf{Design:} staggered-adoption DiD around ownership transitions
   \item \textbf{Variation:} within-facility staffing changes relative to facilities \textit{not yet treated}
   \vspace{0.35em}
-  \item \textbf{Event study (dynamic effects):}
+  \item \textbf{Event study regression:}
   \[
   Y_{it} =
   \sum_{\tau=-24}^{24} \beta_{\tau}\,\mathbf{1}\{event\_time_{it}=\tau\}\cdot Treat_i
@@ -296,7 +296,7 @@ Individual & Person & STURM, JOSHUA   & 25\% \\
 \begin{itemize}
   \item \textbf{Goal:} summarize the \textbf{average} staffing change after an ownership transition
   \vspace{0.35em}
-  \item \textbf{TWFE DiD (headline effect):}
+  \item \textbf{TWFE DiD regression:}
   \[
   Y_{it}=\beta\,Post_{it} + X'_{it}\gamma + \alpha_i + \lambda_t + \varepsilon_{it}
   \]
@@ -419,14 +419,14 @@ Individual & Person & STURM, JOSHUA   & 25\% \\
 % TWFE TABLE SLIDE (raw table code in-frame; no \input needed)
 % =========================================================
 \begin{frame}[t]{Average Post-Change Staffing (TWFE DiD)}
-
+\centering
+\includegraphics[width=0.95\linewidth]{C:/Repositories/white-bowblis-nhmc/presentation/twfe_table.pdf}
 \end{frame}
 
 \begin{frame}[t]{Heterogeneity: Chain vs Non-Chain Facilities}
 
 \vspace{0.2em}
 \centering
-% Replace with your heterogeneity plot or TWFE bars for chain/non-chain
 \includegraphics[width=0.92\linewidth]{C:/Repositories/white-bowblis-nhmc/presentation/twfe_post_chain_nonchain_hppd_bars.pdf}
 \end{frame}
 
@@ -438,28 +438,7 @@ Individual & Person & STURM, JOSHUA   & 25\% \\
 \includegraphics[width=0.92\linewidth]{C:/Repositories/white-bowblis-nhmc/presentation/twfe_post_prepandemic_pandemic_hppd_bars.pdf}
 \end{frame}
 
-% --- Option 2: Raw table (compact) instead of bars
-% Comment out Option 1 above and use this if you prefer tables on slides.
-%
-% \begin{frame}[t]{Headline Effect: Average Post-Change Staffing (TWFE DiD)}
-% \small
-% \begin{itemize}
-%   \item TWFE DiD estimates the \textbf{average} post-change effect: $Post_{it}=1$ after ownership transition
-% \end{itemize}
-% \vspace{0.25em}
-% \centering
-% \begin{tabular}{lcccc}
-% \toprule
-%  & \textbf{RN} & \textbf{LPN} & \textbf{CNA} & \textbf{Total} \\
-% \midrule
-% Post ($\beta$) &  &  &  &  \\
-%  & \footnotesize ( ) & \footnotesize ( ) & \footnotesize ( ) & \footnotesize ( ) \\
-% \bottomrule
-% \end{tabular}
-% \vspace{0.25em}
-% \footnotesize
-% Facility and month FE; controls; SEs clustered at facility. Outcome in HPPD.
-% \end{frame}
+
 
 % =========================================================
 % PART C: ROBUSTNESS / CHECKS (pick 1–2 slides)
