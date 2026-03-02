@@ -1,10 +1,14 @@
 \documentclass{beamer}
 
-\usepackage{amsmath, xcolor, booktabs, graphicx, booktabs, threeparttable, tabularx, array, tikz, amssymb}
+\usepackage{amsmath, xcolor, booktabs, graphicx, booktabs, threeparttable, tabularx, array, tikz, amssymb, makecell, colortbl}
+\newcommand{\hlest}[3]{%
+  {\setlength{\fboxsep}{1.2pt}\colorbox{yellow}{\est{#1}{#2}{#3}}}%
+}
 \usetikzlibrary{positioning}
 \usetikzlibrary{trees,arrows.meta}
 \newcolumntype{Y}{>{\centering\arraybackslash}X}
-
+\newcommand{\sym}[1]{\rlap{$^{#1}$}}
+\newcommand{\est}[3]{\makecell[c]{#1\sym{#3}\\ \footnotesize(#2)}}
 
 \usetheme{Boadilla}
 \usecolortheme{whale}
@@ -416,40 +420,211 @@ Individual & Person & STURM, JOSHUA   & 25\% \\
 \end{frame}
 
 % =========================================================
-% TWFE TABLE SLIDE (raw table code in-frame; no \input needed)
+% 4 SLIDES: SAME TABLE, "HIGHLIGHTER" ON ONE COLUMN AT A TIME
 % =========================================================
-\begin{frame}[t]{Average Post-Change Staffing (TWFE DiD)}
+
+% --- Slide 1: RN highlighted ---
+\begin{frame}{TWFE DiD --- Baseline (RN)}
+\small
 \centering
-\includegraphics[width=0.95\linewidth]{C:/Repositories/white-bowblis-nhmc/presentation/twfe_table.pdf}
+\renewcommand{\arraystretch}{1.15}
+\setlength{\tabcolsep}{8pt}
+
+\begin{threeparttable}
+\begin{tabular}{@{} l cccc @{}}
+\toprule
+ & \textbf{RN} & \textbf{LPN} & \textbf{CNA} & \textbf{Total} \\
+\midrule
+\textbf{HPPD} &
+\hlest{$-0.032$}{$0.005$}{***} &
+\est{$\phantom{-}0.000$}{$0.006$}{} &
+\est{$-0.054$}{$0.009$}{***} &
+\est{$-0.086$}{$0.013$}{***} \\
+\textbf{Log(HPPD)} &
+\hlest{$-0.092$}{$0.016$}{***} &
+\est{$\phantom{-}0.003$}{$0.009$}{} &
+\est{$-0.028$}{$0.005$}{***} &
+\est{$-0.026$}{$0.004$}{***} \\
+\bottomrule
+\end{tabular}
+
+\begin{tablenotes}[flushleft]
+\footnotesize
+\item \textit{Notes:} Each cell reports the coefficient on \textit{post} with two-way clustered SEs (facility and month) in parentheses.
+Sample: without anticipation ($N=628{,}107$).
+\end{tablenotes}
+\end{threeparttable}
+\end{frame}
+
+% --- Slide 2: LPN highlighted ---
+\begin{frame}{TWFE DiD --- Baseline (LPN)}
+\small
+\centering
+\renewcommand{\arraystretch}{1.15}
+\setlength{\tabcolsep}{8pt}
+
+\begin{threeparttable}
+\begin{tabular}{@{} l cccc @{}}
+\toprule
+ & \textbf{RN} & \textbf{LPN} & \textbf{CNA} & \textbf{Total} \\
+\midrule
+\textbf{HPPD} &
+\est{$-0.032$}{$0.005$}{***} &
+\hlest{$\phantom{-}0.000$}{$0.006$}{} &
+\est{$-0.054$}{$0.009$}{***} &
+\est{$-0.086$}{$0.013$}{***} \\
+\textbf{Log(HPPD)} &
+\est{$-0.092$}{$0.016$}{***} &
+\hlest{$\phantom{-}0.003$}{$0.009$}{} &
+\est{$-0.028$}{$0.005$}{***} &
+\est{$-0.026$}{$0.004$}{***} \\
+\bottomrule
+\end{tabular}
+
+\begin{tablenotes}[flushleft]
+\footnotesize
+\item \textit{Notes:} Each cell reports the coefficient on \textit{post} with two-way clustered SEs (facility and month) in parentheses.
+Sample: without anticipation ($N=628{,}107$).
+\end{tablenotes}
+\end{threeparttable}
+\end{frame}
+
+% --- Slide 3: CNA highlighted ---
+\begin{frame}{TWFE DiD --- Baseline (CNA)}
+\small
+\centering
+\renewcommand{\arraystretch}{1.15}
+\setlength{\tabcolsep}{8pt}
+
+\begin{threeparttable}
+\begin{tabular}{@{} l cccc @{}}
+\toprule
+ & \textbf{RN} & \textbf{LPN} & \textbf{CNA} & \textbf{Total} \\
+\midrule
+\textbf{HPPD} &
+\est{$-0.032$}{$0.005$}{***} &
+\est{$\phantom{-}0.000$}{$0.006$}{} &
+\hlest{$-0.054$}{$0.009$}{***} &
+\est{$-0.086$}{$0.013$}{***} \\
+\textbf{Log(HPPD)} &
+\est{$-0.092$}{$0.016$}{***} &
+\est{$\phantom{-}0.003$}{$0.009$}{} &
+\hlest{$-0.028$}{$0.005$}{***} &
+\est{$-0.026$}{$0.004$}{***} \\
+\bottomrule
+\end{tabular}
+
+\begin{tablenotes}[flushleft]
+\footnotesize
+\item \textit{Notes:} Each cell reports the coefficient on \textit{post} with two-way clustered SEs (facility and month) in parentheses.
+Sample: without anticipation ($N=628{,}107$).
+\end{tablenotes}
+\end{threeparttable}
+\end{frame}
+
+% --- Slide 4: Total highlighted ---
+\begin{frame}{TWFE DiD --- Baseline (Total)}
+\small
+\centering
+\renewcommand{\arraystretch}{1.15}
+\setlength{\tabcolsep}{8pt}
+
+\begin{threeparttable}
+\begin{tabular}{@{} l cccc @{}}
+\toprule
+ & \textbf{RN} & \textbf{LPN} & \textbf{CNA} & \textbf{Total} \\
+\midrule
+\textbf{HPPD} &
+\est{$-0.032$}{$0.005$}{***} &
+\est{$\phantom{-}0.000$}{$0.006$}{} &
+\est{$-0.054$}{$0.009$}{***} &
+\hlest{$-0.086$}{$0.013$}{***} \\
+\textbf{Log(HPPD)} &
+\est{$-0.092$}{$0.016$}{***} &
+\est{$\phantom{-}0.003$}{$0.009$}{} &
+\est{$-0.028$}{$0.005$}{***} &
+\hlest{$-0.026$}{$0.004$}{***} \\
+\bottomrule
+\end{tabular}
+
+\begin{tablenotes}[flushleft]
+\footnotesize
+\item \textit{Notes:} Each cell reports the coefficient on \textit{post} with two-way clustered SEs (facility and month) in parentheses.
+Sample: without anticipation ($N=628{,}107$).
+\end{tablenotes}
+\end{threeparttable}
 \end{frame}
 
 \begin{frame}[t]{Heterogeneity: Chain vs Non-Chain Facilities}
-
-\vspace{0.2em}
+\vspace{0.05em}
 \centering
-\includegraphics[width=0.92\linewidth]{C:/Repositories/white-bowblis-nhmc/presentation/twfe_post_chain_nonchain_hppd_bars.pdf}
+\includegraphics[width=0.88\linewidth]{C:/Repositories/white-bowblis-nhmc/presentation/twfe_post_chain_nonchain_hppd_bars.pdf}
+
+\vspace{0.20em}
+{\footnotesize Staffing declines are larger for non-chain facilities, nearly double for CNA and Total.}
 \end{frame}
 
-\begin{frame}[t]{Heterogeneity: Pre vs Pos-Pandemic}
-
-\vspace{0.2em}
+\begin{frame}[t]{Heterogeneity: Pre vs Post-Pandemic}
+\vspace{0.05em}
 \centering
-% Replace with your heterogeneity plot or TWFE bars for chain/non-chain
-\includegraphics[width=0.92\linewidth]{C:/Repositories/white-bowblis-nhmc/presentation/twfe_post_prepandemic_pandemic_hppd_bars.pdf}
+\includegraphics[width=0.88\linewidth]{C:/Repositories/white-bowblis-nhmc/presentation/twfe_post_prepandemic_pandemic_hppd_bars.pdf}
+
+\vspace{0.20em}
+{\footnotesize Large pre-pandemic declines, and post-pandemic effects are almost cut in half.}
 \end{frame}
-
-
 
 % =========================================================
 % PART C: ROBUSTNESS / CHECKS (pick 1–2 slides)
 % =========================================================
 
-% --- Anticipation / donut sensitivity (figure-based)
-\begin{frame}[t]{Robustness: Anticipation and the Donut Window}
+% =========================================================
+% ROBUSTNESS (EVENT STUDY / STAGGERED DiD) --- SUMMARY SLIDE
+% =========================================================
+\begin{frame}[t]{Robustness Checks}
+\small
+\begin{itemize}%[<+->]
+  \item \textbf{Control-group}
+  \begin{itemize}
+    \item Re-estimate using \textbf{not-yet-treated} controls only.
+    \item Re-estimate using \textbf{never-treated} facilities only.
+    \item \textbf{Stacked DiD} (cohort-by-cohort).
+  \end{itemize}
+  
+  \pause
+
+  \vspace{0.35em}
+  \item \textbf{Treatment timing / definition.}
+  \begin{itemize}
+    \item Shift event date by $\pm 1$ month.
+    \item NHC vs HCRIS
+  \end{itemize}
+\end{itemize}
+
 \end{frame}
 
-% --- Additional robustness (summary-only, quick)
-\begin{frame}[t]{Additional Robustness Checks (Summary)}
+\begin{frame}[t]{Robustness Checks}
+\small
+\begin{itemize}%[<+->]
+  \item \textbf{Donut Hole Specification}
+  \begin{itemize}
+    \item Baseline uses a \textbf{donut}: drop $\tau\in\{-3,-2,-1\}$ (reference $\tau=-4$).
+    \item \textbf{Wider donut:} drop $\tau\in\{-4,-3,-2,-1\}$.
+    \item \textbf{Smaller donut:} drop only $\tau\in\{-2,-1\}$.
+    \item Estimates are unchanged in sign, magnitude, and significance.
+  \end{itemize}
+  
+  \pause
+
+  \vspace{0.35em}
+  \item \textbf{Reporting gaps in staffing data.}
+  \begin{itemize}
+    \item Restrict sample to facilities with smaller gaps between observations
+    (exclude gaps $>6$, $>3$, $>1$, and $>0$ months).
+    \item Estimates are nearly identical to baseline.
+  \end{itemize}
+  
+\end{itemize}
+
 \end{frame}
 
 \end{document}
