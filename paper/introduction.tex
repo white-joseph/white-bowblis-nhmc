@@ -325,18 +325,17 @@ This section presents a series of robustness checks designed to assess the valid
 
 Our main event-study specification is estimated using two-way fixed effects (TWFE) with staggered treatment timing. In this setting, TWFE can implicitly use already-treated facilities as controls for cohorts treated later, which may distort event-study estimates when treatment effects are dynamic or heterogeneous across cohorts. To assess sensitivity to this issue, we re-estimate the event study using a stacked difference-in-differences design.
 
-In the stacked approach, we construct cohort-specific samples for each treatment month $g$. For a given cohort, treated facilities are those with an ownership change in month $g$, and the control group consists only of facilities that are never treated or not-yet-treated relative to $g$ (i.e., with treatment dates after $g$). We restrict each cohort-specific sample to a symmetric event window around $g$ and then stack these cohort datasets into a single analysis file. Estimation includes the same covariates as the baseline specification and fixed effects that absorb facility-level time-invariant heterogeneity and common calendar shocks; standard errors are clustered at the facility level (and, in our baseline, also by month).
+In the stacked approach, we construct cohort-specific samples for each treatment month $g$. For a given cohort, treated facilities are those with an ownership change in month $g$, and the control group consists only of facilities that are never treated or not-yet-treated relative to $g$ (i.e., with treatment dates after $g$). We restrict each cohort-specific sample to a symmetric event window around $g$ and then stack these cohort datasets into a single analysis file. Estimation includes the same covariates as the baseline specification and fixed effects that absorb facility-level time-invariant heterogeneity and common calendar shocks; standard errors are clustered at the facility level.
 
-Appendix Figure X shows that stacked event-study estimates ...
+Appendix Figures~\ref{fig:stacked-es-rn} through \ref{fig:stacked-es-total} show that the stacked event-study estimates closely track the baseline TWFE event-study results: the post-transition dynamics and the relative magnitudes across staffing types remain qualitatively unchanged. In addition, Appendix Table~\ref{tab:stacked-pretrend-wald-levels} reports joint Wald tests of pre-treatment coefficients in the stacked specification (under the donut design used in the baseline), which are consistent with flat pre-trends in the remaining pre-period. Together, these results suggest that the main findings are not driven by treated-as-control comparisons that can arise in TWFE under staggered adoption.
 
 \subsubsection{Event Window and Anticipation}
 
-Staffing decisions may adjust in anticipation of formal ownership transitions, potentially violating the parallel trends assumption if these periods are included. To address this concern, we estimate our event study and TWFE models using alternative event windows that exclude months immediately preceding the ownership change and show that the estimated post-treatment effects remain largely unchanged. Row 6 of Table~\ref{tab:twfe-robustness-summary} reports estimates of equation~\ref{eq:twfe-post} with a wider anticipatory period excluded from the sample. The results from row 6 show no differences in values or statistical significance. Similarly, row 7 reports estimates under a smaller anticipatory window that is excluded from the data, and we see no differences in the results.
+As we have previously discussed, because of changes to staffing in anticipation of a formal ownership change, the assumptions of parallel trends is violated. As a result of this, in our baseline specifications we ``donut'' equation~\ref{eq:es_twfe} and equation~\ref{eq:twfe-post} by removing $\tau\in\{-3,-2,-1\}$. To test the validity of removing this set of pre-treatment coefficients, we estimate equations~\ref{eq:es_twfe} and \ref{eq:twfe-post} with different ``donut'' sets and show that the estimated post-treatment effects remain largely unchanged. Row 6 of Table~\ref{tab:twfe-robustness-summary} reports estimates of equation~\ref{eq:twfe-post} with a wider anticipatory period excluded from the sample. The results from row 6 show no differences in values or statistical significance. Similarly, row 7 reports estimates under a smaller anticipatory window that is excluded from the data, and we see no differences in the results.
 
 \subsubsection{Gap Size}
 
 Because staffing data is occasionally missing or reported with gaps, we examine whether our results are sensitive to the length of time between consecutive observations. Restricting the sample to facilities with smaller reporting gap shows that estimates are similar to those in the full sample, indicating that data gaps do not drive our findings. Row 2 of Table~\ref{tab:twfe-robustness-summary} reports our results for equation~\ref{eq:twfe-post} with the restriction that facilities with a reporting gap of larger than 6 are excluded from our sample. Compared to the baseline (row 1) this result is identical across staff types and statistical significance. The exact same result is true for row 3 which reports estimates for equation~\ref{eq:twfe-post} where facilities with a reporting gap of greater than 3 are removed. Row 4 and 5 report estimates where gap greater than 1 or equal to 0 respectively, are removed. Similarly, we see no differences in these results with respect to the baseline.
-
 
 \section{Discussions} \label{sec:discussion}
 
@@ -383,10 +382,41 @@ Closing
 \input{C:/Repositories/white-bowblis-nhmc/outputs/tables/pretrend_pvals_by_tau_fragment.tex}
 \FloatBarrier
 
+\input{C:/Repositories/white-bowblis-nhmc/outputs/tables/pretrend_wald_tests_stacked_levels_fragment.tex}
+
 \clearpage
 
 \section*{Figures} \label{sec:fig}
 \addcontentsline{toc}{section}{Figures}
+
+\begin{figure}[!ht]
+  \centering
+  \includegraphics[width=0.9\textwidth]{C:/Repositories/white-bowblis-nhmc/outputs/plots/stacked_es_rn_baseline.pdf}
+  \caption{Stacked event-study estimates (RN staffing, levels). The stacked design compares each treated cohort only to never-treated and not-yet-treated facilities within the event window, preventing already-treated facilities from serving as controls. The donut excludes $\tau\in\{-3,-2,-1\}$; reference period is $\tau=-4$.}
+  \label{fig:stacked-es-rn}
+\end{figure}
+
+\begin{figure}[!ht]
+  \centering
+
+  \includegraphics[width=0.9\textwidth]{C:/Repositories/white-bowblis-nhmc/outputs/plots/stacked_es_lpn_baseline.pdf}
+  \caption{Stacked event-study estimates (LPN staffing, levels). The stacked design compares each treated cohort only to never-treated and not-yet-treated facilities within the event window, preventing already-treated facilities from serving as controls. The donut excludes $\tau\in\{-3,-2,-1\}$; reference period is $\tau=-4$.}
+  \label{fig:stacked-es-lpn}
+\end{figure}
+
+\begin{figure}[!ht]
+  \centering
+  \includegraphics[width=0.9\textwidth]{C:/Repositories/white-bowblis-nhmc/outputs/plots/stacked_es_cna_baseline.pdf}
+  \caption{Stacked event-study estimates (CNA staffing, levels). The stacked design compares each treated cohort only to never-treated and not-yet-treated facilities within the event window, preventing already-treated facilities from serving as controls. The donut excludes $\tau\in\{-3,-2,-1\}$; reference period is $\tau=-4$.}
+  \label{fig:stacked-es-cna}
+\end{figure}
+
+\begin{figure}[!ht]
+  \centering
+  \includegraphics[width=0.9\textwidth]{C:/Repositories/white-bowblis-nhmc/outputs/plots/stacked_es_total_baseline.pdf}
+  \caption{Stacked event-study estimates (Total staffing, levels). The stacked design compares each treated cohort only to never-treated and not-yet-treated facilities within the event window, preventing already-treated facilities from serving as controls. The donut excludes $\tau\in\{-3,-2,-1\}$; reference period is $\tau=-4$.}
+  \label{fig:stacked-es-total}
+\end{figure}
 
 %\begin{figure}[hp]
 %  \centering

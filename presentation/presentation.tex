@@ -1,6 +1,17 @@
 \documentclass{beamer}
 
 \usepackage{amsmath, xcolor, booktabs, graphicx, booktabs, threeparttable, tabularx, array, tikz, amssymb, makecell, colortbl}
+
+\usepackage[authoryear,round]{natbib}
+
+\usepackage{hyperref}
+\hypersetup{
+  colorlinks=true,
+  linkcolor=blue,
+  citecolor=blue,
+  urlcolor=cyan
+}
+
 \newcommand{\hlest}[3]{%
   {\setlength{\fboxsep}{1.2pt}\colorbox{yellow}{\est{#1}{#2}{#3}}}%
 }
@@ -47,6 +58,8 @@
 
 \begin{frame}[t]{Why Nursing Homes?}
 \begin{itemize}%[<+->]
+  \item There are about 15,000 nursing homes in the U.S. that serve over 4 million people annually
+  \item 56\% of adults aged 57 to 61 will spend at least one night in a nursing home during their lifetime
   \item Nursing home care is labor-intensive and heavily regulated.
   \item \textbf{Nursing labor is the main input} into care and a major operating cost.
   \item Staffing is a natural adjustment margin after ownership change, but it’s constrained by:
@@ -55,19 +68,19 @@
     \item resident outcomes,
     \item demand/occupancy
   \end{itemize}
-  \item Stats: How many nursing homes, How many people a year are in nursing homes, Lifetime prevalence of using a nursing home, etc...
-  \item Start there $\uparrow$ and then move to how the data is good, there are lots of them, etc...
 \end{itemize}
 \end{frame}
 
 \begin{frame}[t]{Staffing is Important}
 
 \begin{itemize}
-	\item Why we care: staffing is the primary input into care, so ownership changes can affect
-	\textbf{quality} even when market structure is unchanged.
-	\item This is where its good to have citations about how important staffing is to patients
+  \item Staffing is the primary input into nursing home care, so ownership changes can affect quality even when market structure is unchanged.
+  \item Higher staffing levels are linked to better quality measures in nursing homes,
+  including fewer deficiency citations \citep{harrington_et_al_2000}.
+  \item Causal evidence shows that increasing nurse staffing improves measured nursing home quality
+  \citep{lin_2014}.
+  \item If ownership changes shift staffing decisions, they can translate into meaningful differences in care quality.
 \end{itemize}
-
 \end{frame}
 
 \begin{frame}{Research Question}
@@ -81,38 +94,67 @@
 \end{itemize}
 \end{frame}
 
-\begin{frame}[t]{Nursing Staff Types}
+\begin{frame}[t]{Nursing Staff Types and Staffing Measurement}
 \begin{itemize}%[<+->]
-  \item We study 3 staffing types:
+  \item \textbf{Nursing homes staff care using three main nursing roles:}
   \begin{itemize}
     \item \textbf{RN (Registered Nurses):} clinical assessment, care planning, meds, supervision
     \item \textbf{LPN (Licensed Practical Nurses):} routine clinical tasks, meds under RN oversight
     \item \textbf{CNA (Certified Nursing Assistants):} direct daily care
     \item \textbf{Total nursing:} RN + LPN + CNA
   \end{itemize}
-  \item Ownership change can affect \textbf{levels} (total hours) and \textbf{mix} (skill composition).
+
+  \vspace{0.25em}
+  \item \textbf{Staffing measure: Hours Per Patient Day (HPPD)}
+  \begin{itemize}
+    \item Standardizes staffing by resident census (staffing intensity, not raw hours)
+    \item Lets us compare facilities and months on a common scale
+  \end{itemize}
+
+  \vspace{0.25em}
+  \item Ownership change can affect both \textbf{levels} (total HPPD) and \textbf{mix} (RN/LPN/CNA composition) which sets up cost-quality tradeoff.
 \end{itemize}
 \end{frame}
 
 \begin{frame}[t]{The Cost--Quality Tradeoff in Staffing}
 \begin{itemize}%[<+->]
-  \item Owners can raise quality through:
+  \item Owners can raise quality through two channels:
   \begin{itemize}
-    \item \textbf{Quantity} of staffing and/or
-    \item \textbf{Quality / skill mix}
+    \item \textbf{Quantity (levels):} increasing total nursing hours (HPPD)
+    \item \textbf{Skill mix:} shifting hours toward more clinically trained staff (e.g., more RN oversight)
   \end{itemize}
-  \item Either margin increases costs
-  \item But \textbf{revenues are relatively flat in the short run}
-  \item So owners face a tradeoff: \textbf{higher quality vs. tighter margins}.
+  \item \textbf{Both margins raise costs} because nursing labor is a major operating expense.
+  \item \textbf{But short-run revenues are relatively fixed} (public payers, limited pricing flexibility), so staffing choices map into a \textbf{cost--quality tradeoff}.
+  \item \textbf{Implication:} an ownership change that shifts objectives or constraints can move a facility along this tradeoff.%
+  \ \ \footnotesize(\citealp{park_werner_2011}; \citealp{bowblis_brunt_2025})
 \end{itemize}
 \end{frame}
 
 \begin{frame}[t]{Why Staffing Could Rise or Fall After a Transition}
 \begin{itemize}%[<+->]
-  \item \textbf{Cost pressures:} tighter budgets / debt service can push cost cutting.
-  \item \textbf{Reorganization:} standardized policies may shift RN/LPN/CNA composition.
-  \item \textbf{Quality objective:} owners with stronger quality/compliance goals may increase staffing.
-  \item Net effect is ambiguous $\Rightarrow$ \textbf{empirical question}.
+  \item Ownership changes can shift \textbf{constraints} and \textbf{objectives} $\Rightarrow$ staffing effects are ambiguous.
+  \vspace{0.20em}
+
+  \item \textbf{Scenario 1: Cost pressure $\Rightarrow$ staffing falls}
+  \begin{itemize}
+    \item Debt service / tighter targets $\Rightarrow$ cut labor costs (lower HPPD or cheaper mix)
+  \end{itemize}
+  \vspace{0.10em}
+
+  \item \textbf{Scenario 2: Quality/compliance push $\Rightarrow$ staffing rises}
+  \begin{itemize}
+    \item Invest in staffing to improve oversight / survey performance (higher HPPD or better mix)
+  \end{itemize}
+  \vspace{0.10em}
+
+  \item \textbf{Scenario 3: Reorganization $\Rightarrow$ mix changes}
+  \begin{itemize}
+    \item Standardized staffing model shifts RN/LPN/CNA composition; total hours may be similar
+  \end{itemize}
+
+  \vspace{0.15em}
+  \item \textbf{Bottom line:} competing predictions $\Rightarrow$ \textbf{empirical question}.%
+  \ \ \footnotesize(\citealp{gupta_et_al_2021}; \citealp{holmes_1996})
 \end{itemize}
 \end{frame}
 
@@ -210,56 +252,54 @@ Individual & Person & STURM, JOSHUA   & 25\% \\
 \end{itemize}
 \end{frame}
 
-\begin{frame}{Ownership Change Agreement: NHC vs HCRIS}
-\centering
-\vspace{0.2em}
-\includegraphics[width=0.82\linewidth]{C:/Repositories/white-bowblis-nhmc/presentation/crosstab_hybrid_panel00_11_chow_rest.pdf}
-
-\vspace{0.4em}
-\end{frame}
-
-\begin{frame}[t]{Dependent Variables: Nurse Staffing (PBJ)}
+\begin{frame}[t]{Ownership Change Agreement: NHC vs HCRIS}
+\small
 \begin{itemize}
-  \item We study four staffing measures:
+  \item \textbf{Step 3: Validate the ownership-change flag.}
+  \item We keep facilities with:
   \begin{itemize}
-    \item RN HPRD
-    \item LPN HPRD
-    \item CNA HPRD
-    \item Total HPRD
+    \item \textbf{(0,0)}: no changes in either source, or
+    \item \textbf{(1,1)}: exactly one change in each source with dates within \textbf{6 months}.
   \end{itemize}
-
-  \vspace{0.4em}
-  \item Outcome is \textbf{hours per patient day (HPPD)}: staffing intensity standardized by resident census
+  \item \textbf{Event month:} the first month NHC indicates a majority-control transfer.
 \end{itemize}
 
 \vspace{0.2em}
+\centering
+\includegraphics[width=0.82\linewidth]{C:/Repositories/white-bowblis-nhmc/presentation/crosstab_hybrid_panel00_11_chow_rest.pdf}
+\end{frame}
+
+\begin{frame}[t]{Dependent Variables: Nurse Staffing (PBJ) and Analysis Sample}
+\small
+\begin{itemize}
+  \item We study four staffing measures:
+  \begin{itemize}
+    \item RN, LPN, CNA, and total HPPD
+  \end{itemize}
+
+  \vspace{0.25em}
+  \item Outcome is \textbf{hours per patient day (HPPD)}: staffing intensity standardized by resident census
+\end{itemize}
+
+\vspace{0.10em}
 \[
 \text{HPPD}_{s,i,t}=\frac{H_{s,i,t}}{\text{PatientDays}_{i,t}}
 \]
-\end{frame}
 
-\begin{frame}[t]{Final Sample Construction}
-\small
+\vspace{-0.05em}
 \begin{itemize}
-  \item \textbf{Validated ownership-change sample (HCRIS $\leftrightarrow$ NHC):}
-  \begin{itemize}
-    \item Keep facilities with \textbf{(0,0)} changes in both datasets, or \textbf{(1,1)} with dates within 6 months
-    \item Event month is the \textbf{first month} NHC indicates a change
-  \end{itemize}
-
-  \vspace{0.35em}
-  \item \textbf{CMS implausible staffing}
+  \item \textbf{CMS implausible staffing exclusions:}
   \begin{itemize}
     \item RN HPPD $=0$ \textbf{and} LPN HPPD $=0$
     \item Total HPPD $<1.5$ or $>12$
     \item CNA HPPD $>5.25$
   \end{itemize}
 
-  \vspace{0.35em}
+  \vspace{0.15em}
   \item \textbf{Additional restrictions:} beds $<15$; hospital-based facilities
 
-  \vspace{0.35em}
-  \item \textbf{Final sample:} 7,806 facilities; 632,231 facility-months; 1,589 are treated, about 2\% of the final sample
+  \vspace{0.15em}
+  \item \textbf{Final sample:} 7,806 facilities; 632,231 facility-months; 1,589 treated (\(\approx 20\%\))
 \end{itemize}
 \end{frame}
 
@@ -272,7 +312,7 @@ Individual & Person & STURM, JOSHUA   & 25\% \\
 \begin{frame}[t]{Empirical Strategy: Event-Study Difference-in-Differences}
 \small
 \begin{itemize}
-  \item \textbf{Design:} staggered-adoption DiD around ownership transitions
+  \item \textbf{Design:} staggered-adoption DiD around ownership transitions \citealp{goodman_bacon_2021}
   \item \textbf{Variation:} within-facility staffing changes relative to facilities \textit{not yet treated}
   \vspace{0.35em}
   \item \textbf{Event study regression:}
@@ -590,8 +630,6 @@ Sample: without anticipation ($N=628{,}107$).
     \item \textbf{Stacked DiD} (cohort-by-cohort).
   \end{itemize}
   
-  \pause
-
   \vspace{0.35em}
   \item \textbf{Treatment timing / definition.}
   \begin{itemize}
@@ -613,8 +651,6 @@ Sample: without anticipation ($N=628{,}107$).
     \item Estimates are unchanged in sign, magnitude, and significance.
   \end{itemize}
   
-  \pause
-
   \vspace{0.35em}
   \item \textbf{Reporting gaps in staffing data.}
   \begin{itemize}
@@ -625,6 +661,11 @@ Sample: without anticipation ($N=628{,}107$).
   
 \end{itemize}
 
+\end{frame}
+
+\begin{frame}[allowframebreaks]{References}
+\bibliographystyle{apalike} % or whatever you use in the paper
+\bibliography{refs}
 \end{frame}
 
 \end{document}

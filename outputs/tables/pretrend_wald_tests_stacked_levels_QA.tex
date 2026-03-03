@@ -1,0 +1,42 @@
+\documentclass[11pt]{article}
+\usepackage[margin=1in]{geometry}
+\usepackage{booktabs}
+\usepackage{tabularx}
+\usepackage{threeparttable}
+\usepackage{array}
+\usepackage{newtxtext}
+\usepackage{newtxmath}
+\newcolumntype{Y}{>{\centering\arraybackslash}X}
+\begin{document}
+\begingroup
+\begin{table}[!ht]
+\centering
+\begin{threeparttable}
+\caption{Joint Wald Tests of Pre-trends (Stacked Event Study) --- Levels}
+\label{tab:pretrend-wald-tests-stacked-levels}
+\small
+\setlength{\tabcolsep}{6pt}
+
+\begin{tabularx}{\textwidth}{@{} l YYYY @{} }
+\toprule
+ & \multicolumn{4}{c}{\textbf{Outcomes}} \\
+\cmidrule(lr){2-5}
+ & \textbf{RN} & \textbf{LPN} & \textbf{CNA} & \textbf{Total} \\
+\midrule
+2 Year Window with Donut & $28.46$ (20) [0.0990] & $35.10$ (20) [0.0196] & $20.25$ (20) [0.4423] & $24.08$ (20) [0.2388] \\
+1 Year Window with Donut & $5.26$ (8) [0.7300] & $24.35$ (8) [0.0020] & $6.59$ (8) [0.5817] & $15.99$ (8) [0.0425] \\
+\bottomrule
+\end{tabularx}
+
+\begin{tablenotes}[flushleft]
+\footnotesize
+\item \textit{Notes:} Each cell reports the Wald $\chi^2$ statistic for the joint null that all pre-treatment event-time coefficients equal zero, followed by degrees of freedom in parentheses and the p-value in brackets.
+\item Tested windows and reference periods: 2 Year Donut tests $\tau=-24$ to $\tau=-5$ with reference $\tau=-4$ (dropping $\tau=-3,-2,-1$); 1 Year Donut tests $\tau=-12$ to $\tau=-5$ with reference $\tau=-4$ (dropping $\tau=-3,-2,-1$).
+\item Sample sizes (stacked rows): 2 Year Donut ($N=23,877,687$); 1 Year Donut ($N=13,121,085$).
+\item All specifications include stacked-unit fixed effects (facility-by-cohort), calendar-month fixed effects, cohort fixed effects, and baseline covariates. Standard errors are clustered at the facility level.
+\end{tablenotes}
+\end{threeparttable}
+\end{table}
+\endgroup
+
+\end{document}
