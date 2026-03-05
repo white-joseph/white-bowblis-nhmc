@@ -142,34 +142,34 @@ df_tab4 <- tribble(
 # ============================================================
 
 plot_twfe_bars_onepanel(df_tab3, "HPPD",
-                        title = "TWFE Post Estimates: Baseline (HPPD, Without Anticipation)",
+                        title = "TWFE Post Estimates: Baseline",
                         out_stub = "twfe_post_baseline_hppd_bars"
 )
 
 plot_twfe_bars_onepanel(df_tab3, "Log(HPPD)",
-                        title = "TWFE Post Estimates: Baseline (Log(HPPD), Without Anticipation)",
+                        title = "TWFE Post Estimates: Baseline",
                         out_stub = "twfe_post_baseline_loghppd_bars",
                         ylab = "Estimated effect of ownership change (post, log points)"
 )
 
 plot_twfe_bars_onepanel(df_tab5, "HPPD",
-                        title = "TWFE Post Estimates: Chain vs Non-chain (HPPD, Without Anticipation)",
+                        title = "TWFE Post Estimates: Chain vs Non-chain",
                         out_stub = "twfe_post_chain_nonchain_hppd_bars"
 )
 
 plot_twfe_bars_onepanel(df_tab5, "Log(HPPD)",
-                        title = "TWFE Post Estimates: Chain vs Non-chain (Log(HPPD), Without Anticipation)",
+                        title = "TWFE Post Estimates: Chain vs Non-chain",
                         out_stub = "twfe_post_chain_nonchain_loghppd_bars",
                         ylab = "Estimated effect of ownership change (post, log points)"
 )
 
 plot_twfe_bars_onepanel(df_tab4, "HPPD",
-                        title = "TWFE Post Estimates: Pre-pandemic vs Pandemic (HPPD, Without Anticipation)",
+                        title = "TWFE Post Estimates: Pre-pandemic vs Pandemic",
                         out_stub = "twfe_post_prepandemic_pandemic_hppd_bars"
 )
 
 plot_twfe_bars_onepanel(df_tab4, "Log(HPPD)",
-                        title = "TWFE Post Estimates: Pre-pandemic vs Pandemic (Log(HPPD), Without Anticipation)",
+                        title = "TWFE Post Estimates: Pre-pandemic vs Pandemic",
                         out_stub = "twfe_post_prepandemic_pandemic_loghppd_bars",
                         ylab = "Estimated effect of ownership change (post, log points)"
 )

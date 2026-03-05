@@ -45,6 +45,7 @@
   \end{itemize}
   \item This second type of changes does \textbf{not} change the set of providers in a market.
   \item Instead, effects operate through \textbf{internal production decisions}
+  \item This second type is understudied in the literature and we study this issue in \textbf{nursing homes}
 \end{itemize}
 \end{frame}
 
@@ -87,7 +88,7 @@
 \begin{itemize}%[<+->]
   \item \textbf{Research question:} How do nurse staffing levels respond to ownership changes in nursing homes?
   \begin{itemize}
-  \item Do responses differ across staff type 
+  \item Do responses differ across staff type?
   \item Do responses differ if a nursing home is part of a chain or not?
   \item Do responses differ pre vs post-pandemic?
   \end{itemize}
@@ -105,14 +106,14 @@
   \end{itemize}
 
   \vspace{0.25em}
-  \item \textbf{Staffing measure: Hours Per Patient Day (HPPD)}
+  \item \textbf{Staffing measure: Hours Per Resident Day (HPRD)}
   \begin{itemize}
     \item Standardizes staffing by resident census (staffing intensity, not raw hours)
     \item Lets us compare facilities and months on a common scale
   \end{itemize}
 
   \vspace{0.25em}
-  \item Ownership change can affect both \textbf{levels} (total HPPD) and \textbf{mix} (RN/LPN/CNA composition) which sets up cost-quality tradeoff.
+  \item Ownership change can affect both \textbf{levels} (total HPRD) and \textbf{mix} (RN/LPN/CNA composition) which sets up cost-quality tradeoff.
 \end{itemize}
 \end{frame}
 
@@ -120,7 +121,7 @@
 \begin{itemize}%[<+->]
   \item Owners can raise quality through two channels:
   \begin{itemize}
-    \item \textbf{Quantity (levels):} increasing total nursing hours (HPPD)
+    \item \textbf{Quantity (levels):} increasing total nursing hours (HPRD)
     \item \textbf{Skill mix:} shifting hours toward more clinically trained staff (e.g., more RN oversight)
   \end{itemize}
   \item \textbf{Both margins raise costs} because nursing labor is a major operating expense.
@@ -137,13 +138,13 @@
 
   \item \textbf{Scenario 1: Cost pressure $\Rightarrow$ staffing falls}
   \begin{itemize}
-    \item Debt service / tighter targets $\Rightarrow$ cut labor costs (lower HPPD or cheaper mix)
+    \item Debt service / tighter targets $\Rightarrow$ cut labor costs (lower HPRD or cheaper mix)
   \end{itemize}
   \vspace{0.10em}
 
   \item \textbf{Scenario 2: Quality/compliance push $\Rightarrow$ staffing rises}
   \begin{itemize}
-    \item Invest in staffing to improve oversight / survey performance (higher HPPD or better mix)
+    \item Invest in staffing to improve oversight / survey performance (higher HPRD or better mix)
   \end{itemize}
   \vspace{0.10em}
 
@@ -152,9 +153,6 @@
     \item Standardized staffing model shifts RN/LPN/CNA composition; total hours may be similar
   \end{itemize}
 
-  \vspace{0.15em}
-  \item \textbf{Bottom line:} competing predictions $\Rightarrow$ \textbf{empirical question}.%
-  \ \ \footnotesize(\citealp{gupta_et_al_2021}; \citealp{holmes_1996})
 \end{itemize}
 \end{frame}
 
@@ -179,10 +177,11 @@
 \end{itemize}
 \end{frame}
 
-\begin{frame}[t]{Identifying Ownership Changes: Step 1}
+\begin{frame}[t]{Identifying Ownership Changes}
 \small
 \begin{itemize}
-  \item \textbf{Starting point (HCRIS):} includes a variable indicating \textbf{whether and when} an ownership change occurred.
+	\item We identify ownership changes using a 3 step process
+  \item \textbf{Step 1 (HCRIS):} includes a variable indicating \textbf{whether and when} an ownership change occurred.
   \vspace{0.35em}
   \item \textbf{Challenge:} ownership is often \textbf{layered} (organizations owning organizations), so an administrative flag may not map cleanly to an \textbf{economic change in control}.
   \vspace{0.35em}
@@ -220,10 +219,10 @@ Individual & Person & STURM, JOSHUA   & 25\% \\
 
 \end{frame}
 
-\begin{frame}[t]{Identifying Ownership Changes: Step 2}
+\begin{frame}[t]{Identifying Ownership Changes}
 \small
 \begin{itemize}
-  \item \textbf{Validate \& date using NHC:}
+  \item \textbf{Step 2: Validate \& date using NHC}
   \begin{itemize}
     \item Track ownership shares over time within the highest reported ownership level
     \item Define a change when \textbf{majority control (50\%)} transfers between $t-1$ and $t$
@@ -252,21 +251,28 @@ Individual & Person & STURM, JOSHUA   & 25\% \\
 \end{itemize}
 \end{frame}
 
+% ============================================================
+% Option 1 (recommended): Two slides — clean + big image
+% ============================================================
+
+% ---------- Slide 1: Text only ----------
 \begin{frame}[t]{Ownership Change Agreement: NHC vs HCRIS}
 \small
 \begin{itemize}
-  \item \textbf{Step 3: Validate the ownership-change flag.}
-  \item We keep facilities with:
+  \item \textbf{Validate HCRIS ownership-change flags using NHC ownership records.}
+  \item We keep facilities only if:
   \begin{itemize}
-    \item \textbf{(0,0)}: no changes in either source, or
-    \item \textbf{(1,1)}: exactly one change in each source with dates within \textbf{6 months}.
+    \item \textbf{Never-treated:} 0 changes in \textbf{both} NHC and HCRIS, or
+    \item \textbf{Single change:} exactly 1 change in \textbf{each} source, within \textbf{6 months}.
   \end{itemize}
-  \item \textbf{Event month:} the first month NHC indicates a majority-control transfer.
+  \item \textbf{Event month:} first month NHC shows a majority-control transfer.
 \end{itemize}
+\end{frame}
 
-\vspace{0.2em}
+% ---------- Slide 2: Image only (large) ----------
+\begin{frame}[t]{Ownership Change Agreement: NHC vs HCRIS (Cross-tab)}
 \centering
-\includegraphics[width=0.82\linewidth]{C:/Repositories/white-bowblis-nhmc/presentation/crosstab_hybrid_panel00_11_chow_rest.pdf}
+\includegraphics[width=\linewidth,height=0.85\textheight,keepaspectratio]{C:/Repositories/white-bowblis-nhmc/presentation/crosstab_hybrid_panel00_11_chow_rest.pdf}
 \end{frame}
 
 \begin{frame}[t]{Dependent Variables: Nurse Staffing (PBJ) and Analysis Sample}
@@ -274,16 +280,16 @@ Individual & Person & STURM, JOSHUA   & 25\% \\
 \begin{itemize}
   \item We study four staffing measures:
   \begin{itemize}
-    \item RN, LPN, CNA, and total HPPD
+    \item RN, LPN, CNA, and total HPRD
   \end{itemize}
 
   \vspace{0.25em}
-  \item Outcome is \textbf{hours per patient day (HPPD)}: staffing intensity standardized by resident census
+  \item Outcome is \textbf{hours per resident day (HPRD)}: staffing intensity standardized by resident census
 \end{itemize}
 
 \vspace{0.10em}
 \[
-\text{HPPD}_{s,i,t}=\frac{H_{s,i,t}}{\text{PatientDays}_{i,t}}
+\text{HPRD}_{s,i,t}=\frac{H_{s,i,t}}{\text{ResidentDays}_{i,t}}
 \]
 
 \vspace{-0.05em}
@@ -324,7 +330,7 @@ Individual & Person & STURM, JOSHUA   & 25\% \\
   \vspace{0.2em}
   \item \textbf{Key objects:}
   \begin{itemize}
-    \item $Y_{it}$: staffing outcome in \textbf{HPPD} (RN, LPN, CNA, Total)
+    \item $Y_{it}$: staffing outcome in \textbf{HPRD} (RN, LPN, CNA, Total)
     \item $\beta_{\tau}$: effect at event time $\tau$ (relative to the reference period)
     \item $\alpha_i$ facility FE; $\lambda_t$ month FE; $X_{it}$ controls (beds, occupancy, payer mix, ownership type, chain, acuity)
     \item SEs clustered at the facility level
@@ -348,7 +354,7 @@ Individual & Person & STURM, JOSHUA   & 25\% \\
   \item \textbf{Key objects:}
   \begin{itemize}
     \item $Post_{it}=1$ in all months after a change ($=0$ before)
-    \item $\beta$: \textbf{average post-change effect} on staffing (HPPD)
+    \item $\beta$: \textbf{average post-change effect} on staffing (HPRD)
     \item Same fixed effects and controls as the event-study specification
     \item SEs clustered at the facility level
   \end{itemize}
@@ -360,7 +366,7 @@ Individual & Person & STURM, JOSHUA   & 25\% \\
 \begin{itemize}
   \item \textbf{Parallel trends:} absent an ownership change, treated facilities would have followed the same staffing trends as facilities not yet treated.
   \vspace{0.4em}
-  \item \textbf{Why anticipation is plausible in ownership transitions}
+  \item \textbf{Staffing may change in anticipation of a formal ownership change}
   \begin{itemize}
     \item Changes are not instantaneous: negotiations and operational handoffs precede the recorded month
     \item Staffing can adjust during planning (turnover, hiring freezes, renegotiated contracts)
@@ -408,6 +414,7 @@ Individual & Person & STURM, JOSHUA   & 25\% \\
 \setlength{\tabcolsep}{8pt}
 
 \begin{threeparttable}
+\caption{\textbf{Pre-trend Wald Test p-values (Total Staffing)}}
 \begin{tabular}{@{} l cc @{}}
 \toprule
  & \textbf{Total (Levels)} & \textbf{Total (Logs)} \\
@@ -431,28 +438,28 @@ Individual & Person & STURM, JOSHUA   & 25\% \\
 % PART A: MAIN EVENT-STUDY RESULTS (your four figures)
 % =========================================================
 
-\begin{frame}[t]{Main Results: Event Study (RN HPPD)}
+\begin{frame}[t]{Event Study Results (RN HPRD)}
 
 \vspace{0.15em}
 \centering
 \includegraphics[width=0.92\linewidth]{C:/Repositories/white-bowblis-nhmc/outputs/plots/twfe_es_rn_without_anticipation_drop_3_1_.pdf}
 \end{frame}
 
-\begin{frame}[t]{Main Results: Event Study (LPN HPPD)}
+\begin{frame}[t]{Event Study Results (LPN HPRD)}
 
 \vspace{0.15em}
 \centering
 \includegraphics[width=0.92\linewidth]{C:/Repositories/white-bowblis-nhmc/outputs/plots/twfe_es_lpn_without_anticipation_drop_3_1_.pdf}
 \end{frame}
 
-\begin{frame}[t]{Main Results: Event Study (CNA HPPD)}
+\begin{frame}[t]{Event Study Results (CNA HPRD)}
 
 \vspace{0.15em}
 \centering
 \includegraphics[width=0.92\linewidth]{C:/Repositories/white-bowblis-nhmc/outputs/plots/twfe_es_cna_without_anticipation_drop_3_1_.pdf}
 \end{frame}
 
-\begin{frame}[t]{Main Results: Event Study (Total Nursing HPPD)}
+\begin{frame}[t]{Event Study Results (Total Nursing HPRD)}
 
 \vspace{0.15em}
 \centering
@@ -475,12 +482,12 @@ Individual & Person & STURM, JOSHUA   & 25\% \\
 \toprule
  & \textbf{RN} & \textbf{LPN} & \textbf{CNA} & \textbf{Total} \\
 \midrule
-\textbf{HPPD} &
+\textbf{HPRD} &
 \hlest{$-0.032$}{$0.005$}{***} &
 \est{$\phantom{-}0.000$}{$0.006$}{} &
 \est{$-0.054$}{$0.009$}{***} &
 \est{$-0.086$}{$0.013$}{***} \\
-\textbf{Log(HPPD)} &
+\textbf{Log(HPRD)} &
 \hlest{$-0.092$}{$0.016$}{***} &
 \est{$\phantom{-}0.003$}{$0.009$}{} &
 \est{$-0.028$}{$0.005$}{***} &
@@ -490,8 +497,7 @@ Individual & Person & STURM, JOSHUA   & 25\% \\
 
 \begin{tablenotes}[flushleft]
 \footnotesize
-\item \textit{Notes:} Each cell reports the coefficient on \textit{post} with two-way clustered SEs (facility and month) in parentheses.
-Sample: without anticipation ($N=628{,}107$).
+\item \textit{Notes:} Each cell reports the coefficient on \textit{post} with two-way clustered SEs (facility and month) in parentheses. $N=628{,}107$
 \end{tablenotes}
 \end{threeparttable}
 \end{frame}
@@ -508,12 +514,12 @@ Sample: without anticipation ($N=628{,}107$).
 \toprule
  & \textbf{RN} & \textbf{LPN} & \textbf{CNA} & \textbf{Total} \\
 \midrule
-\textbf{HPPD} &
+\textbf{HPRD} &
 \est{$-0.032$}{$0.005$}{***} &
 \hlest{$\phantom{-}0.000$}{$0.006$}{} &
 \est{$-0.054$}{$0.009$}{***} &
 \est{$-0.086$}{$0.013$}{***} \\
-\textbf{Log(HPPD)} &
+\textbf{Log(HPRD)} &
 \est{$-0.092$}{$0.016$}{***} &
 \hlest{$\phantom{-}0.003$}{$0.009$}{} &
 \est{$-0.028$}{$0.005$}{***} &
@@ -523,8 +529,7 @@ Sample: without anticipation ($N=628{,}107$).
 
 \begin{tablenotes}[flushleft]
 \footnotesize
-\item \textit{Notes:} Each cell reports the coefficient on \textit{post} with two-way clustered SEs (facility and month) in parentheses.
-Sample: without anticipation ($N=628{,}107$).
+\item \textit{Notes:} Each cell reports the coefficient on \textit{post} with two-way clustered SEs (facility and month) in parentheses. $N=628{,}107$
 \end{tablenotes}
 \end{threeparttable}
 \end{frame}
@@ -541,12 +546,12 @@ Sample: without anticipation ($N=628{,}107$).
 \toprule
  & \textbf{RN} & \textbf{LPN} & \textbf{CNA} & \textbf{Total} \\
 \midrule
-\textbf{HPPD} &
+\textbf{HPRD} &
 \est{$-0.032$}{$0.005$}{***} &
 \est{$\phantom{-}0.000$}{$0.006$}{} &
 \hlest{$-0.054$}{$0.009$}{***} &
 \est{$-0.086$}{$0.013$}{***} \\
-\textbf{Log(HPPD)} &
+\textbf{Log(HPRD)} &
 \est{$-0.092$}{$0.016$}{***} &
 \est{$\phantom{-}0.003$}{$0.009$}{} &
 \hlest{$-0.028$}{$0.005$}{***} &
@@ -556,8 +561,7 @@ Sample: without anticipation ($N=628{,}107$).
 
 \begin{tablenotes}[flushleft]
 \footnotesize
-\item \textit{Notes:} Each cell reports the coefficient on \textit{post} with two-way clustered SEs (facility and month) in parentheses.
-Sample: without anticipation ($N=628{,}107$).
+\item \textit{Notes:} Each cell reports the coefficient on \textit{post} with two-way clustered SEs (facility and month) in parentheses. $N=628{,}107$
 \end{tablenotes}
 \end{threeparttable}
 \end{frame}
@@ -574,12 +578,12 @@ Sample: without anticipation ($N=628{,}107$).
 \toprule
  & \textbf{RN} & \textbf{LPN} & \textbf{CNA} & \textbf{Total} \\
 \midrule
-\textbf{HPPD} &
+\textbf{HPRD} &
 \est{$-0.032$}{$0.005$}{***} &
 \est{$\phantom{-}0.000$}{$0.006$}{} &
 \est{$-0.054$}{$0.009$}{***} &
 \hlest{$-0.086$}{$0.013$}{***} \\
-\textbf{Log(HPPD)} &
+\textbf{Log(HPRD)} &
 \est{$-0.092$}{$0.016$}{***} &
 \est{$\phantom{-}0.003$}{$0.009$}{} &
 \est{$-0.028$}{$0.005$}{***} &
@@ -589,8 +593,7 @@ Sample: without anticipation ($N=628{,}107$).
 
 \begin{tablenotes}[flushleft]
 \footnotesize
-\item \textit{Notes:} Each cell reports the coefficient on \textit{post} with two-way clustered SEs (facility and month) in parentheses.
-Sample: without anticipation ($N=628{,}107$).
+\item \textit{Notes:} Each cell reports the coefficient on \textit{post} with two-way clustered SEs (facility and month) in parentheses. $N=628{,}107$
 \end{tablenotes}
 \end{threeparttable}
 \end{frame}
@@ -663,10 +666,89 @@ Sample: without anticipation ($N=628{,}107$).
 
 \end{frame}
 
+% ============================================================
+% Discussion + Conclusion slides (lean bullets; you speak details)
+% ============================================================
+
+% ---------- Slide: Mechanism (why LPNs don't move) ----------
+\begin{frame}{Discussion: Why do LPN hours not decline?}
+\begin{itemize}
+  \item Roles differ by scope-of-practice:
+  \begin{itemize}
+    \item \textbf{RN:} clinical oversight \& supervision
+    \item \textbf{CNA:} hands-on ADLs / direct care
+    \item \textbf{LPN:} middle-skill routine clinical + direct care overlap
+  \end{itemize}
+  \item \textbf{Substitution:} LPNs can cover some RN \emph{and} CNA tasks $\Rightarrow$ ``buffer'' when RN/CNA hours fall
+  \item \textbf{Implication:} ownership changes may shift \textbf{skill mix} more than cut all staffing uniformly
+\end{itemize}
+{\footnotesize \vspace{0.3em} \textit{(e.g., Lin 2014; Harrington et al. 2000; Bowblis \& Ghattas 2017)}}
+\end{frame}
+
+% ---------- Slide: Magnitudes / meaningfulness ----------
+\begin{frame}{Magnitude: statistically significant vs meaningful}
+\begin{itemize}
+  \item Baseline, minutes per resident-day:
+  \begin{itemize}
+    \item \textbf{RN:} $-0.032$ HPPD $\approx$ $-1.9$ min
+    \item \textbf{CNA:} $-0.054$ HPPD $\approx$ $-3.2$ min
+    \item \textbf{Total:} $-0.086$ HPPD $\approx$ $-5.2$ min
+  \end{itemize}
+  \item Benchmarks (sample means): \textbf{RN $\sim$7--9\%}, \textbf{Total $\sim$2--3\%} (logs similar)
+  \item \textbf{Key point:} big samples $\Rightarrow$ precise estimates; significance $\neq$ clinical impact
+\end{itemize}
+\end{frame}
+
+% ---------- Slide: Facility size / diffusion ----------
+\begin{frame}{When might it matter? Facility size \& diffusion}
+\begin{itemize}
+  \item Same average change can play out differently across facilities
+  \item Example: Total $-0.086$ HPPD $\Rightarrow$ $8.6$ staff-hours/day at 100 residents
+  \item \textbf{Medium/large:} spread across shifts/residents $\Rightarrow$ likely absorbed
+  \item \textbf{Small:} More likely to affect quality of care
+\end{itemize}
+\end{frame}
+
+% ---------- Slide: Heterogeneity ----------
+\begin{frame}{Heterogeneity: Chains and Covid}
+\begin{itemize}
+  \item \textbf{Non-chain facilities:} larger declines (fewer organizational buffers)
+  \item \textbf{COVID period:} smaller declines (labor market tightness / oversight constraints)
+  \item Suggests effects depend on \textbf{organizational capacity} and \textbf{labor market conditions}
+\end{itemize}
+\end{frame}
+
+% ---------- Slide: Limitations + extension ----------
+\begin{frame}{Limitations and future extensions}
+\begin{itemize}
+  \item \textbf{Timing noise / anticipation:} motivates ``donut" window
+  \item \textbf{Remaining confounding:} ownership may coincide with distress/restructuring
+  \item \textbf{Next step:} link to resident outcomes / quality metrics (deficiencies, rehospitalizations, mortality, stars)
+  \item Distinguish: \textbf{efficiency/task reallocation} vs \textbf{quality-reducing cost cutting}
+\end{itemize}
+\end{frame}
+
+% ---------- Slide: Conclusion ----------
+\begin{frame}{Conclusion}
+\begin{itemize}
+  \item Ownership changes lead to persistent declines in \textbf{RN/CNA/Total} staffing; \textbf{LPN stable}
+  \item Average magnitudes modest (minutes per resident-day; small \% for total)
+  \item Effects larger for \textbf{non-chains} and smaller during \textbf{COVID}
+  \item Takeaway: ownership changes affect care via \textbf{internal production decisions}, even without market-structure change
+\end{itemize}
+\end{frame}
+
+% ---------- Final slide ----------
+\begin{frame}{Thank you}
+\centering
+\Large Questions?
+\end{frame}
+
 \begin{frame}[allowframebreaks]{References}
 \bibliographystyle{apalike} % or whatever you use in the paper
 \bibliography{refs}
 \end{frame}
+
 
 \end{document}
 
