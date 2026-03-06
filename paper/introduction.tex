@@ -68,7 +68,7 @@
 \date{\today}
 \maketitle
 \begin{abstract}
-\noindent Ownership changes are common in U.S. nursing homes, yet their implications for care production remain unclear. Using administrative panel data from the Centers for Medicare and Medicaid Services (CMS) from 2017 to 2024, we study how ownership changes affect nurse staffing, the core input to nursing home care production. We identify control-changing ownership changes and estimate effects using a staggered-adoption difference-in-differences event-study design. We find that ownership changes lead to persistent declines in staffing, concentrated in registered nurses, certified nursing assistants, and total nursing hours per patient day, with little adjustment in licensed practical nurse staffing. Importantly, effects are substantially larger among facilities that are not chain-affiliated and before the COVID-19 pandemic. These patterns indicate that staffing is a central adjustment margin following ownership changes in a regulated setting with limited short-run pricing flexibility, suggesting that consolidation can affect resident welfare through internal production decisions even when facilities remain open. \\
+\noindent Ownership changes are common in U.S. nursing homes, yet their implications for care production remain unclear. Using administrative panel data from the Centers for Medicare and Medicaid Services (CMS) from 2017 to 2024, we study how ownership changes affect nurse staffing, the core input to nursing home care production. We identify control-changing ownership changes and estimate effects using a staggered-adoption difference-in-differences event-study design. We find that ownership changes lead to persistent declines in staffing, concentrated in registered nurses, certified nursing assistants, and total nursing hours per resident day, with little adjustment in licensed practical nurse staffing. Importantly, effects are substantially larger among facilities that are not chain-affiliated and before the COVID-19 pandemic. These patterns indicate that staffing is a central adjustment margin following ownership changes in a regulated setting with limited short-run pricing flexibility, suggesting that consolidation can affect resident welfare through internal production decisions even when facilities remain open. \\
 \vspace{0in}\\
 \noindent\textbf{Keywords:} nursing homes, ownership change, staffing, difference-in-differences\\
 \vspace{0in}\\
@@ -109,7 +109,7 @@ More broadly, ownership changes can also affect the cost structure of facilities
 
 This paper contributes to several related literatures. First, it adds to the growing body of work on ownership changes and provider performance by focusing on internal production decisions, staffing, rather than solely on market structure or prices. Second, it contributes to the nursing home literature by studying how a major organizational event, an ownership change, effects the central input into care, building on evidence that staffing improves quality \citep{lin_2014} and that staffing shortfalls are linked to poor regulatory performance \citep{harrington_et_al_2000}. Third, it complements work on financial incentives and quality in nursing homes by explicitly connecting ownership transitions to staffing adjustments in an environment where financial performance can shape quality investment \citep{park_werner_2011} and where Medicaid reliance constrains staffing resources \citep{bowblis_brunt_2025}. By examining heterogeneity by chain affiliation and by period relative to COVID-19, the paper sheds light on how organizational structure and shifting labor market conditions mediate staffing responses to ownership change.
 
-To answer the research question, we use Centers for Medicare and Medicaid Services (CMS) date to construct a panel of nursing homes across the 48 contiguous U.S. states from January 2017 through June 2024. We measure staffing outcomes using hours per patient day (HPRD) for RNs, LPNs, CNAs, and total nursing hours. We estimate treatment effects using a staggered adoption difference-in-differences event study design. The results show persistent declines in nursing staffing following ownership changes, concentrated among RNs, CNAs, and total nursing hours, with heterogeneity by chain affiliation and the COVID-19 pandemic.
+To answer the research question, we use Centers for Medicare and Medicaid Services (CMS) date to construct a panel of nursing homes across the 48 contiguous U.S. states from January 2017 through June 2024. We measure staffing outcomes using hours per resident day (HPRD) for RNs, LPNs, CNAs, and total nursing hours. We estimate treatment effects using a staggered adoption difference-in-differences event study design. The results show persistent declines in nursing staffing following ownership changes, concentrated among RNs, CNAs, and total nursing hours, with heterogeneity by chain affiliation and the COVID-19 pandemic.
 
 \section{Data and Methods}
 \subsection{Data Sources}
@@ -125,7 +125,7 @@ Our sample is constructed at the facility-year-month level. We create our sample
 
 No single data source provides a comprehensive record of ownership changes for U.S. nursing homes, so we combine information from HCRIS and the NHC Archive in a two-step identification and verification process to identify ownership changes.
 
-The first step was to use the HCRIS data which contains an indicator for an ownership change, and corresponding date, in each cost report after an ownership change. We use this as our flag for ownership changes during the study period. However, these indicators may capture administrative or legal changes that do not reflect meaningful transfers of control. Thus, to verify these changes, our second step was to validate each potential ownership change in the HRCIS data with the NHC Archive data. The NHC Archive data reports ownership shares for each owner associated with a facility on a monthly basis. One issue with the NHC Archive data is that it reports the direct owners and indirect owners of each NH. For example, a limited liability corporation may directly own the NH, but that limited liability corporation is owned by different individuals. Therefore, we identified ownership changes to occur among direct and indirect owners using the following criteria: 
+The first step was to use the HCRIS data which contains an indicator for an ownership change, and corresponding date, in each cost report after an ownership change. We use this as our flag for ownership changes during the study period. However, these indicators may capture administrative or legal changes that do not reflect meaningful transfers of control. Thus, to verify these changes, our second step was to validate each potential ownership change in the HRCIS data with the NHC Archive data. The NHC Archive data reports ownership shares for each owner associated with a facility on a monthly basis. One issue with the NHC Archive data is that it reports the direct owners and indirect owners of each nursing home. For example, a limited liability corporation may directly own the nursing home, but that limited liability corporation is owned by different individuals. Therefore, we identified ownership changes to occur among direct and indirect owners using the following criteria: 
 
 Using this information, we define a change in ownership when a majority of ownership shares turn over between month $t-1$ and month $t$. Intuitively, this captures transactions in which control of the facility changes hands, including cases where a new operator acquires most or all shares. Secondly, when ownership percentages are partially or completely missing, we approximate shares by normalizing any reported percentages and, where necessary, assigning equal weights across remaining owners. To reduce false positives from purely legal restructuring, we do not flag a change in ownership if at least 80 percent of the ownership stake remains within the same surname family (e.g., a change from “Smith Holdings LLC” to “Smith Family Partners LP”). 
 
@@ -133,13 +133,13 @@ Using these verified ownership changes, the analytic sample included Nursing Hom
 
 \subsection{Nursing Staff Levels}
 
-Our main dependent variables are measures of nursing staff levels. The nursing staff types we use in our study are registered nurses (RNs), licensed practical nurses (LPNs), and certified nursing assistants (CNAs). RNs are the most highly trained nursing staff and are responsible for assessment, care planning, medication administration, and supervision of other nursing personnel. LPNs provide basic medical care under the supervision of RNs and physicians, including monitoring vital signs and administering certain treatments. CNAs provide the majority of direct daily care to residents, assisting with activities of daily living. Because these staff types differ in training, scope of practice, and compensation, changes in staffing composition may reflect different organizational responses to ownership changes. We therefore examine each staff category separately, as well as total nursing hours per patient day. 
+Our main dependent variables are measures of nursing staff levels. The nursing staff types we use in our study are registered nurses (RNs), licensed practical nurses (LPNs), and certified nursing assistants (CNAs). RNs are the most highly trained nursing staff and are responsible for assessment, care planning, medication administration, and supervision of other nursing personnel. LPNs provide basic medical care under the supervision of RNs and physicians, including monitoring vital signs and administering certain treatments. CNAs provide the majority of direct daily care to residents, assisting with activities of daily living. Because these staff types differ in training, scope of practice, and compensation, changes in staffing composition may reflect different organizational responses to ownership changes. We therefore examine each staff category separately, as well as total nursing hours per resident day. 
 
-Nursing staff levels were calculated from PBJ data, which reports the number of hours worked and the census for each type of nursing staff on a daily basis. We used this information to calculate nursing staff levels in hours per patient day (HPPD) as follows: for each facility $i$, calendar month $t$, and staff type, we first aggregate daily hours to the monthly level and then compute
+Nursing staff levels were calculated from PBJ data, which reports the number of hours worked and the census for each type of nursing staff on a daily basis. We used this information to calculate nursing staff levels in hours per resident day (HPRD) as follows: for each facility $i$, calendar month $t$, and staff type, we first aggregate daily hours to the monthly level and then compute
 \begin{equation}
-  \text{HPPD}_{i,t} = \frac{H_{i,t}}{R_{i,t}},
+  \text{HPRD}_{i,t} = \frac{H_{i,t}}{R_{i,t}},
 \end{equation}
-where $H_{i,t}$ is the total hours worked by the staff type during month $t$ and $R_{i,t}$ is the total resident days in that facility-month. Total HPPD is defined as the sum of RN, LPN, and CNA HPPD.
+where $H_{i,t}$ is the total hours worked by the staff type during month $t$ and $R_{i,t}$ is the total resident days in that facility-month. Total HPRD is defined as the sum of RN, LPN, and CNA HPRD.
 
 We construct two additional measures of data quality. First, we define a monthly coverage ratio
 \[
@@ -149,7 +149,7 @@ where $\text{DaysReported}_{i,t}$ is the number of distinct days in month $t$ wi
 
 Second, we track gaps in the reporting for each facility. For each observation we compute \textit{gap}, defined as the number of calendar months since the previous PBJ observation for that facility. This captures discontinuities in reporting that may arise from administrative faults or temporary periods of not reporting PBJ system, for example during the COVID-19 period. Our baseline specification places no restriction on reporting gaps, however; we use the gap measure in robustness analyses to assess whether our results are sensitive to excluding observations following reporting gaps.
 
-Finally, we exclude a small number of observations with implausible staffing levels: months in which RN and LPN HPPD are both zero, total HPPD is below 1.5 or above 12, or CNA HPPD exceeds 5.25. These observations are outliers that likely reflect reporting errors rather than genuine variation in staffing. These exclusion criteria align with the criteria outlined in the CMS NHC Technical Users Guide.
+Finally, we exclude a small number of observations with implausible staffing levels: months in which RN and LPN HPRD are both zero, total HPRD is below 1.5 or above 12, or CNA HPRD exceeds 5.25. These observations are outliers that likely reflect reporting errors rather than genuine variation in staffing. These exclusion criteria align with the criteria outlined in the CMS NHC Technical Users Guide.
 
 \subsection{Other Controls}
 
@@ -157,7 +157,7 @@ To account for other factors that are correlated with nursing staff levels, we i
 
 \subsection{Analytic Approach}
 
-If nursing homes changed at the same time we would use classic diff in diff, but since they don't, we dont. In our empirical setting, nursing homes change ownership at different points in time. Recent literature shows that conventional two-way fixed effects (TWFE) estimators can produce biased estimates in staggered adoption settings when treatment effects are heterogeneous over time \citep{goodman_bacon_2021}. In particular, TWFE estimates can place negative weights on certain comparisons and implicitly rely on already treated units as controls. To circumvent this, we employ a staggered adoption event study regression design. This approach allows us to estimate treatment effects before and after ownership changes while assessing pre-trends. Specifically we estimate the following event study regression:
+Ownership changes occur at different dates across facilities in our study period, so identification relies on staggered adoption within a two-way fixed effects event-study framework. Recent literature shows that conventional two-way fixed effects (TWFE) estimators can produce biased estimates in staggered adoption settings when treatment effects are heterogeneous over time \citep{goodman_bacon_2021}. In particular, TWFE estimates can place negative weights on certain comparisons and implicitly rely on already treated units as controls. To circumvent this, we employ a staggered adoption event study regression design. This approach allows us to estimate treatment effects before and after ownership changes while assessing pre-trends. Specifically we estimate the following event study regression:
 
 \begin{equation}
 \label{eq:es_twfe}
@@ -168,7 +168,7 @@ Y_{it}
     \mathbf{1}\!\left\{ \text{event\_time}_{it} = \tau \right\}
     \cdot \text{Treat}_{i}
 +
-X_{it}^{\prime}\gamma
+X_{it}\gamma
 +
 \alpha_i
 +
@@ -177,7 +177,7 @@ X_{it}^{\prime}\gamma
 \varepsilon_{it}.
 \end{equation}
 
-where $Y_{it}$ denotes nursing staff levels in HPPD for facility $i$ in in month $t$. The variable $\text{event\_time}_{it}$ measures the number of months relative to the month of ownership change. Thus, the coefficients $\beta_{\tau}$ capture the evolution of the nursing staff levels before and after ownership transitions. The vector $X_{it}$ includes time-varying facility characteristics, while $\alpha_i$ and $\lambda_t$ denote facility and month fixed effects, respectively. Identification comes from within-facility changes in staffing relative to the timing of ownership transitions, using facilities that have not yet experienced a change as controls.
+where $Y_{it}$ denotes nursing staff levels in HPRD for facility $i$ in in month $t$. The variable $\text{event\_time}_{it}$ measures the number of months relative to the month of ownership change. Thus, the coefficients $\beta_{\tau}$ capture the evolution of the nursing staff levels before and after ownership transitions. The vector $X_{it}$ includes time-varying facility characteristics, while $\alpha_i$ and $\lambda_t$ denote facility and month fixed effects, respectively. Identification comes from within-facility changes in staffing relative to the timing of ownership transitions, using facilities that have not yet experienced a change as controls.
 
 In addition to estimating using levels, we also estimate specifications where the dependent variable is expressed in logarithms, log($Y_{it}$). Log specifications allow coefficients to be interpreted as approximate percentage changes in staffing and reduce sensitivity to differences in baseline staffing levels across facilities. For outcomes with zero staffing in a given month, log specifications are omitted.
 
@@ -203,7 +203,7 @@ While our main specification relies on the event-study design, we also present T
   =
   \beta_{\text{post}}\,\textit{Post}_{it}
   +
-  X_{it}^{\prime}\boldsymbol{\gamma}
+  X_{it}\boldsymbol{\gamma}
   +
   \alpha_i
   +
@@ -213,7 +213,7 @@ While our main specification relies on the event-study design, we also present T
   \label{eq:twfe-post}
 \end{equation}
 
-where $Y_{it}$ denotes nurse staffing outcomes for staff types RN, LPN, CNA, or total HPPD for facility $i$ in month $t$. The indicator $\textit{Post}_{it}$ equals one for all months following an ownership change and zero otherwise. Facility fixed effects $\alpha_i$ absorb time invariant differences across nursing homes, while month fixed effects $\lambda_t$ control for common shocks to staffing over time.
+where $Y_{it}$ denotes nurse staffing outcomes for staff types RN, LPN, CNA, or total HPRD for facility $i$ in month $t$. The indicator $\textit{Post}_{it}$ equals one for all months following an ownership change and zero otherwise. Facility fixed effects $\alpha_i$ absorb time invariant differences across nursing homes, while month fixed effects $\lambda_t$ control for common shocks to staffing over time.
 
 The coefficient $\beta_{\text{post}}$ captures the average change in staffing following an ownership transition, relative to the pre-change period. All specifications include the same time varying covariates as in the event-study models, and standard errors are clustered at the facility level.
 
@@ -240,7 +240,7 @@ Table~\ref{tab:sumstats} reports summary statistics for the main analysis sample
 
 \subsection{Main Results}
 
-Given our main analysis suggests that parallel trends assumption likely holds, Figure~\ref{fig:event_study_main_landscape} presents event study estimates of the effect of ownership changes on nursing staffing outcomes (i.e., Equation~\ref{eq:es_twfe}). Following an ownership transition, staffing declines persist for many periods, with the largest and most precise effects occurring for registered nurses (RN), certified nursing assistants (CNA), and total nursing hours per patient day.
+Given our main analysis suggests that parallel trends assumption likely holds, Figure~\ref{fig:event_study_main_landscape} presents event study estimates of the effect of ownership changes on nursing staffing outcomes (i.e., Equation~\ref{eq:es_twfe}). Following an ownership transition, staffing declines persist for many periods, with the largest and most precise effects occurring for registered nurses (RN), certified nursing assistants (CNA), and total nursing hours per resident day.
 
 RN staffing declines immediately following ownership changes and remains far below pre-transition levels throughout the post-treatment period. CNA staffing exhibits a similar but slightly smaller decline, while total nursing hours mirror the combined reductions across staff types. In contrast, LPN staffing shows limited and statistically insignificant changes over time. These dynamic patterns indicate that ownership transitions lead to sustained reductions in staffing rather than short run adjustments.
 
@@ -279,7 +279,7 @@ RN staffing declines immediately following ownership changes and remains far bel
 
 \caption{
 Dynamic Effects of Ownership Change on Nursing Staffing.
-Event study estimates of the effect of a change in ownership on nursing staff levels in hours per patient day (HPPD).
+Event study estimates of the effect of a change in ownership on nursing staff levels in hours per resident day (HPRD).
 Points show coefficient estimates relative to the reference period $\tau=-4$ ;
 vertical bars denote 95\% confidence intervals.
 The three months prior to the ownership change ($\tau=-3,-2,-1$) are excluded.
@@ -295,26 +295,26 @@ All specifications include control variables and facility and month fixed effect
 \normalsize
 \doublespacing
 
-To summarize these dynamic effects with a single average treatment estimate, Table~\ref{tab:twfe-post-full} reports two-way fixed effects estimates of the ownership change effect (i.e., Equation~\ref{eq:twfe-post}). Panel A reports results in levels, while Panel B reports logged results. Consistent with the event study results, ownership changes lead to meaningful reductions in staffing levels. RN staffing declines by approximately 0.03 hours per patient day (roughly 9 percent), CNA staffing falls by about 0.05 hours (approximately 3 percent), and total staffing decreases by 0.08 hours per patient day (roughly 3 percent). LPN staffing shows no statistically significant change. Estimates are nearly identical whether the observations for the three month period before the ownership change occurred is included or excluded from the model.
+To summarize these dynamic effects with a single average treatment estimate, Table~\ref{tab:twfe-post-full} reports two-way fixed effects estimates of the ownership change effect (i.e., Equation~\ref{eq:twfe-post}). Panel A reports results in levels, while Panel B reports logged results. Consistent with the event study results, ownership changes lead to meaningful reductions in staffing levels. RN staffing declines by approximately 0.03 hours per resident day (roughly 9 percent), CNA staffing falls by about 0.05 hours (approximately 3 percent), and total staffing decreases by 0.08 hours per resident day (roughly 3 percent). LPN staffing shows no statistically significant change. Estimates are nearly identical whether the observations for the three month period before the ownership change occurred is included or excluded from the model.
 
 \input{C:/Repositories/white-bowblis-nhmc/outputs/tables/twfe_post_full.tex}
 \FloatBarrier
 
 \subsection{Effects Before and During Covid-19 Pandemic}
 
-Table~\ref{tab:twfe-prepost} examines whether these effects differ before and after the COVID-19 pandemic. The magnitude of the decline is roughly halved in the post pandemic period for RN, CNA, and total HPPD, suggesting that pandemic induced shifts in labor markets and staffing substantially reduced the impact of ownership transitions.
+Table~\ref{tab:twfe-prepost} examines whether these effects differ before and after the COVID-19 pandemic. The magnitude of the decline is roughly halved in the post pandemic period for RN, CNA, and total HPRD, suggesting that pandemic induced shifts in labor markets and staffing substantially reduced the impact of ownership transitions.
 
 \input{C:/Repositories/white-bowblis-nhmc/outputs/tables/twfe_prepost.tex}
 \FloatBarrier
 
 \subsection{Effects by Chain Status}
 
-Table~\ref{tab:twfe-chain-nonchain} compares effects for facilities that began the study period as part of a chain and those that did not. Staffing reductions are noticeably larger among non chain facilities. CNA HPPD falls by 0.034 hours in chain facilities and by 0.079 hours in non chains, and total HPPD declines by 0.062 versus 0.113 hours, respectively. On a log scale, these differences translate into substantially larger percentage declines for non-chain facilities. LPN staffing again shows minimal movement.
+Table~\ref{tab:twfe-chain-nonchain} compares effects for facilities that began the study period as part of a chain and those that did not. Staffing reductions are noticeably larger among non chain facilities. CNA HPRD falls by 0.034 hours in chain facilities and by 0.079 hours in non chains, and total HPRD declines by 0.062 versus 0.113 hours, respectively. On a log scale, these differences translate into substantially larger percentage declines for non-chain facilities. LPN staffing again shows minimal movement.
 
 \input{C:/Repositories/white-bowblis-nhmc/outputs/tables/twfe_chain_nonchain.tex}
 \FloatBarrier
 
-Overall, ownership changes lead to sizable and persistent reductions in nursing staffing, with effects concentrated among RN, CNA, and total hours per patient day. These reductions are larger prior to the COVID-19 pandemic and among facilities that were not part of a chain at baseline. Together, the event study and TWFE results indicate that ownership transitions systematically worsen staffing conditions in nursing homes rather than inducing temporary adjustments.
+Overall, ownership changes lead to sizable and persistent reductions in nursing staffing, with effects concentrated among RN, CNA, and total hours per resident day. These reductions are larger prior to the COVID-19 pandemic and among facilities that were not part of a chain at baseline. Together, the event study and TWFE results indicate that ownership transitions systematically worsen staffing conditions in nursing homes rather than inducing temporary adjustments.
 
 \subsection{Robustness}
 
@@ -338,7 +338,7 @@ Because staffing data is occasionally missing or reported with gaps, we examine 
 
 \section{Discussion}\label{sec:discussion}
 
-We find that ownership changes are followed by persistent reductions in nurse staffing, concentrated in RN hours, CNA hours, and total nursing hours per patient day. In a regulated sector with limited short-run pricing flexibility, staffing is one of the most immediately adjustable margins, and changes in staffing provide a direct window into how new owners reshape internal production decisions. The patterns in the event-study estimates, together with the robustness of results across alternative specifications, suggest that these changes reflect sustained operational adjustments rather than short changes around the ownership change.
+We find that ownership changes are followed by persistent reductions in nurse staffing, concentrated in RN hours, CNA hours, and total nursing hours per resident day. In a regulated sector with limited short-run pricing flexibility, staffing is one of the most immediately adjustable margins, and changes in staffing provide a direct window into how new owners reshape internal production decisions. The patterns in the event-study estimates, together with the robustness of results across alternative specifications, suggest that these changes reflect sustained operational adjustments rather than short changes around the ownership change.
 
 \subsection{No declines in LPN hours}
 
@@ -348,12 +348,12 @@ LPNs provide the most feasible substitution margin when new owners seek to decre
 
 \subsection{Are the staffing reductions meaningful?}
 
-Although the estimated staffing reductions are statistically precise, an important question is whether they are large in economic or clinical terms. Benchmarking the estimates against baseline staffing levels provides context. In our sample, from table~\ref{tab:sumstats} mean staffing levels are 0.427 RN HPPD, 0.796 LPN HPPD, 2.100 CNA HPPD, and 3.324 total HPPD.
-In the baseline TWFE specification, an ownership change reduces RN staffing by 0.032 HPPD, CNA staffing by 0.054 HPPD, and total staffing by 0.086 HPPD, with no statistically significant change in LPN staffing.
+Although the estimated staffing reductions are statistically precise, an important question is whether they are large in economic or clinical terms. Benchmarking the estimates against baseline staffing levels provides context. In our sample, from table~\ref{tab:sumstats} mean staffing levels are 0.427 RN HPRD, 0.796 LPN HPRD, 2.100 CNA HPRD, and 3.324 total HPRD.
+In the baseline TWFE specification, an ownership change reduces RN staffing by 0.032 HPRD, CNA staffing by 0.054 HPRD, and total staffing by 0.086 HPRD, with no statistically significant change in LPN staffing.
 
-These effects correspond to approximately a 7.5\% decline in RN hours ($0.032/0.427$), a 2.6\% decline in CNA hours ($0.054/2.100$), and a 2.6\% decline in total nursing hours ($0.086/3.324$). The log specifications yield closely aligned percentage changes: RN log(HPPD) falls by 0.092 (about 9\%), CNA log(HPPD) falls by 0.028 (about 2.8\%), and total log(HPPD) falls by 0.026 (about 2.6\%). The consistency between level-based benchmarks and log-based estimates strengthens the interpretation that staffing declines are modest in proportional terms for total hours, with a larger proportional reduction concentrated in RN time.
+These effects correspond to approximately a 7.5\% decline in RN hours ($0.032/0.427$), a 2.6\% decline in CNA hours ($0.054/2.100$), and a 2.6\% decline in total nursing hours ($0.086/3.324$). The log specifications yield closely aligned percentage changes: RN log(HPRD) falls by 0.092 (about 9\%), CNA log(HPRD) falls by 0.028 (about 2.8\%), and total log(HPRD) falls by 0.026 (about 2.6\%). The consistency between level-based benchmarks and log-based estimates strengthens the interpretation that staffing declines are modest in proportional terms for total hours, with a larger proportional reduction concentrated in RN time.
 
-To interpret magnitudes intuitevely, note that 0.032 RN HPPD corresponds to about $0.032 \times 60 \approx 1.9$ fewer RN minutes per resident-day, while 0.054 CNA HPPD corresponds to about $3.2$ fewer CNA minutes per resident-day. The 0.086 reduction in total HPPD corresponds to about $5.2$ fewer total nursing minutes per resident-day. These per-resident changes are small in isolation, and one reason they are estimated with high statistical significance is the very large panel of facility-month observations. In other words, statistical precision here reflects sample size and repeated observations, not necessarily large changes in day-to-day care time.
+To interpret magnitudes intuitevely, note that 0.032 RN HPRD corresponds to about $0.032 \times 60 \approx 1.9$ fewer RN minutes per resident-day, while 0.054 CNA HPRD corresponds to about $3.2$ fewer CNA minutes per resident-day. The 0.086 reduction in total HPRD corresponds to about $5.2$ fewer total nursing minutes per resident-day. These per-resident changes are small in isolation, and one reason they are estimated with high statistical significance is the very large panel of facility-month observations. In other words, statistical precision here reflects sample size and repeated observations, not necessarily large changes in day-to-day care time.
 
 In a facility with roughly 100 residents, this corresponds mechanically to about $0.086 \times 100 = 8.6$ fewer nursing staff-hours per day. However, in medium and large facilities this reduction is typically diffused across many residents and across multiple shifts. Put differently, average minutes per resident-day can decline while the realized resident-level impact remains difficult to detect if facilities reallocate tasks (particularly toward LPNs) or trim time in ways that do not affect measured outcomes. By contrast, in smaller facilities with fewer staff on duty per shift and less slack, comparable reductions may be more likely to bind and to concentrate into noticeable gaps in coverage for particular residents. These considerations underscore why statistically precise estimates of small average changes do not necessarily imply large welfare effects, and why linking ownership transitions to resident outcomes is a natural next step for evaluating whether these staffing reductions reflect efficiency-enhancing reorganization or quality-reducing cost containment.
 

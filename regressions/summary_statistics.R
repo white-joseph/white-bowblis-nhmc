@@ -83,10 +83,10 @@ digits_for <- function(var) {
 }
 
 pretty_name <- c(
-  rn_hppd        = "RN HPPD",
-  lpn_hppd       = "LPN HPPD",
-  cna_hppd       = "CNA HPPD",
-  total_hppd     = "Total HPPD",
+  rn_hppd        = "RN HPRD",
+  lpn_hppd       = "LPN HPRD",
+  cna_hppd       = "CNA HPRD",
+  total_hppd     = "Total HPRD",
   
   government     = "Government (dummy)",
   non_profit     = "Non-profit (dummy)",
@@ -155,9 +155,9 @@ avgm_str   <- fmt_dec(overview$avg_months_per_ccn, 1)
 # ---- Expanded, standalone notes with abbreviations ----
 notes_line <- paste0(
   "\\item \\textit{Notes:} The unit of observation is facility--month. ",
-  "HPPD denotes hours per patient day. ",
+  "HPRD denotes hours per resident day. ",
   "RN, LPN, and CNA denote registered nurses, licensed practical nurses, and certified nursing assistants, respectively. ",
-  "Total HPPD is the sum of RN, LPN, and CNA HPPD. ",
+  "Total HPRD is the sum of RN, LPN, and CNA HPRD. ",
   "Occupancy rate is the ratio of residents to certified beds (percent). ",
   "\\% Medicare and \\% Medicaid are the shares of residents covered by Medicare and Medicaid, respectively. ",
   "Government and Non-profit are ownership-type indicator variables (for-profit omitted category). ",
