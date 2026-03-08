@@ -23,7 +23,7 @@
 
 \usetheme{Boadilla}
 \usecolortheme{whale}
-\title[Title]{Labor Input Responses to Ownership Changes: Evidence from U.S. Nursing Homes}
+\title[Ownership Changes and Staffing]{Labor Input Responses to Ownership Changes: Evidence from U.S. Nursing Homes}
 \author{Joseph White}
 \institute{Miami University}
 \date{\today}
@@ -32,169 +32,237 @@
 \frame{\titlepage}
 
 % =========================================================
-% INTRODUCTION + BACKGROUND (RQ EARLIER)
+% SLIDE 1
 % =========================================================
 
 \begin{frame}[t]{Motivation: Ownership Changes Beyond Market Structure}
-\begin{itemize}%[<+->]
-  \item Ownership changes are very common
-  
-  \begin{itemize}
-  	\item (1) Mergers and Acquisitions
-  	\item (2) New Management
-  \end{itemize}
-  \item This second type of changes does \textbf{not} change the set of providers in a market.
-  \item Instead, effects operate through \textbf{internal production decisions}
-  \item This second type is understudied in the literature and we study this issue in \textbf{nursing homes}
+
+\begin{itemize}[<+->]
+	\item Ownership changes are very common:
+	\setlength{\itemsep}{1.2em}
+
+	\begin{itemize}
+		\setlength{\itemsep}{0.6em}
+		\item[(i)] Mergers and acquisitions
+		\item[(ii)] New management
+	\end{itemize}
+	
+	\item This second type of change does \textbf{not} alter the set of providers in a market.
+	\item Instead, effects operate through \textbf{internal production decisions}.
+	\item This type of change is understudied in the literature, and we examine it in \textbf{nursing homes}.
+
 \end{itemize}
 \end{frame}
+
+% =========================================================
+% SLIDE 2
+% =========================================================
 
 \begin{frame}{Ownership Changes Over Time (Quarterly)}
 \centering
 \vspace{0.2em}
+
 \includegraphics[width=0.92\linewidth]{C:/Repositories/white-bowblis-nhmc/presentation/validated_changes_by_quarter.pdf}
 
 \vspace{0.4em}
 \end{frame}
 
+% =========================================================
+% SLIDE 3
+% =========================================================
+
 \begin{frame}[t]{Why Nursing Homes?}
-\begin{itemize}%[<+->]
-  \item There are about 15,000 nursing homes in the U.S. that serve over 4 million people annually
-  \item 56\% of adults aged 57 to 61 will spend at least one night in a nursing home during their lifetime
-  \item Nursing home care is labor-intensive and heavily regulated.
-  \item \textbf{Nursing labor is the main input} into care and a major operating cost.
-  \item Staffing is a natural adjustment margin after ownership change, but it’s constrained by:
-  \begin{itemize}
-    \item compliance,
-    \item resident outcomes,
-    \item demand/occupancy
-  \end{itemize}
+
+\begin{itemize}[<+->]
+	\item There are about 15,000 nursing homes in the U.S. that serve over 4 million people annually
+	\vfill
+	\item 56\% of adults aged 57 to 61 will spend at least one night in a nursing home during their lifetime
+	\vfill
+	\item Nursing home care is labor-intensive and heavily regulated.
+	\vfill
+	\item \textbf{Nursing labor is the main input} into care and a major operating cost.
+	\vfill
+	\item Staffing is a natural adjustment margin after ownership change, but it’s constrained by:
+	\vfill
+	
+	\begin{itemize}
+		\item compliance,
+		\item resident outcomes,
+		\item demand/occupancy
+	\end{itemize}
+
 \end{itemize}
 \end{frame}
 
 \begin{frame}[t]{Staffing is Important}
 
-\begin{itemize}
-  \item Staffing is the primary input into nursing home care, so ownership changes can affect quality even when market structure is unchanged.
-  \item Higher staffing levels are linked to better quality measures in nursing homes,
-  including fewer deficiency citations \citep{harrington_et_al_2000}.
-  \item Causal evidence shows that increasing nurse staffing improves measured nursing home quality
-  \citep{lin_2014}.
-  \item If ownership changes shift staffing decisions, they can translate into meaningful differences in care quality.
+\begin{itemize}[<+->]
+	\setlength{\itemsep}{0.9em}
+	\item Staffing is the primary input into nursing home care, so ownership changes can affect quality even 			when market structure is unchanged.
+	
+	\item Higher staffing levels are linked to better quality measures in nursing homes,
+	including fewer deficiency citations \citep{harrington_et_al_2000}.
+	
+	\item Causal evidence shows that increasing nurse staffing improves measured nursing home quality 					\citep{lin_2014}.
+	
+	\item If ownership changes shift staffing decisions, they can translate into meaningful differences in care 		quality.
+\end{itemize}
+
+\end{frame}
+
+\begin{frame}[t]{Research Question}
+
+\begin{itemize}[<+->]
+	\item \textbf{Research question:} How do nurse staffing levels respond to ownership changes in nursing 				homes?
+	
+	\begin{itemize}
+		\setlength{\itemsep}{1em}
+		\item Do responses differ across staff type?
+		\item Do responses differ if a nursing home is part of a chain or not?
+		\item Do responses differ pre vs post-pandemic?
+	\end{itemize}
+	
 \end{itemize}
 \end{frame}
 
-\begin{frame}{Research Question}
-\begin{itemize}%[<+->]
-  \item \textbf{Research question:} How do nurse staffing levels respond to ownership changes in nursing homes?
-  \begin{itemize}
-  \item Do responses differ across staff type?
-  \item Do responses differ if a nursing home is part of a chain or not?
-  \item Do responses differ pre vs post-pandemic?
-  \end{itemize}
+\begin{frame}[t]{Nursing Staff Types}
+
+\begin{itemize}[<+->]
+	\setlength{\itemsep}{0.7em}
+
+	\item \textbf{Nursing homes staff care using three main nursing roles:}
+	\begin{itemize}
+		\setlength{\itemsep}{0.25em}
+		\item \textbf{Registered Nurses (RNs):} clinical assessment, care planning, meds, supervision
+		\item \textbf{Licensed Practical Nurses (LPNs):} routine clinical tasks, meds under RN oversight
+		\item \textbf{Certified Nursing Assistants (CNAs):} direct daily care
+		\item \textbf{Total:} RN + LPN + CNA
+	\end{itemize}
+
+	\vspace{0.25em}
+	\item \textbf{Staffing measure: Hours Per Resident Day (HPRD)}
+	\begin{itemize}
+		\setlength{\itemsep}{0.2em}
+		\item Standardizes staffing by resident census
+		\item Lets us compare facilities and months on a common scale
+	\end{itemize}
+
+	\vspace{0.25em}
+	\item Ownership change can affect both \textbf{levels} and \textbf{mix} which sets up cost-quality trade off.
 \end{itemize}
 \end{frame}
 
-\begin{frame}[t]{Nursing Staff Types and Staffing Measurement}
-\begin{itemize}%[<+->]
-  \item \textbf{Nursing homes staff care using three main nursing roles:}
-  \begin{itemize}
-    \item \textbf{RN (Registered Nurses):} clinical assessment, care planning, meds, supervision
-    \item \textbf{LPN (Licensed Practical Nurses):} routine clinical tasks, meds under RN oversight
-    \item \textbf{CNA (Certified Nursing Assistants):} direct daily care
-    \item \textbf{Total nursing:} RN + LPN + CNA
-  \end{itemize}
+\begin{frame}[t]{Cost--Quality Trade Off}
 
-  \vspace{0.25em}
-  \item \textbf{Staffing measure: Hours Per Resident Day (HPRD)}
-  \begin{itemize}
-    \item Standardizes staffing by resident census (staffing intensity, not raw hours)
-    \item Lets us compare facilities and months on a common scale
-  \end{itemize}
+\begin{itemize}[<+->]
+	\setlength{\itemsep}{0.8em}
+	\item Owners can raise quality through two channels:
+	\begin{itemize}
+		\setlength{\itemsep}{0.25em}
+		\item \textbf{Quantity:} increasing total nursing hours (HPRD)
+		\item \textbf{Skill mix:} shifting hours toward more clinically trained staff
+	\end{itemize}
+	
+	\item \textbf{Both margins raise costs} because nursing labor is a major operating expense.
+	\item \textbf{But short-run revenues are relatively fixed}, so staffing choices map into a \textbf{cost--quality 		tradeoff}.
+	\item \textbf{Implication:} an ownership change that shifts objectives or constraints can move a facility 				along this tradeoff.
+	{\footnotesize(\citealp{park_werner_2011}; \citealp{bowblis_brunt_2025})}
 
-  \vspace{0.25em}
-  \item Ownership change can affect both \textbf{levels} (total HPRD) and \textbf{mix} (RN/LPN/CNA composition) which sets up cost-quality tradeoff.
 \end{itemize}
 \end{frame}
 
-\begin{frame}[t]{The Cost--Quality Tradeoff in Staffing}
-\begin{itemize}%[<+->]
-  \item Owners can raise quality through two channels:
-  \begin{itemize}
-    \item \textbf{Quantity (levels):} increasing total nursing hours (HPRD)
-    \item \textbf{Skill mix:} shifting hours toward more clinically trained staff (e.g., more RN oversight)
-  \end{itemize}
-  \item \textbf{Both margins raise costs} because nursing labor is a major operating expense.
-  \item \textbf{But short-run revenues are relatively fixed} (public payers, limited pricing flexibility), so staffing choices map into a \textbf{cost--quality tradeoff}.
-  \item \textbf{Implication:} an ownership change that shifts objectives or constraints can move a facility along this tradeoff.%
-  \ \ \footnotesize(\citealp{park_werner_2011}; \citealp{bowblis_brunt_2025})
-\end{itemize}
-\end{frame}
+\begin{frame}[t]{Why Staffing Could Rise or Fall}
 
-\begin{frame}[t]{Why Staffing Could Rise or Fall After a Transition}
-\begin{itemize}%[<+->]
-  \item Ownership changes can shift \textbf{constraints} and \textbf{objectives} $\Rightarrow$ staffing effects are ambiguous.
-  \vspace{0.20em}
+\begin{itemize}[<+->]
+	\setlength{\itemsep}{0.8em}
+	\item Ownership changes can shift \textbf{constraints} and \textbf{objectives} $\Rightarrow$ staffing effects are 		ambiguous.
+	\vspace{0.20em}
 
-  \item \textbf{Scenario 1: Cost pressure $\Rightarrow$ staffing falls}
-  \begin{itemize}
-    \item Debt service / tighter targets $\Rightarrow$ cut labor costs (lower HPRD or cheaper mix)
-  \end{itemize}
-  \vspace{0.10em}
+	\item \textbf{Scenario 1: Cost pressure $\Rightarrow$ staffing falls}
+	\begin{itemize}
+		\setlength{\itemsep}{0.2em}
+		\item Debt service / tighter targets $\Rightarrow$ cut labor costs
+	\end{itemize}
+	\vspace{0.10em}
 
-  \item \textbf{Scenario 2: Quality/compliance push $\Rightarrow$ staffing rises}
-  \begin{itemize}
-    \item Invest in staffing to improve oversight / survey performance (higher HPRD or better mix)
-  \end{itemize}
-  \vspace{0.10em}
+	\item \textbf{Scenario 2: Quality/compliance push}
+	\begin{itemize}
+		\setlength{\itemsep}{0.2em}
+		\item Invest in staffing to improve oversight / survey performance
+	\end{itemize}
+	\vspace{0.10em}
 
-  \item \textbf{Scenario 3: Reorganization $\Rightarrow$ mix changes}
-  \begin{itemize}
-    \item Standardized staffing model shifts RN/LPN/CNA composition; total hours may be similar
-  \end{itemize}
+	\item \textbf{Scenario 3: Reorganization}
+	\begin{itemize}
+		\setlength{\itemsep}{0.2em}
+		\item Standardized staffing model shifts RN/LPN/CNA composition; total hours may be similar
+	\end{itemize}
 
 \end{itemize}
 \end{frame}
 
 \begin{frame}[t]{Data Sources and Unit of Observation}
-\begin{itemize}
-  \item \textbf{Healthcare Cost Report Information System (HCRIS)}
-  \begin{itemize}
-    \item Annual cost report information
-    \item Contains information about costs, revenue, financial data and dates of ownership change
-  \end{itemize}
-  \item \textbf{Nursing Home Compare (NHC) Archive}
-  \begin{itemize}
-    \item Contains ownership information as well as facility characteristics
-	\end{itemize}
-	\item \textbf{Payroll Based Journal (PBJ)}
+
+\begin{itemize}[<+->]
+	
+	\setlength{\itemsep}{0.8em}
+	\item \textbf{Healthcare Cost Report Information System (HCRIS)}
+	
 	\begin{itemize}
-    \item Payroll-reported nurse staffing hours by staff type
-    \item Used to construct outcome variables
+		\setlength{\itemsep}{0.2em}
+		\item Annual cost report information
+		\item Contains information about costs, revenue, financial data and dates of ownership change
+	\end{itemize}
+	
+	\item \textbf{Nursing Home Compare (NHC) Archive}
+	
+	\begin{itemize}
+		\setlength{\itemsep}{0.2em}
+		\item Contains ownership information as well as facility characteristics
+	\end{itemize}
+	
+	\item \textbf{Payroll Based Journal (PBJ)}
+	
+	\begin{itemize}
+		\setlength{\itemsep}{0.2em}
+		\item Payroll-reported nurse staffing hours by staff type
+		\item Used to construct outcome variables
 	\end{itemize}
 
-  \item \textbf{Facility-month panel, 48 contiguous states, Jan 2017 -- Jun 2024}
+	\item \textbf{Facility-month panel, 48 contiguous states, Jan 2017 -- Jun 2024}
+
 \end{itemize}
 \end{frame}
 
 \begin{frame}[t]{Identifying Ownership Changes}
+
 \small
-\begin{itemize}
-	\item We identify ownership changes using a 3 step process
-  \item \textbf{Step 1 (HCRIS):} includes a variable indicating \textbf{whether and when} an ownership change occurred.
-  \vspace{0.35em}
-  \item \textbf{Challenge:} ownership is often \textbf{layered} (organizations owning organizations), so an administrative flag may not map cleanly to an \textbf{economic change in control}.
-  \vspace{0.35em}
-  \item HCRIS might not contain all ownership changes, or it may contain those with no meaningful economic change, so we have to verify using the NHC Archive data.
+\begin{itemize}[<+->]
+	\setlength{\itemsep}{0.75em}
+	\item \textbf{Challenge:} ownership is often \textbf{layered}, so an administrative “change” may not reflect a true \textbf{transfer of economic control}.
+	\vspace{0.35em}
+
+	\item We identify ownership changes using a \textbf{3-step process}.
+	\vspace{0.15em}
+
+	\item \textbf{Step 1:} HCRIS includes a variable indicating \textbf{whether and when} an 								ownership change occurred.
+	
+	\begin{itemize}
+	\setlength{\itemsep}{0.2em}
+		\item Useful for identifying \textbf{candidate events}, but the flag may be incomplete or capture legal 				restructuring rather than an economic change.
+	\end{itemize}
+	\vspace{0.20em}
+
+	\item Therefore, we have to use \textbf{NHC ownership shares} to verify and date whether control						actually changes.
+	
 \end{itemize}
-
-
 \end{frame}
 
 \begin{frame}[t]{Ownership Level Challenge}
 \small
 \begin{itemize}
-  \item We identify ownership changes at the \textbf{highest level of ownership present}
+	\item \textbf{NHC}
+	\item We identify ownership changes at the \textbf{highest level of ownership present}
 \end{itemize}
 
 \vspace{0.5em}
@@ -220,164 +288,190 @@ Individual & Person & STURM, JOSHUA   & 25\% \\
 \end{frame}
 
 \begin{frame}[t]{Identifying Ownership Changes}
+
 \small
 \begin{itemize}
-  \item \textbf{Step 2: Validate \& date using NHC}
-  \begin{itemize}
-    \item Track ownership shares over time within the highest reported ownership level
-    \item Define a change when \textbf{majority control (50\%)} transfers between $t-1$ and $t$
-    \item We do not flag changes driven by name changes or within-family reclassification
+	\item \textbf{Step 2: Validate \& date using NHC}
+	
+	\begin{itemize}[<+->]
+		\item Track shares over time within the highest reported ownership level
+		\item Define a change when \textbf{majority control (50\%)} transfers between $t-1$ and $t$
+		\item We do not flag changes driven by name changes or within-family reclassification
   \end{itemize}
 
-  \vspace{0.35em}
+	\vspace{0.35em}
+	
+	\pause
 
-  \item \textbf{Example from the data:}
-  \begin{itemize}
-    \item \textit{Before:}
-    \begin{itemize}
-      \item ESTES JAMES (84\%)
-      \item BURCHFIELD JOHN (10\%)
-      \item LEE CLAUDE (6\%)
-    \end{itemize}
+	\item \textbf{Example from the data:}
+	
+	\begin{itemize}
+		\item \textit{Before:}
+		
+		\begin{itemize}
+			\item ESTES JAMES (84\%)
+			\item BURCHFIELD JOHN (10\%)
+			\item LEE CLAUDE (6\%)
+		\end{itemize}
 
-    \item \textit{After:}
-    \begin{itemize}
-      \item JAMES N ESTES JR FAMILY DYNASTY TR NO 2 (50\%)
-      \item JENNIFER E AGEE FAMILY DYNASTY TR NO 2 (50\%)
-    \end{itemize}
+	\item \textit{After:}
+	
+		\begin{itemize}
+			\item JAMES N ESTES JR FAMILY DYNASTY TR NO 2 (50\%)
+			\item JENNIFER E AGEE FAMILY DYNASTY TR NO 2 (50\%)
+		\end{itemize}
 
-    \item We do \textbf{not} treat this as a meaningful ownership change
-  \end{itemize}
+	\item We do \textbf{not} treat this as a meaningful ownership change
+	\end{itemize}
+	
 \end{itemize}
 \end{frame}
 
-% ============================================================
-% Option 1 (recommended): Two slides — clean + big image
-% ============================================================
+\begin{frame}[t]{Ownership Change Agreement}
 
-% ---------- Slide 1: Text only ----------
-\begin{frame}[t]{Ownership Change Agreement: NHC vs HCRIS}
 \small
-\begin{itemize}
-  \item \textbf{Validate HCRIS ownership-change flags using NHC ownership records.}
-  \item We keep facilities only if:
-  \begin{itemize}
-    \item \textbf{Never-treated:} 0 changes in \textbf{both} NHC and HCRIS, or
-    \item \textbf{Single change:} exactly 1 change in \textbf{each} source, within \textbf{6 months}.
-  \end{itemize}
-  \item \textbf{Event month:} first month NHC shows a majority-control transfer.
+\begin{itemize}[<+->]
+	\setlength{\itemsep}{0.8em}
+	\item \textbf{Step 3: Validate between HCRIS and NHC.}
+	\item We keep facilities only if:
+	
+	\begin{itemize}
+		\setlength{\itemsep}{0.25em}
+		\item \textbf{Never-treated:} 0 changes in \textbf{both} NHC and HCRIS, or
+		\item \textbf{Single change:} exactly 1 change in \textbf{each} dataset, within \textbf{6 months}.
+	\end{itemize}
+	
+	\item \textbf{Event month:} first month NHC shows a majority-control transfer.
+
 \end{itemize}
 \end{frame}
 
-% ---------- Slide 2: Image only (large) ----------
-\begin{frame}[t]{Ownership Change Agreement: NHC vs HCRIS (Cross-tab)}
+\begin{frame}[t]{Cross-tab of NHC \& HCRIS}
+
 \centering
 \includegraphics[width=\linewidth,height=0.85\textheight,keepaspectratio]{C:/Repositories/white-bowblis-nhmc/presentation/crosstab_hybrid_panel00_11_chow_rest.pdf}
 \end{frame}
 
-\begin{frame}[t]{Dependent Variables: Nurse Staffing (PBJ) and Analysis Sample}
+\begin{frame}[t]{Dependent Variables: Nurse Staffing (PBJ) and Sample}
+
 \small
 \begin{itemize}
-  \item We study four staffing measures:
-  \begin{itemize}
-    \item RN, LPN, CNA, and total HPRD
-  \end{itemize}
+	\item We study four staffing measures:
+	
+	\begin{itemize}
+		\item RN, LPN, CNA, and total HPRD
+	\end{itemize}
 
-  \vspace{0.25em}
-  \item Outcome is \textbf{hours per resident day (HPRD)}: staffing intensity standardized by resident census
+	\vspace{0.25em}
+	\item Outcome is \textbf{hours per resident day (HPRD)}: staffing intensity standardized by resident census
 \end{itemize}
 
 \vspace{0.10em}
 \[
-\text{HPRD}_{s,i,t}=\frac{H_{s,i,t}}{\text{ResidentDays}_{i,t}}
+\text{HPRD}_{s,i,t}=\frac{\text{TotalHours}_{s,i,t}}{\text{ResidentDays}_{i,t}}
 \]
 
 \vspace{-0.05em}
+
+\pause
+
 \begin{itemize}
-  \item \textbf{CMS implausible staffing exclusions:}
-  \begin{itemize}
-    \item RN HPPD $=0$ \textbf{and} LPN HPPD $=0$
-    \item Total HPPD $<1.5$ or $>12$
-    \item CNA HPPD $>5.25$
-  \end{itemize}
+	\item \textbf{CMS implausible staffing exclusions:}
+	\begin{itemize}
+		\item RN HPRD $=0$ \textbf{and} LPN HPRD $=0$
+		\item Total HPRD $<1.5$ or $>12$
+		\item CNA HPRD $>5.25$
+	\end{itemize}
 
-  \vspace{0.15em}
-  \item \textbf{Additional restrictions:} beds $<15$; hospital-based facilities
+	\vspace{0.15em}
+	\pause
+	\item \textbf{Additional restrictions:} beds $<15$; hospital-based facilities
 
-  \vspace{0.15em}
-  \item \textbf{Final sample:} 7,806 facilities; 632,231 facility-months; 1,589 treated (\(\approx 20\%\))
+	\pause
+	\vspace{0.15em}
+	\item \textbf{Final sample:} 7,806 facilities; 632,231 facility-months; 1,589 treated (\(\approx 20\%\))
+
 \end{itemize}
 \end{frame}
 
-% =========================
-% METHODS: Strategy + Equation (combined)
-% =========================
-% =========================================================
-% Slide 1: Event-study DiD
-% =========================================================
 \begin{frame}[t]{Empirical Strategy: Event-Study Difference-in-Differences}
+
 \small
 \begin{itemize}
-  \item \textbf{Design:} staggered-adoption DiD around ownership transitions \citealp{goodman_bacon_2021}
-  \item \textbf{Variation:} within-facility staffing changes relative to facilities \textit{not yet treated}
-  \vspace{0.35em}
-  \item \textbf{Event study regression:}
-  \[
-  Y_{it} =
-  \sum_{\tau=-24}^{24} \beta_{\tau}\,\mathbf{1}\{event\_time_{it}=\tau\}\cdot Treat_i
-  + X'_{it}\gamma + \alpha_i + \lambda_t + \varepsilon_{it}.
-  \]
-  \vspace{0.2em}
-  \item \textbf{Key objects:}
-  \begin{itemize}
-    \item $Y_{it}$: staffing outcome in \textbf{HPRD} (RN, LPN, CNA, Total)
-    \item $\beta_{\tau}$: effect at event time $\tau$ (relative to the reference period)
-    \item $\alpha_i$ facility FE; $\lambda_t$ month FE; $X_{it}$ controls (beds, occupancy, payer mix, ownership type, chain, acuity)
-    \item SEs clustered at the facility level
-  \end{itemize}
+	\item \textbf{Design:} staggered-adoption DiD around ownership transitions \citealp{goodman_bacon_2021}
+	\item \textbf{Variation:} within-facility staffing changes relative to facilities not yet treated
+	\vspace{0.35em}
+	\item \textbf{Event study regression:}
+	
+	\pause
+	
+	\[
+	Y_{it} =
+	\sum_{\tau=-24}^{24} \beta_{\tau}\,\mathbf{1}\{event\_time_{it}=\tau\}\cdot Treat_i
+	+ X_{it}\gamma + \alpha_i + \lambda_t + \varepsilon_{it}.
+	\]
+  
+	\vspace{0.2em}
+	
+	\begin{itemize}
+		\item $Y_{it}$: staffing outcome in \textbf{HPRD}
+		\item $\beta_{\tau}$: effect on $Y_{it}$ at event time $\tau$
+		\item $X_{it}$ controls (beds, occupancy, payer mix, ownership type, chain, acuity)
+		\item $\alpha_i$ facility FE; $\lambda_t$ month FE
+		\item SEs clustered at the facility and month level
+	\end{itemize}
+
 \end{itemize}
 \end{frame}
 
-% =========================================================
-% Slide 2: TWFE DiD
-% =========================================================
 \begin{frame}[t]{Empirical Strategy: TWFE Difference-in-Differences}
+
 \small
 \begin{itemize}
-  \item \textbf{Goal:} summarize the \textbf{average} staffing change after an ownership transition
-  \vspace{0.35em}
-  \item \textbf{TWFE DiD regression:}
-  \[
-  Y_{it}=\beta\,Post_{it} + X'_{it}\gamma + \alpha_i + \lambda_t + \varepsilon_{it}
-  \]
-  \vspace{0.2em}
-  \item \textbf{Key objects:}
-  \begin{itemize}
-    \item $Post_{it}=1$ in all months after a change ($=0$ before)
-    \item $\beta$: \textbf{average post-change effect} on staffing (HPRD)
-    \item Same fixed effects and controls as the event-study specification
-    \item SEs clustered at the facility level
-  \end{itemize}
+	\item \textbf{Goal:} summarize the \textbf{average} staffing change after an ownership transition
+	\vspace{0.35em}
+	\item \textbf{TWFE DiD regression:}
+	
+	\[
+	Y_{it}=\beta\,Post_{it} + X_{it}\gamma + \alpha_i + \lambda_t + \varepsilon_{it}
+	\]
+	
+	\vspace{0.2em}
+
+	\begin{itemize}
+		\item $Post_{it}=1$ in all months after a change
+		\item $\beta$: \textbf{average post-change effect} on staffing $Y_{it}$
+		\item Same fixed effects and controls as the event-study specification
+		\item SEs clustered at the facility and month level
+	\end{itemize}
+	
 \end{itemize}
 \end{frame}
 
 \begin{frame}[t]{Identification: Parallel Trends}
+
 \small
-\begin{itemize}
-  \item \textbf{Parallel trends:} absent an ownership change, treated facilities would have followed the same staffing trends as facilities not yet treated.
-  \vspace{0.4em}
-  \item \textbf{Staffing may change in anticipation of a formal ownership change}
-  \begin{itemize}
-    \item Changes are not instantaneous: negotiations and operational handoffs precede the recorded month
-    \item Staffing can adjust during planning (turnover, hiring freezes, renegotiated contracts)
-    \item Recorded dates may reflect administrative/legal timing, not first operational change
-  \end{itemize}
-  \vspace{0.35em}
-  \item \textbf{Implication:} months just before $\tau=0$ may violate parallel trends.
+\begin{itemize}[<+->]
+	\setlength{\itemsep}{0.8em}
+	\item \textbf{Parallel trends:} absent an ownership change, treated facilities would have followed the same 			staffing trends as facilities not yet treated.
+	\vspace{0.4em}
+	\item \textbf{Staffing may change in anticipation of a formal ownership change}
+	
+	\begin{itemize}
+		\setlength{\itemsep}{0.2em}
+		\item Changes are not instantaneous: negotiations and operational handoffs precede the recorded month
+		\item Staffing can adjust during planning (turnover, hiring freezes, renegotiated contracts)
+		\item Recorded dates may reflect administrative/legal timing, not first operational change
+	\end{itemize}
+	
+	\vspace{0.35em}
+	\item \textbf{Implication:} months just before $\tau=0$ may violate parallel trends.
+
 \end{itemize}
 \end{frame}
 
 \begin{frame}[t]{Evidence of violation in the Pre-Period}
+
 \small
 \centering
 \includegraphics[width=0.92\linewidth]{C:/Repositories/white-bowblis-nhmc/presentation/twfe_es_total_preonly_tau_m24_to_0_highlight_anticipation.pdf}
@@ -385,29 +479,34 @@ Individual & Person & STURM, JOSHUA   & 25\% \\
 \end{frame}
 
 \begin{frame}[t]{Main Specification: Donut Event Study + Pre-trend Test}
+
 \small
 \begin{itemize}
-  \item \textbf{Donut event study:} mitigate this influence by excluding months just before the recorded transition.
-  \vspace{0.35em}
-  \item \textbf{Implementation}
-  \begin{itemize}
-    \item Exclude $\tau \in \{-3,-2,-1\}$
-    \item Use $\tau=-4$ as the reference period
-  \end{itemize}
-  \vspace{0.35em}
-  \item \textbf{Parallel Trends:} joint Wald test of pre-period leads
-  \[
-    H_0:\ \beta_{\tau}=0 \quad \forall\ \tau<0
-  \]
-  \vspace{0.2em}
-  \item \textbf{Takeaway:} full pre-window shows evidence of pre-trends; the donut specification is more consistent with parallel trends.
+	\item \textbf{Donut event study:} mitigate this influence by excluding months just before the recorded transition.
+	\vspace{0.35em}
+	\item \textbf{Implementation}
+	
+	\begin{itemize}
+		\item Exclude $\tau \in \{-3,-2,-1\}$
+		\item Use $\tau=-4$ as the reference period
+	\end{itemize}
+	
+	\pause
+	\vspace{0.35em}
+	\item \textbf{Parallel Trends:} joint Wald test of pre-period leads
+
+	\[
+	H_0:\ \beta_{\tau}=0 \quad \forall\ \tau<0
+	\]
+	
+	\vspace{0.2em}
+	\item \textbf{Takeaway:} full pre-window shows evidence of pre-trends; the donut specification is more consistent 		with parallel trends.
+	
 \end{itemize}
 \end{frame}
 
-% =========================
-% METHODS: Wald Table
-% =========================
 \begin{frame}{Parallel Trends Tests (Joint Wald) --- Total Staffing}
+
 \small
 \centering
 \renewcommand{\arraystretch}{1.15}
@@ -429,7 +528,6 @@ Individual & Person & STURM, JOSHUA   & 25\% \\
 \footnotesize
 \item \textit{Notes:} Joint Wald $\chi^2$ test of $H_0:\beta_\tau=0$ for all pre-treatment coefficients. Cells report p-value.
 \item Donut excludes $\tau\in\{-3,-2,-1\}$; reference period is $\tau=-4$.
-\item Full outcome-by-staff-type table available in appendix.
 \end{tablenotes}
 \end{threeparttable}
 \end{frame}
@@ -616,125 +714,237 @@ Individual & Person & STURM, JOSHUA   & 25\% \\
 {\footnotesize Large pre-pandemic declines, and post-pandemic effects are almost cut in half.}
 \end{frame}
 
-% =========================================================
-% PART C: ROBUSTNESS / CHECKS (pick 1–2 slides)
-% =========================================================
-
-% =========================================================
-% ROBUSTNESS (EVENT STUDY / STAGGERED DiD) --- SUMMARY SLIDE
-% =========================================================
 \begin{frame}[t]{Robustness Checks}
-\small
-\begin{itemize}%[<+->]
-  \item \textbf{Control-group}
-  \begin{itemize}
-    \item Re-estimate using \textbf{not-yet-treated} controls only.
-    \item Re-estimate using \textbf{never-treated} facilities only.
-    \item \textbf{Stacked DiD} (cohort-by-cohort).
-  \end{itemize}
-  
-  \vspace{0.35em}
-  \item \textbf{Treatment timing / definition.}
-  \begin{itemize}
-    \item Shift event date by $\pm 1$ month.
-    \item NHC vs HCRIS
-  \end{itemize}
-\end{itemize}
 
+\small
+\begin{itemize}[<+->]
+	\setlength{\itemsep}{0.85em}
+	\item \textbf{Control-group}
+	
+	\begin{itemize}
+		\setlength{\itemsep}{0.2em}
+		\item Re-estimate using \textbf{not-yet-treated} controls only.
+		\item Re-estimate using \textbf{never-treated} facilities only.
+		\item \textbf{Stacked DiD} (cohort-by-cohort).
+	\end{itemize}
+  
+	\vspace{0.35em}
+	\item \textbf{Treatment timing / definition.}
+	
+	\begin{itemize}
+		\setlength{\itemsep}{0.2em}
+		\item Shift event date by $\pm 1$ month.
+		\item NHC vs HCRIS
+	\end{itemize}
+	
+\end{itemize}
 \end{frame}
 
 \begin{frame}[t]{Robustness Checks}
+
 \small
-\begin{itemize}%[<+->]
-  \item \textbf{Donut Hole Specification}
-  \begin{itemize}
-    \item Baseline uses a \textbf{donut}: drop $\tau\in\{-3,-2,-1\}$ (reference $\tau=-4$).
-    \item \textbf{Wider donut:} drop $\tau\in\{-4,-3,-2,-1\}$.
-    \item \textbf{Smaller donut:} drop only $\tau\in\{-2,-1\}$.
-    \item Estimates are unchanged in sign, magnitude, and significance.
-  \end{itemize}
+\begin{itemize}[<+->]
+	\setlength{\itemsep}{0.85em}
+	\item \textbf{Donut Hole Specification}
+	
+	\begin{itemize}
+		\setlength{\itemsep}{0.2em}
+		\item \textbf{Wider donut:} drop $\tau\in\{-4,-3,-2,-1\}$.
+		\item \textbf{Smaller donut:} drop only $\tau\in\{-2,-1\}$.
+		\item Estimates are unchanged in sign, magnitude, and significance.
+	\end{itemize}
   
-  \vspace{0.35em}
-  \item \textbf{Reporting gaps in staffing data.}
-  \begin{itemize}
-    \item Restrict sample to facilities with smaller gaps between observations
-    (exclude gaps $>6$, $>3$, $>1$, and $>0$ months).
-    \item Estimates are nearly identical to baseline.
-  \end{itemize}
+	\vspace{0.35em}
+	\item \textbf{Reporting gaps in staffing data.}
+	
+	\begin{itemize}
+		\setlength{\itemsep}{0.2em}
+		\item Restrict sample to facilities with smaller gaps between observations
+		(exclude gaps $>6$, $>3$, $>1$, and $>0$ months).
+		\item Estimates are nearly identical to baseline.
+	\end{itemize}
   
 \end{itemize}
-
 \end{frame}
 
-% ============================================================
-% Discussion + Conclusion slides (lean bullets; you speak details)
-% ============================================================
+\begin{frame}[t]{Key Findings}
 
-% ---------- Slide: Mechanism (why LPNs don't move) ----------
-\begin{frame}{Discussion: Why do LPN hours not decline?}
-\begin{itemize}
-  \item Roles differ by scope-of-practice:
-  \begin{itemize}
-    \item \textbf{RN:} clinical oversight \& supervision
-    \item \textbf{CNA:} hands-on ADLs / direct care
-    \item \textbf{LPN:} middle-skill routine clinical + direct care overlap
-  \end{itemize}
-  \item \textbf{Substitution:} LPNs can cover some RN \emph{and} CNA tasks $\Rightarrow$ ``buffer'' when RN/CNA hours fall
-  \item \textbf{Implication:} ownership changes may shift \textbf{skill mix} more than cut all staffing uniformly
-\end{itemize}
-{\footnotesize \vspace{0.3em} \textit{(e.g., Lin 2014; Harrington et al. 2000; Bowblis \& Ghattas 2017)}}
-\end{frame}
+\small
+\begin{itemize}[<+->]
+	\setlength{\itemsep}{0.85em}
+	\item \textbf{Staffing falls after ownership change, but not uniformly.}
+	
+	\begin{itemize}
+		\setlength{\itemsep}{0.2em}
+		\item Declines in \textbf{RN}, \textbf{CNA}, and \textbf{Total} HPRD
+		\item \textbf{No meaningful change} in \textbf{LPN} staffing
+	\end{itemize}
 
-% ---------- Slide: Magnitudes / meaningfulness ----------
-\begin{frame}{Magnitude: statistically significant vs meaningful}
-\begin{itemize}
-  \item Baseline, minutes per resident-day:
-  \begin{itemize}
-    \item \textbf{RN:} $-0.032$ HPPD $\approx$ $-1.9$ min
-    \item \textbf{CNA:} $-0.054$ HPPD $\approx$ $-3.2$ min
-    \item \textbf{Total:} $-0.086$ HPPD $\approx$ $-5.2$ min
-  \end{itemize}
-  \item Benchmarks (sample means): \textbf{RN $\sim$7--9\%}, \textbf{Total $\sim$2--3\%} (logs similar)
-  \item \textbf{Key point:} big samples $\Rightarrow$ precise estimates; significance $\neq$ clinical impact
-\end{itemize}
-\end{frame}
+	\vspace{0.35em}
+	\item \textbf{Magnitudes are economically meaningful but not huge.}
+	
+	\begin{itemize}
+		\setlength{\itemsep}{0.2em}
+		\item Effects are \textbf{small in HPRD units}, but persist over time and aggregate at the facility level
+	\end{itemize}
 
-% ---------- Slide: Facility size / diffusion ----------
-\begin{frame}{When might it matter? Facility size \& diffusion}
-\begin{itemize}
-  \item Same average change can play out differently across facilities
-  \item Example: Total $-0.086$ HPPD $\Rightarrow$ $8.6$ staff-hours/day at 100 residents
-  \item \textbf{Medium/large:} spread across shifts/residents $\Rightarrow$ likely absorbed
-  \item \textbf{Small:} More likely to affect quality of care
+	\vspace{0.35em}
+	\item \textbf{Effects are heterogeneous across settings.}
+  
+	\begin{itemize}
+		\setlength{\itemsep}{0.2em}
+		\item Larger declines \textbf{pre-pandemic} vs. \textbf{pandemic period}
+		\item Larger declines for \textbf{non-chain} vs. \textbf{chain} facilities
+	\end{itemize}
+
 \end{itemize}
 \end{frame}
 
-% ---------- Slide: Heterogeneity ----------
-\begin{frame}{Heterogeneity: Chains and Covid}
-\begin{itemize}
-  \item \textbf{Non-chain facilities:} larger declines (fewer organizational buffers)
-  \item \textbf{COVID period:} smaller declines (labor market tightness / oversight constraints)
-  \item Suggests effects depend on \textbf{organizational capacity} and \textbf{labor market conditions}
+\begin{frame}[t]{Discussion}
+
+\small
+\begin{itemize}[<+->]
+	\setlength{\itemsep}{0.8em}
+	\item \textbf{Key finding:} RN, CNA, and Total hours fall after ownership change; \textbf{LPN hours do not.}
+
+	\vspace{0.3em}
+	\item \textbf{Why might LPN hours not decline?}
+	
+	\begin{itemize}
+		\setlength{\itemsep}{0.2em}
+		\item \textbf{Minimum licensed coverage:} facilities must staff enough \textbf{RN+LPN} for clinical/compliance 		needs.
+		\item \textbf{Cheaper licensed nurse:} cutting \textbf{RN} while keeping \textbf{LPN} stable reduces labor 				costs.
+		\item \textbf{Substitution:} LPNs can absorb some routine clinical / direct-care tasks $\Rightarrow$ 					\textbf{skill-mix shift}.
+	\end{itemize}
+	
+\end{itemize}
+
+\vspace{0.25em}
+{\footnotesize \textit{(e.g., Lin 2014; Harrington et al. 2000; Bowblis \& Ghattas 2017)}}
+\end{frame}
+
+\begin{frame}[t]{Discussion}
+
+\small
+\begin{itemize}[<+->]
+	\item \textbf{Question:} Are our findings clinically \textbf{meaningful}?
+
+	\vspace{0.25em}
+	\item \textbf{Baseline effects (minutes per resident-day):}
+	
+	\begin{itemize}
+		\item \textbf{RN:} $-0.032$ HPRD $\approx -1.9$ minutes
+		\item \textbf{CNA:} $-0.054$ HPRD $\approx -3.2$ minutes
+		\item \textbf{Total:} $-0.086$ HPRD $\approx -5.2$ minutes
+	\end{itemize}
+
+	\vspace{0.25em}
+	\item \textbf{Translation:}
+	Mean beds $\approx 108$ and occupancy $\approx 76\% \Rightarrow$ census $\approx 83$ residents.
+	
+	\begin{itemize}
+		\item Total $-0.086$ HPRD $\Rightarrow$ $\approx 7.1$ fewer nursing staff-hours per day
+		\item $\approx 213$ fewer staff-hours in a 30-day month
+	\end{itemize}
+
+	\vspace{0.25em}
+	\item Lin (2014) finds that a \textbf{0.3 HPRD} increase in RN staffing
+	($\approx$ 18 minutes) improves measured quality substantially.
+	
+	\begin{itemize}
+		\item Our RN effect ($\approx$ 1.9 minutes) is \textbf{smaller}, but effects may matter when \textbf{sustained 		over time} and aggregated across residents and facilities.
+	\end{itemize}
+
 \end{itemize}
 \end{frame}
 
-% ---------- Slide: Limitations + extension ----------
-\begin{frame}{Limitations and future extensions}
-\begin{itemize}
-  \item \textbf{Timing noise / anticipation:} motivates ``donut" window
-  \item \textbf{Remaining confounding:} ownership may coincide with distress/restructuring
-  \item \textbf{Next step:} link to resident outcomes / quality metrics (deficiencies, rehospitalizations, mortality, stars)
-  \item Distinguish: \textbf{efficiency/task reallocation} vs \textbf{quality-reducing cost cutting}
+\begin{frame}[t]{Discussion}
+
+\small
+\begin{itemize}[<+->]
+	\item \textbf{Heterogeneous effects}
+	
+	\begin{itemize}
+		\item Staffing declines are \textbf{larger in non-chain facilities}
+		\item Staffing declines are \textbf{smaller after the Covid-19 pandemic}
+	\end{itemize}
+
+	\vspace{0.35em}
+	\item \textbf{Why are declines larger in non-chain facilities?}
+	
+	\begin{itemize}
+		\item Smaller labor pools
+		\item Weaker hiring and less standardization
+		\item Less ability to absorb shocks without cutting variable costs
+		\item Ownership changes may be more destabilizing without chain-level management systems
+	\end{itemize}
+
+	\vspace{0.35em}
+	\item \textbf{Why are declines smaller after Covid?}
+	
+	\begin{itemize}
+		\item Widespread shortages make staffing reductions harder to implement
+		\item Greater scrutiny of staffing/quality raises the cost of cutting hours
+		\item Facilities closer to staffing constraints have less room to reduce hours further
+		\item Owners may prioritize stabilizing operations rather than restructuring staffing during crisis periods
+	\end{itemize}
+
 \end{itemize}
 \end{frame}
 
-% ---------- Slide: Conclusion ----------
-\begin{frame}{Conclusion}
-\begin{itemize}
-  \item Ownership changes lead to persistent declines in \textbf{RN/CNA/Total} staffing; \textbf{LPN stable}
-  \item Average magnitudes modest (minutes per resident-day; small \% for total)
-  \item Effects larger for \textbf{non-chains} and smaller during \textbf{COVID}
-  \item Takeaway: ownership changes affect care via \textbf{internal production decisions}, even without market-structure change
+\begin{frame}[t]{Limitations and future extensions}
+
+\begin{itemize}[<+->]
+	\item \textbf{Timing noise / anticipation:} motivates ``donut" window
+	\item \textbf{Remaining confounding:} ownership may coincide with distress/restructuring
+	\item \textbf{Next step:} link to resident outcomes / quality metrics (deficiencies, rehospitalizations, 				mortality, stars)
+	\item Distinguish: \textbf{efficiency/task reallocation} vs \textbf{quality-reducing cost cutting}
+\end{itemize}
+
+\end{frame}
+
+%\begin{frame}[t]{Policy Implications}
+
+%\small
+	%\begin{itemize}
+	%\item \textbf{What should policymakers do?} 
+
+	%\vspace{0.35em}
+	%\item \textbf{1) Improve transparency around ownership transitions}
+	
+	%\begin{itemize}
+		%\item Standardize reporting of \textbf{control changes} (ultimate owner) and timing
+		%\item Make CHOW information easier for regulators and residents to track
+	%\end{itemize}
+
+	%\vspace{0.25em}
+	
+	%\item \textbf{2) Targeted oversight during the transition window}
+	
+	%\begin{itemize}
+		%\item Temporary monitoring / survey attention for \textbf{6--12 months post-CHOW}
+		%\item Focus on staffing stability and continuity of care processes
+	%\end{itemize}
+
+	%\vspace{0.25em}
+	%\item \textbf{3) Risk-based safeguards (not one-size-fits-all mandates)}
+	
+	%\begin{itemize}
+		%\item Require a \textbf{transition staffing plan} for facilities near staffing/quality thresholds
+		%\item Prioritize \textbf{non-chain} facilities where organizational buffers are weaker
+	%\end{itemize}
+	
+%\end{itemize}
+%\end{frame}
+
+\begin{frame}[t]{Conclusion}
+
+\begin{itemize}[<+->]
+	\item Ownership changes lead to persistent declines in \textbf{RN/CNA/Total} staffing; \textbf{LPN stable}
+	\item Average magnitudes modest (minutes per resident-day; small \% for total)
+	\item Effects larger for \textbf{non-chains} and smaller during \textbf{COVID}
+	\item Takeaway: ownership changes affect care via \textbf{internal production decisions}, even without market-			structure change
+  
 \end{itemize}
 \end{frame}
 
