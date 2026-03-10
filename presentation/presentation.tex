@@ -22,10 +22,13 @@
 \newcommand{\est}[3]{\makecell[c]{#1\sym{#3}\\ \footnotesize(#2)}}
 
 \usetheme{Boadilla}
-\usecolortheme{whale}
+%\usecolortheme{whale}
 \title[Ownership Changes and Staffing]{Labor Input Responses to Ownership Changes: Evidence from U.S. Nursing Homes}
-\author{Joseph White}
-\institute{Miami University}
+\author[Joseph White]{%
+    Joseph White \\
+    \small Advisor: Dr.\ John Bowblis
+}
+\institute[Miami University]{Miami University}
 \date{\today}
 
 \begin{document}
@@ -58,7 +61,7 @@
 % SLIDE 2
 % =========================================================
 
-\begin{frame}{Ownership Changes Over Time (Quarterly)}
+\begin{frame}{Ownership Changes in Nursing Homes Over Time (Quarterly)}
 \centering
 \vspace{0.2em}
 
@@ -73,41 +76,25 @@
 
 \begin{frame}[t]{Why Nursing Homes?}
 
-\begin{itemize}[<+->]
-	\item There are about 15,000 nursing homes in the U.S. that serve over 4 million people annually
-	\vfill
-	\item 56\% of adults aged 57 to 61 will spend at least one night in a nursing home during their lifetime
-	\vfill
-	\item Nursing home care is labor-intensive and heavily regulated.
-	\vfill
-	\item \textbf{Nursing labor is the main input} into care and a major operating cost.
-	\vfill
-	\item Staffing is a natural adjustment margin after ownership change, but it’s constrained by:
-	\vfill
+\begin{itemize}		
+	\setlength{\itemsep}{1em}
+
+	\item 15,000 U.S. nursing homes serve over 4 million people annualy
+	\item 56\% of retirement age adults will use a nursing home
+	\item Labor is the main input into care
 	
-	\begin{itemize}
-		\item compliance,
-		\item resident outcomes,
-		\item demand/occupancy
+	\begin{itemize} 
+	\setlength{\itemsep}{0.20em}
+	
+	\item More staffing improves measured quality \citep{lin_2014} and decreases deficiency 		citations \citep{harrington_et_al_2000}
+	
+	\item Major cost
+	
 	\end{itemize}
+	
+	\item Staffing can easily change so it may adjust following an ownership change
 
 \end{itemize}
-\end{frame}
-
-\begin{frame}[t]{Staffing is Important}
-
-\begin{itemize}[<+->]
-	\setlength{\itemsep}{0.9em}
-	\item Staffing is the primary input into nursing home care, so ownership changes can affect quality even 			when market structure is unchanged.
-	
-	\item Higher staffing levels are linked to better quality measures in nursing homes,
-	including fewer deficiency citations \citep{harrington_et_al_2000}.
-	
-	\item Causal evidence shows that increasing nurse staffing improves measured nursing home quality 					\citep{lin_2014}.
-	
-	\item If ownership changes shift staffing decisions, they can translate into meaningful differences in care 		quality.
-\end{itemize}
-
 \end{frame}
 
 \begin{frame}[t]{Research Question}
@@ -127,7 +114,7 @@
 
 \begin{frame}[t]{Nursing Staff Types}
 
-\begin{itemize}[<+->]
+\begin{itemize}
 	\setlength{\itemsep}{0.7em}
 
 	\item \textbf{Nursing homes staff care using three main nursing roles:}
@@ -138,6 +125,8 @@
 		\item \textbf{Certified Nursing Assistants (CNAs):} direct daily care
 		\item \textbf{Total:} RN + LPN + CNA
 	\end{itemize}
+	
+	\pause
 
 	\vspace{0.25em}
 	\item \textbf{Staffing measure: Hours Per Resident Day (HPRD)}
@@ -154,7 +143,7 @@
 
 \begin{frame}[t]{Cost--Quality Trade Off}
 
-\begin{itemize}[<+->]
+\begin{itemize}
 	\setlength{\itemsep}{0.8em}
 	\item Owners can raise quality through two channels:
 	\begin{itemize}
@@ -173,12 +162,12 @@
 
 \begin{frame}[t]{Why Staffing Could Rise or Fall}
 
-\begin{itemize}[<+->]
+\begin{itemize}
 	\setlength{\itemsep}{0.8em}
 	\item Ownership changes can shift \textbf{constraints} and \textbf{objectives} $\Rightarrow$ staffing effects are 		ambiguous.
 	\vspace{0.20em}
 
-	\item \textbf{Scenario 1: Cost pressure $\Rightarrow$ staffing falls}
+	\item \textbf{Scenario 1: Cost pressure}
 	\begin{itemize}
 		\setlength{\itemsep}{0.2em}
 		\item Debt service / tighter targets $\Rightarrow$ cut labor costs
@@ -203,7 +192,7 @@
 
 \begin{frame}[t]{Data Sources and Unit of Observation}
 
-\begin{itemize}[<+->]
+\begin{itemize}
 	
 	\setlength{\itemsep}{0.8em}
 	\item \textbf{Healthcare Cost Report Information System (HCRIS)}
@@ -237,13 +226,15 @@
 \begin{frame}[t]{Identifying Ownership Changes}
 
 \small
-\begin{itemize}[<+->]
+\begin{itemize}
 	\setlength{\itemsep}{0.75em}
 	\item \textbf{Challenge:} ownership is often \textbf{layered}, so an administrative “change” may not reflect a true \textbf{transfer of economic control}.
 	\vspace{0.35em}
 
 	\item We identify ownership changes using a \textbf{3-step process}.
 	\vspace{0.15em}
+	
+	\pause
 
 	\item \textbf{Step 1:} HCRIS includes a variable indicating \textbf{whether and when} an 								ownership change occurred.
 	
@@ -293,7 +284,7 @@ Individual & Person & STURM, JOSHUA   & 25\% \\
 \begin{itemize}
 	\item \textbf{Step 2: Validate \& date using NHC}
 	
-	\begin{itemize}[<+->]
+	\begin{itemize}
 		\item Track shares over time within the highest reported ownership level
 		\item Define a change when \textbf{majority control (50\%)} transfers between $t-1$ and $t$
 		\item We do not flag changes driven by name changes or within-family reclassification
@@ -330,7 +321,7 @@ Individual & Person & STURM, JOSHUA   & 25\% \\
 \begin{frame}[t]{Ownership Change Agreement}
 
 \small
-\begin{itemize}[<+->]
+\begin{itemize}
 	\setlength{\itemsep}{0.8em}
 	\item \textbf{Step 3: Validate between HCRIS and NHC.}
 	\item We keep facilities only if:
@@ -384,10 +375,8 @@ Individual & Person & STURM, JOSHUA   & 25\% \\
 	\end{itemize}
 
 	\vspace{0.15em}
-	\pause
 	\item \textbf{Additional restrictions:} beds $<15$; hospital-based facilities
 
-	\pause
 	\vspace{0.15em}
 	\item \textbf{Final sample:} 7,806 facilities; 632,231 facility-months; 1,589 treated (\(\approx 20\%\))
 
@@ -398,7 +387,7 @@ Individual & Person & STURM, JOSHUA   & 25\% \\
 
 \small
 \begin{itemize}
-	\item \textbf{Design:} staggered-adoption DiD around ownership transitions \citealp{goodman_bacon_2021}
+	\item \textbf{Design:} staggered-adoption DiD around ownership transitions \citep{goodman_bacon_2021}
 	\item \textbf{Variation:} within-facility staffing changes relative to facilities not yet treated
 	\vspace{0.35em}
 	\item \textbf{Event study regression:}
@@ -448,12 +437,13 @@ Individual & Person & STURM, JOSHUA   & 25\% \\
 \end{itemize}
 \end{frame}
 
-\begin{frame}[t]{Identification: Parallel Trends}
+\begin{frame}[t]{Identifying Assumptions}
 
 \small
-\begin{itemize}[<+->]
+\begin{itemize}
 	\setlength{\itemsep}{0.8em}
-	\item \textbf{Parallel trends:} absent an ownership change, treated facilities would have followed the same 			staffing trends as facilities not yet treated.
+	\item \textbf{Parallel trends}
+	
 	\vspace{0.4em}
 	\item \textbf{Staffing may change in anticipation of a formal ownership change}
 	
@@ -717,53 +707,15 @@ Individual & Person & STURM, JOSHUA   & 25\% \\
 \begin{frame}[t]{Robustness Checks}
 
 \small
-\begin{itemize}[<+->]
+\begin{itemize}
 	\setlength{\itemsep}{0.85em}
-	\item \textbf{Control-group}
+	\item \textbf{Stacked Difference-in-Difference}
 	
-	\begin{itemize}
-		\setlength{\itemsep}{0.2em}
-		\item Re-estimate using \textbf{not-yet-treated} controls only.
-		\item Re-estimate using \textbf{never-treated} facilities only.
-		\item \textbf{Stacked DiD} (cohort-by-cohort).
-	\end{itemize}
+	\item \textbf{Smaller and wider Donut Hole}
   
 	\vspace{0.35em}
-	\item \textbf{Treatment timing / definition.}
+	\item \textbf{Gaps in our Data.}
 	
-	\begin{itemize}
-		\setlength{\itemsep}{0.2em}
-		\item Shift event date by $\pm 1$ month.
-		\item NHC vs HCRIS
-	\end{itemize}
-	
-\end{itemize}
-\end{frame}
-
-\begin{frame}[t]{Robustness Checks}
-
-\small
-\begin{itemize}[<+->]
-	\setlength{\itemsep}{0.85em}
-	\item \textbf{Donut Hole Specification}
-	
-	\begin{itemize}
-		\setlength{\itemsep}{0.2em}
-		\item \textbf{Wider donut:} drop $\tau\in\{-4,-3,-2,-1\}$.
-		\item \textbf{Smaller donut:} drop only $\tau\in\{-2,-1\}$.
-		\item Estimates are unchanged in sign, magnitude, and significance.
-	\end{itemize}
-  
-	\vspace{0.35em}
-	\item \textbf{Reporting gaps in staffing data.}
-	
-	\begin{itemize}
-		\setlength{\itemsep}{0.2em}
-		\item Restrict sample to facilities with smaller gaps between observations
-		(exclude gaps $>6$, $>3$, $>1$, and $>0$ months).
-		\item Estimates are nearly identical to baseline.
-	\end{itemize}
-  
 \end{itemize}
 \end{frame}
 
@@ -781,11 +733,11 @@ Individual & Person & STURM, JOSHUA   & 25\% \\
 	\end{itemize}
 
 	\vspace{0.35em}
-	\item \textbf{Magnitudes are economically meaningful but not huge.}
+	\item \textbf{Magnitudes are relatively small.}
 	
 	\begin{itemize}
 		\setlength{\itemsep}{0.2em}
-		\item Effects are \textbf{small in HPRD units}, but persist over time and aggregate at the facility level
+		\item Effects are between 2 to 9\%
 	\end{itemize}
 
 	\vspace{0.35em}
@@ -803,7 +755,7 @@ Individual & Person & STURM, JOSHUA   & 25\% \\
 \begin{frame}[t]{Discussion}
 
 \small
-\begin{itemize}[<+->]
+\begin{itemize}
 	\setlength{\itemsep}{0.8em}
 	\item \textbf{Key finding:} RN, CNA, and Total hours fall after ownership change; \textbf{LPN hours do not.}
 
@@ -826,8 +778,8 @@ Individual & Person & STURM, JOSHUA   & 25\% \\
 \begin{frame}[t]{Discussion}
 
 \small
-\begin{itemize}[<+->]
-	\item \textbf{Question:} Are our findings clinically \textbf{meaningful}?
+\begin{itemize}
+	\item \textbf{Question:} Are our findings economically \textbf{meaningful}?
 
 	\vspace{0.25em}
 	\item \textbf{Baseline effects (minutes per resident-day):}
@@ -839,20 +791,11 @@ Individual & Person & STURM, JOSHUA   & 25\% \\
 	\end{itemize}
 
 	\vspace{0.25em}
-	\item \textbf{Translation:}
-	Mean beds $\approx 108$ and occupancy $\approx 76\% \Rightarrow$ census $\approx 83$ residents.
+	\item \cite{lin_2014} finds that a \textbf{0.3 HPRD} increase in RN staffing
+	($\approx$ 18 minutes) improves deficiencies by 16\% .
 	
 	\begin{itemize}
-		\item Total $-0.086$ HPRD $\Rightarrow$ $\approx 7.1$ fewer nursing staff-hours per day
-		\item $\approx 213$ fewer staff-hours in a 30-day month
-	\end{itemize}
-
-	\vspace{0.25em}
-	\item Lin (2014) finds that a \textbf{0.3 HPRD} increase in RN staffing
-	($\approx$ 18 minutes) improves measured quality substantially.
-	
-	\begin{itemize}
-		\item Our RN effect ($\approx$ 1.9 minutes) is \textbf{smaller}, but effects may matter when \textbf{sustained 		over time} and aggregated across residents and facilities.
+		\item Our results would translate to a 1.6\% increase in deficiencies.
 	\end{itemize}
 
 \end{itemize}
@@ -861,7 +804,7 @@ Individual & Person & STURM, JOSHUA   & 25\% \\
 \begin{frame}[t]{Discussion}
 
 \small
-\begin{itemize}[<+->]
+\begin{itemize}
 	\item \textbf{Heterogeneous effects}
 	
 	\begin{itemize}
@@ -890,17 +833,6 @@ Individual & Person & STURM, JOSHUA   & 25\% \\
 	\end{itemize}
 
 \end{itemize}
-\end{frame}
-
-\begin{frame}[t]{Limitations and future extensions}
-
-\begin{itemize}[<+->]
-	\item \textbf{Timing noise / anticipation:} motivates ``donut" window
-	\item \textbf{Remaining confounding:} ownership may coincide with distress/restructuring
-	\item \textbf{Next step:} link to resident outcomes / quality metrics (deficiencies, rehospitalizations, 				mortality, stars)
-	\item Distinguish: \textbf{efficiency/task reallocation} vs \textbf{quality-reducing cost cutting}
-\end{itemize}
-
 \end{frame}
 
 %\begin{frame}[t]{Policy Implications}
@@ -937,13 +869,18 @@ Individual & Person & STURM, JOSHUA   & 25\% \\
 %\end{itemize}
 %\end{frame}
 
-\begin{frame}[t]{Conclusion}
+\begin{frame}[t]{Conclusion and future extensions}
 
 \begin{itemize}[<+->]
 	\item Ownership changes lead to persistent declines in \textbf{RN/CNA/Total} staffing; \textbf{LPN stable}
-	\item Average magnitudes modest (minutes per resident-day; small \% for total)
+	\item Declines are small
 	\item Effects larger for \textbf{non-chains} and smaller during \textbf{COVID}
-	\item Takeaway: ownership changes affect care via \textbf{internal production decisions}, even without market-			structure change
+	\item Takeaway: ownership changes affect care via \textbf{internal production decisions}, even without market-structure change
+	\item Future Research
+	
+	\begin{itemize}
+		\item Linking our findings to quality metrics and resident outcomes	
+	\end{itemize}
   
 \end{itemize}
 \end{frame}
