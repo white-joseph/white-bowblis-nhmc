@@ -1,25 +1,34 @@
-# C:/Repositories/white-bowblis-nhmc/presentation/presentation_visuals.R
-# PURPOSE:
-#   Plot validated ownership changes over time aggregated to QUARTERS.
-#
-# OUTPUT:
-#   C:/Repositories/white-bowblis-nhmc/presentation/validated_changes_by_quarter.pdf
-#   C:/Repositories/white-bowblis-nhmc/presentation/validated_changes_by_quarter.png
-
 suppressPackageStartupMessages({
   library(readr)
   library(dplyr)
   library(stringr)
   library(lubridate)
   library(ggplot2)
+  library(systemfonts)
 })
 
 CHOW_FP <- "C:/Repositories/white-bowblis-nhmc/data/interim/chow.csv"
 OUT_DIR <- "C:/Repositories/white-bowblis-nhmc/presentation"
 dir.create(OUT_DIR, recursive = TRUE, showWarnings = FALSE)
 
-theme_set(theme_minimal(base_size = 14, base_family = "Times New Roman"))
+available_families <- unique(system_fonts()$family)
 
+plot_font <- dplyr::case_when(
+  "CMU Sans Serif" %in% available_families ~ "CMU Sans Serif",
+  "Arial" %in% available_families ~ "Arial",
+  "Liberation Sans" %in% available_families ~ "Liberation Sans",
+  "DejaVu Sans" %in% available_families ~ "DejaVu Sans",
+  TRUE ~ "sans"
+)
+
+theme_set(
+  theme_minimal(
+    base_size = 18,
+    base_family = plot_font
+  )
+)
+
+cat("Using font family:", plot_font, "\n")
 df <- read_csv(CHOW_FP, show_col_types = FALSE)
 
 # -----------------------------
@@ -108,10 +117,9 @@ p_q <- ggplot(quarterly, aes(x = qtr_date, y = n)) +
     date_labels = "%Y"
   ) +
   labs(
-    x = NULL,
-    y = "Number of Ownership Changes",
-    title = "Ownership Changes by Quarter"
-  ) +
+    x = "Quarter",
+    y = "Ownership Changes"
+    ) +
   theme(
     panel.grid.minor = element_blank(),
     axis.text.x = element_text(size = 11),

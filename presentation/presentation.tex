@@ -61,7 +61,7 @@
 % SLIDE 2
 % =========================================================
 
-\begin{frame}{Ownership Changes in Nursing Homes Over Time (Quarterly)}
+\begin{frame}{Ownership Changes in Nursing Homes by Quarter}
 \centering
 \vspace{0.2em}
 
@@ -132,8 +132,7 @@
 	\item \textbf{Staffing measure: Hours Per Resident Day (HPRD)}
 	\begin{itemize}
 		\setlength{\itemsep}{0.2em}
-		\item Standardizes staffing by resident census
-		\item Lets us compare facilities and months on a common scale
+		\item How much total time nurses spend caring for one resident over a 24-hour period
 	\end{itemize}
 
 	\vspace{0.25em}
@@ -218,7 +217,7 @@
 		\item Used to construct outcome variables
 	\end{itemize}
 
-	\item \textbf{Facility-month panel, 48 contiguous states, Jan 2017 -- Jun 2024}
+	\item \textbf{Facility-month panel, 48 contiguous states, Jan 2017 -- June 2024}
 
 \end{itemize}
 \end{frame}
@@ -438,24 +437,22 @@ Individual & Person & STURM, JOSHUA   & 25\% \\
 \end{frame}
 
 \begin{frame}[t]{Identifying Assumptions}
-
 \small
 \begin{itemize}
 	\setlength{\itemsep}{0.8em}
 	\item \textbf{Parallel trends}
-	
-	\vspace{0.4em}
+	\vspace{0.3em}
 	\item \textbf{Staffing may change in anticipation of a formal ownership change}
 	
 	\begin{itemize}
-		\setlength{\itemsep}{0.2em}
-		\item Changes are not instantaneous: negotiations and operational handoffs precede the recorded month
-		\item Staffing can adjust during planning (turnover, hiring freezes, renegotiated contracts)
-		\item Recorded dates may reflect administrative/legal timing, not first operational change
-	\end{itemize}
-	
-	\vspace{0.35em}
-	\item \textbf{Implication:} months just before $\tau=0$ may violate parallel trends.
+    \setlength{\itemsep}{0.2em}
+    \item A contract is signed, then there is a gap until the closing/transfer date.
+    \item During this gap, staffing may adjust
+    \item We want to observe the date the contract was signed.
+  \end{itemize}
+
+  \vspace{0.3em}
+  \item \textbf{Implication:} The months in this window may violate parallel trends.
 
 \end{itemize}
 \end{frame}
@@ -764,9 +761,9 @@ Individual & Person & STURM, JOSHUA   & 25\% \\
 	
 	\begin{itemize}
 		\setlength{\itemsep}{0.2em}
-		\item \textbf{Minimum licensed coverage:} facilities must staff enough \textbf{RN+LPN} for clinical/compliance 		needs.
-		\item \textbf{Cheaper licensed nurse:} cutting \textbf{RN} while keeping \textbf{LPN} stable reduces labor 				costs.
-		\item \textbf{Substitution:} LPNs can absorb some routine clinical / direct-care tasks $\Rightarrow$ 					\textbf{skill-mix shift}.
+		\item Compliance %minimum staffing requirements for RNs + LPNs
+		\item Cost %LPNs are cheaper than RNs, so cutting RNs and keeping LPNs reduces labor costs
+		\item Substitution %LPNs sit in the middle ground for clinical taks, they can take on tasks for RNs and CNAs
 	\end{itemize}
 	
 \end{itemize}
@@ -776,29 +773,37 @@ Individual & Person & STURM, JOSHUA   & 25\% \\
 \end{frame}
 
 \begin{frame}[t]{Discussion}
-
 \small
+
 \begin{itemize}
 	\item \textbf{Question:} Are our findings economically \textbf{meaningful}?
+\end{itemize}
 
-	\vspace{0.25em}
-	\item \textbf{Baseline effects (minutes per resident-day):}
-	
-	\begin{itemize}
-		\item \textbf{RN:} $-0.032$ HPRD $\approx -1.9$ minutes
-		\item \textbf{CNA:} $-0.054$ HPRD $\approx -3.2$ minutes
-		\item \textbf{Total:} $-0.086$ HPRD $\approx -5.2$ minutes
-	\end{itemize}
+\vfill
+\centering
+\renewcommand{\arraystretch}{1.25}
+\setlength{\tabcolsep}{12pt}
 
-	\vspace{0.25em}
-	\item \cite{lin_2014} finds that a \textbf{0.3 HPRD} increase in RN staffing
-	($\approx$ 18 minutes) improves deficiencies by 16\% .
-	
+\begin{tabular}{lcc}
+\toprule
+\textbf{Staff type} & \textbf{Sample Average} & \textbf{Effects} \\
+\midrule
+RN    & 25.6 min/day    & $-1.9$ min/day \\
+LPN   & 47.8 min/day    & $\;\;\;\;0.0$ min/day \\
+CNA   & 2 hr 6 min/day  & $-3.2$ min/day \\
+Total & 3 hr 19 min/day & $-5.2$ min/day \\
+\bottomrule
+\end{tabular}
+\vfill
+
+\begin{itemize}
+	\item \cite{lin_2014} finds 0.3 HPRD ($\approx$ 18 minutes) increase in RN staffing $\rightarrow$ improves 	deficiencies 16\% .
 	\begin{itemize}
 		\item Our results would translate to a 1.6\% increase in deficiencies.
 	\end{itemize}
 
 \end{itemize}
+
 \end{frame}
 
 \begin{frame}[t]{Discussion}
@@ -809,27 +814,30 @@ Individual & Person & STURM, JOSHUA   & 25\% \\
 	
 	\begin{itemize}
 		\item Staffing declines are \textbf{larger in non-chain facilities}
-		\item Staffing declines are \textbf{smaller after the Covid-19 pandemic}
+		\item Staffing declines are \textbf{smaller after the Covid-19 period}
 	\end{itemize}
 
+	\pause
 	\vspace{0.35em}
 	\item \textbf{Why are declines larger in non-chain facilities?}
 	
 	\begin{itemize}
-		\item Smaller labor pools
-		\item Weaker hiring and less standardization
-		\item Less ability to absorb shocks without cutting variable costs
-		\item Ownership changes may be more destabilizing without chain-level management systems
+		\item Small business
+		\item Local
+		%\item Smaller labor pools
+		%\item Weaker hiring and less standardization
+		%\item Less ability to absorb shocks without cutting variable costs
+		%\item Ownership changes may be more destabilizing without chain-level management systems
 	\end{itemize}
-
+	
+	\pause
 	\vspace{0.35em}
 	\item \textbf{Why are declines smaller after Covid?}
 	
 	\begin{itemize}
-		\item Widespread shortages make staffing reductions harder to implement
-		\item Greater scrutiny of staffing/quality raises the cost of cutting hours
-		\item Facilities closer to staffing constraints have less room to reduce hours further
-		\item Owners may prioritize stabilizing operations rather than restructuring staffing during crisis periods
+		\item Labor market shocks
+		\item Higher oversight/compliance
+		\item Tighter constraints
 	\end{itemize}
 
 \end{itemize}
@@ -872,6 +880,7 @@ Individual & Person & STURM, JOSHUA   & 25\% \\
 \begin{frame}[t]{Conclusion and future extensions}
 
 \begin{itemize}[<+->]
+	\setlength{\itemsep}{0.85em}
 	\item Ownership changes lead to persistent declines in \textbf{RN/CNA/Total} staffing; \textbf{LPN stable}
 	\item Declines are small
 	\item Effects larger for \textbf{non-chains} and smaller during \textbf{COVID}
@@ -879,7 +888,9 @@ Individual & Person & STURM, JOSHUA   & 25\% \\
 	\item Future Research
 	
 	\begin{itemize}
-		\item Linking our findings to quality metrics and resident outcomes	
+		\setlength{\itemsep}{0.20em}
+		\item Linking our findings to quality metrics and resident outcomes
+		\item Identifying mechanisms
 	\end{itemize}
   
 \end{itemize}
@@ -891,11 +902,20 @@ Individual & Person & STURM, JOSHUA   & 25\% \\
 \Large Questions?
 \end{frame}
 
+% Save current frame number (last "content" slide)
+\newcounter{finalframe}
+\setcounter{finalframe}{\value{framenumber}}
+
+\appendix
+\setbeamertemplate{footline}{} % optional: hide footer entirely for refs
+
 \begin{frame}[allowframebreaks]{References}
-\bibliographystyle{apalike} % or whatever you use in the paper
+\bibliographystyle{apalike}
 \bibliography{refs}
 \end{frame}
 
+% Restore frame number so total doesn't include appendix
+\setcounter{framenumber}{\value{finalframe}}
 
 \end{document}
 
