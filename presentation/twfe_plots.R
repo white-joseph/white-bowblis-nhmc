@@ -8,7 +8,23 @@ suppressPackageStartupMessages({
 OUT_DIR <- "C:/Repositories/white-bowblis-nhmc/presentation"
 dir.create(OUT_DIR, recursive = TRUE, showWarnings = FALSE)
 
-theme_set(theme_minimal(base_size = 14, base_family = "Times New Roman"))
+# Match your other presentation plots: sans serif, larger text
+theme_set(theme_minimal(base_size = 16, base_family = "sans"))
+
+presentation_bar_theme <- function() {
+  theme(
+    panel.grid.minor   = element_blank(),
+    legend.position    = "top",
+    legend.title       = element_blank(),
+    legend.text        = element_text(size = 15),
+    axis.title.x       = element_blank(),
+    axis.title.y       = element_text(size = 18),
+    axis.text.x        = element_text(size = 16),
+    axis.text.y        = element_text(size = 16),
+    plot.title         = element_blank(),
+    plot.title.position = "plot"
+  )
+}
 
 # -----------------------------
 # Helper: compute tight y-lims from 95% CI
@@ -26,7 +42,7 @@ tight_ylims <- function(df, pad_frac = 0.12) {
 #   PDF only (no PNG)
 # -----------------------------
 plot_twfe_bars_onepanel <- function(df, panel_keep,
-                                    title, out_stub,
+                                    out_stub,
                                     ylab = "Estimated effect of ownership change (post)",
                                     bar_width = 0.38,
                                     dodge_width = 0.62,
@@ -50,28 +66,31 @@ plot_twfe_bars_onepanel <- function(df, panel_keep,
     )
   
   yl <- tight_ylims(d)
-  
   pal <- fill_values[names(fill_values) %in% as.character(unique(d$group))]
   
   p <- ggplot(d, aes(x = outcome, y = estimate, fill = group)) +
     geom_hline(yintercept = 0, linewidth = 0.4) +
-    geom_col(position = position_dodge(width = dodge_width), width = bar_width) +
+    geom_col(
+      position = position_dodge(width = dodge_width),
+      width = bar_width
+    ) +
     geom_errorbar(
       aes(ymin = ci_lo, ymax = ci_hi),
       position = position_dodge(width = dodge_width),
       width = 0.12,
-      linewidth = 0.4
+      linewidth = 0.5
     ) +
-    scale_y_continuous(limits = yl, breaks = pretty_breaks(n = 6)) +
+    scale_y_continuous(
+      limits = yl,
+      breaks = pretty_breaks(n = 6)
+    ) +
     scale_fill_manual(values = pal, drop = FALSE) +
-    labs(x = NULL, y = ylab, title = title, fill = NULL) +
-    theme(
-      panel.grid.minor = element_blank(),
-      legend.position  = "top",
-      axis.text.x      = element_text(size = 12),
-      plot.title       = element_text(hjust = 0.5),
-      plot.title.position = "plot"
-    )
+    labs(
+      x = NULL,
+      y = ylab,
+      fill = NULL
+    ) +
+    presentation_bar_theme()
   
   out_pdf <- file.path(OUT_DIR, paste0(out_stub, ".pdf"))
   ggsave(out_pdf, p, width = out_width, height = out_height, device = cairo_pdf)
@@ -141,35 +160,35 @@ df_tab4 <- tribble(
 # MAKE PLOTS (two per table)
 # ============================================================
 
-plot_twfe_bars_onepanel(df_tab3, "HPPD",
-                        title = "TWFE Post Estimates: Baseline",
-                        out_stub = "twfe_post_baseline_hppd_bars"
+plot_twfe_bars_onepanel(
+  df_tab3, "HPPD",
+  out_stub = "twfe_post_baseline_hppd_bars"
 )
 
-plot_twfe_bars_onepanel(df_tab3, "Log(HPPD)",
-                        title = "TWFE Post Estimates: Baseline",
-                        out_stub = "twfe_post_baseline_loghppd_bars",
-                        ylab = "Estimated effect of ownership change (post, log points)"
+plot_twfe_bars_onepanel(
+  df_tab3, "Log(HPPD)",
+  out_stub = "twfe_post_baseline_loghppd_bars",
+  ylab = "Estimated effect of ownership change (post, log points)"
 )
 
-plot_twfe_bars_onepanel(df_tab5, "HPPD",
-                        title = "TWFE Post Estimates: Chain vs Non-chain",
-                        out_stub = "twfe_post_chain_nonchain_hppd_bars"
+plot_twfe_bars_onepanel(
+  df_tab5, "HPPD",
+  out_stub = "twfe_post_chain_nonchain_hppd_bars"
 )
 
-plot_twfe_bars_onepanel(df_tab5, "Log(HPPD)",
-                        title = "TWFE Post Estimates: Chain vs Non-chain",
-                        out_stub = "twfe_post_chain_nonchain_loghppd_bars",
-                        ylab = "Estimated effect of ownership change (post, log points)"
+plot_twfe_bars_onepanel(
+  df_tab5, "Log(HPPD)",
+  out_stub = "twfe_post_chain_nonchain_loghppd_bars",
+  ylab = "Estimated effect of ownership change (post, log points)"
 )
 
-plot_twfe_bars_onepanel(df_tab4, "HPPD",
-                        title = "TWFE Post Estimates: Pre-pandemic vs Pandemic",
-                        out_stub = "twfe_post_prepandemic_pandemic_hppd_bars"
+plot_twfe_bars_onepanel(
+  df_tab4, "HPPD",
+  out_stub = "twfe_post_prepandemic_pandemic_hppd_bars"
 )
 
-plot_twfe_bars_onepanel(df_tab4, "Log(HPPD)",
-                        title = "TWFE Post Estimates: Pre-pandemic vs Pandemic",
-                        out_stub = "twfe_post_prepandemic_pandemic_loghppd_bars",
-                        ylab = "Estimated effect of ownership change (post, log points)"
+plot_twfe_bars_onepanel(
+  df_tab4, "Log(HPPD)",
+  out_stub = "twfe_post_prepandemic_pandemic_loghppd_bars",
+  ylab = "Estimated effect of ownership change (post, log points)"
 )

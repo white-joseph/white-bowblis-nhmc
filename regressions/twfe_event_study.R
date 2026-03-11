@@ -31,9 +31,13 @@ set_plot_font()
 # ------------------------------ 0) Load ------------------------------
 panel_fp <- "C:/Repositories/white-bowblis-nhmc/data/clean/panel.csv"
 
-# NEW: plot output directory
+# Paper plot output directory
 out_plots <- "C:/Repositories/white-bowblis-nhmc/outputs/plots"
 dir.create(out_plots, showWarnings = FALSE, recursive = TRUE)
+
+# Presentation plot output directory
+presentation_dir <- "C:/Repositories/white-bowblis-nhmc/presentation"
+dir.create(presentation_dir, showWarnings = FALSE, recursive = TRUE)
 
 keep_cols <- c(
   "cms_certification_number","year_month","anticipation2",
@@ -230,45 +234,149 @@ fit_block <- function(tag, data, desired_ref = -1L, print_logs = TRUE,
   
   # RN
   iplot(mods_lvl[["rn_hppd"]], ref = ref, xlim = event_window,
-        xlab = "Months relative to treatment", ylab = "RN HPPD",
+        xlab = "Months relative to treatment", ylab = "RN HPRD",
         main = "", sub = ""
-        # main = paste0("TWFE ES: RN — ", tag)  # titles OFF
   )
   save_iplot(mods_lvl[["rn_hppd"]],
              sprintf("twfe_es_rn_%s.pdf", tag_safe),
-             "RN HPPD", paste0("TWFE ES: RN — ", tag))
+             "RN HPRD", paste0("TWFE ES: RN — ", tag))
   
   # LPN
   iplot(mods_lvl[["lpn_hppd"]], ref = ref, xlim = event_window,
-        xlab = "Months relative to treatment", ylab = "LPN HPPD",
+        xlab = "Months relative to treatment", ylab = "LPN HPRD",
         main = "", sub = ""
-        # main = paste0("TWFE ES: LPN — ", tag)
   )
   save_iplot(mods_lvl[["lpn_hppd"]],
              sprintf("twfe_es_lpn_%s.pdf", tag_safe),
-             "LPN HPPD", paste0("TWFE ES: LPN — ", tag))
+             "LPN HPRD", paste0("TWFE ES: LPN — ", tag))
   
   # CNA
   iplot(mods_lvl[["cna_hppd"]], ref = ref, xlim = event_window,
-        xlab = "Months relative to treatment", ylab = "CNA HPPD",
+        xlab = "Months relative to treatment", ylab = "CNA HPRD",
         main = "", sub = ""
-        # main = paste0("TWFE ES: CNA — ", tag)
   )
   save_iplot(mods_lvl[["cna_hppd"]],
              sprintf("twfe_es_cna_%s.pdf", tag_safe),
-             "CNA HPPD", paste0("TWFE ES: CNA — ", tag))
+             "CNA HPRD", paste0("TWFE ES: CNA — ", tag))
   
   # TOTAL
   iplot(mods_lvl[["total_hppd"]], ref = ref, xlim = event_window,
-        xlab = "Months relative to treatment", ylab = "Total HPPD",
+        xlab = "Months relative to treatment", ylab = "Total HPRD",
         main = "", sub = ""
-        # main = paste0("TWFE ES: Total — ", tag)
   )
   save_iplot(mods_lvl[["total_hppd"]],
              sprintf("twfe_es_total_%s.pdf", tag_safe),
-             "Total HPPD", paste0("TWFE ES: Total — ", tag))
+             "Total HPRD", paste0("TWFE ES: Total — ", tag))
   
   invisible(list(levels = mods_lvl, logs = mods_log, ref = ref))
+}
+
+# ------------------------------ 5b) Presentation-only plots ------------------------------
+# Separate helper so slide plots can use a sans serif font and larger axes/labels
+# without changing the paper plots.
+
+set_presentation_plot_style <- function() {
+  par(
+    family   = "sans",
+    cex.axis = 1.18,
+    tcl      = -0.28,
+    mgp      = c(1.9, 0.65, 0),   # tick-label spacing
+    xaxs     = "r",
+    yaxs     = "r",
+    
+    # Explicitly place the plotting region inside the PDF:
+    # c(left, right, bottom, top) in device fractions
+    plt      = c(0.14, 0.96, 0.16, 0.90))
+}
+
+save_presentation_iplot <- function(model, ref, file_name, ylab_txt,
+                                    save_dir = presentation_dir,
+                                    event_window = c(-24L, 24L)) {
+  dir.create(save_dir, showWarnings = FALSE, recursive = TRUE)
+  
+  grDevices::cairo_pdf(
+    filename = file.path(save_dir, file_name),
+    width    = 9.4,
+    height   = 5.4
+  )
+  
+  old_par <- par(no.readonly = TRUE)
+  on.exit({
+    par(old_par)
+    dev.off()
+  }, add = FALSE)
+  
+  set_presentation_plot_style()
+  
+  iplot(
+    model,
+    ref  = ref,
+    xlim = event_window,
+    xlab = "",
+    ylab = "",
+    main = "",
+    sub  = ""
+  )
+  
+  # Manual axis titles so they can sit farther from tick labels
+  mtext(
+    "Months relative to treatment",
+    side   = 1,
+    line   = 2.8,
+    cex    = 1.34,
+    family = "sans"
+  )
+  
+  mtext(
+    ylab_txt,
+    side   = 2,
+    line   = 3.2,
+    cex    = 1.34,
+    family = "sans"
+  )
+}
+
+save_baseline_presentation_plots <- function(mod_obj,
+                                             tag = "baseline",
+                                             save_dir = presentation_dir,
+                                             event_window = c(-24L, 24L)) {
+  ref <- mod_obj$ref
+  
+  save_presentation_iplot(
+    mod_obj$levels[["rn_hppd"]],
+    ref = ref,
+    file_name = paste0("twfe_es_rn_", tag, "_presentation.pdf"),
+    ylab_txt = "RN HPRD",
+    save_dir = save_dir,
+    event_window = event_window
+  )
+  
+  save_presentation_iplot(
+    mod_obj$levels[["lpn_hppd"]],
+    ref = ref,
+    file_name = paste0("twfe_es_lpn_", tag, "_presentation.pdf"),
+    ylab_txt = "LPN HPRD",
+    save_dir = save_dir,
+    event_window = event_window
+  )
+  
+  save_presentation_iplot(
+    mod_obj$levels[["cna_hppd"]],
+    ref = ref,
+    file_name = paste0("twfe_es_cna_", tag, "_presentation.pdf"),
+    ylab_txt = "CNA HPRD",
+    save_dir = save_dir,
+    event_window = event_window
+  )
+  
+  save_presentation_iplot(
+    mod_obj$levels[["total_hppd"]],
+    ref = ref,
+    file_name = paste0("twfe_es_total_", tag, "_presentation.pdf"),
+    ylab_txt = "Total HPRD",
+    save_dir = save_dir,
+    event_window = event_window
+  )
 }
 
 # ------------------------------ 6) Define samples ------------------------------
@@ -304,43 +412,56 @@ mods_pan_full <- fit_block("Pandemic (2020Q2–2024Q2) — WITH anticipation",
 mods_pan_no   <- fit_block("Pandemic (2020Q2–2024Q2) — WITHOUT anticipation",
                            S_pan_noant, desired_ref = -4L, save_dir = out_plots)
 
+# ------------------------------ 7b) Extra baseline plots for presentation ------------------------------
+# Baseline for slides = no-anticipation spec
+baseline_for_slides <- mods_noant
+baseline_tag_for_slides <- "no_anticipation_baseline"
+
+save_baseline_presentation_plots(
+  mod_obj      = baseline_for_slides,
+  tag          = baseline_tag_for_slides,
+  save_dir     = presentation_dir,
+  event_window = c(-24L, 24L)
+)
+
+cat("\nSaved extra presentation baseline plots to:\n", presentation_dir, "\n", sep = "")
+
 # ------------------------------ 8) TWFE robustness: event-window and anticipation-window ------------------------------
-# (unchanged below)
 robust_specs <- list(
   list(
-    name        = "noant_win_24",
-    tag         = "Robustness: WITHOUT anticipation, window [-24,24]",
-    data        = S_noant,
-    desired_ref = -4L,
-    event_window= c(-24L, 24L)
+    name         = "noant_win_24",
+    tag          = "Robustness: WITHOUT anticipation, window [-24,24]",
+    data         = S_noant,
+    desired_ref  = -4L,
+    event_window = c(-24L, 24L)
   ),
   list(
-    name        = "noant_win_18",
-    tag         = "Robustness: WITHOUT anticipation, window [-18,18]",
-    data        = S_noant,
-    desired_ref = -4L,
-    event_window= c(-18L, 18L)
+    name         = "noant_win_18",
+    tag          = "Robustness: WITHOUT anticipation, window [-18,18]",
+    data         = S_noant,
+    desired_ref  = -4L,
+    event_window = c(-18L, 18L)
   ),
   list(
-    name        = "noant_win_12",
-    tag         = "Robustness: WITHOUT anticipation, window [-12,12]",
-    data        = S_noant,
-    desired_ref = -4L,
-    event_window= c(-12L, 12L)
+    name         = "noant_win_12",
+    tag          = "Robustness: WITHOUT anticipation, window [-12,12]",
+    data         = S_noant,
+    desired_ref  = -4L,
+    event_window = c(-12L, 12L)
   ),
   list(
-    name        = "drop_m4_to_m1",
-    tag         = "Robustness: drop t in {-4,-3,-2,-1}",
-    data        = df %>% filter(is.na(event_time) | !(event_time %in% -4:-1)),
-    desired_ref = -1L,
-    event_window= c(-24L, 24L)
+    name         = "drop_m4_to_m1",
+    tag          = "Robustness: drop t in {-4,-3,-2,-1}",
+    data         = df %>% filter(is.na(event_time) | !(event_time %in% -4:-1)),
+    desired_ref  = -1L,
+    event_window = c(-24L, 24L)
   ),
   list(
-    name        = "drop_m2_to_m1",
-    tag         = "Robustness: drop t in {-2,-1}",
-    data        = df %>% filter(is.na(event_time) | !(event_time %in% c(-2, -1))),
-    desired_ref = -1L,
-    event_window= c(-24L, 24L)
+    name         = "drop_m2_to_m1",
+    tag          = "Robustness: drop t in {-2,-1}",
+    data         = df %>% filter(is.na(event_time) | !(event_time %in% c(-2, -1))),
+    desired_ref  = -1L,
+    event_window = c(-24L, 24L)
   )
 )
 

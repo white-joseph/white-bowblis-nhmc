@@ -5,10 +5,10 @@
 #
 # OUTPUTS:
 #   C:/Repositories/white-bowblis-nhmc/presentation/
-#     - twfe_es_rn_preonly_tau_m24_to_0_highlight_anticipation.pdf/png
-#     - twfe_es_lpn_preonly_tau_m24_to_0_highlight_anticipation.pdf/png
-#     - twfe_es_cna_preonly_tau_m24_to_0_highlight_anticipation.pdf/png
-#     - twfe_es_total_preonly_tau_m24_to_0_highlight_anticipation.pdf/png
+#     - twfe_es_rn_preonly_tau_m24_to_0_highlight_anticipation_presentation.pdf
+#     - twfe_es_lpn_preonly_tau_m24_to_0_highlight_anticipation_presentation.pdf
+#     - twfe_es_cna_preonly_tau_m24_to_0_highlight_anticipation_presentation.pdf
+#     - twfe_es_total_preonly_tau_m24_to_0_highlight_anticipation_presentation.pdf
 
 suppressPackageStartupMessages({
   library(fixest)
@@ -16,10 +16,16 @@ suppressPackageStartupMessages({
   library(dplyr)
 })
 
-# ------------------------------ Plot font (Times / newtx-like) ------------------------------
-set_plot_font <- function() {
-  fam <- "Times New Roman"
-  par(family = fam)
+# ------------------------------ Presentation plot style ------------------------------
+# Match the slide-style formatting used in the other presentation plots.
+set_presentation_plot_style <- function() {
+  par(
+    family   = "sans",
+    cex.axis = 1.30,
+    mar      = c(6.0, 6.2, 1.2, 1.2),  # a bit more room for manual axis titles
+    mgp      = c(2.0, 0.85, 0),        # tick labels spacing
+    tcl      = -0.3
+  )
 }
 
 # ------------------------------ Paths ------------------------------
@@ -125,7 +131,13 @@ get_es_df <- function(mod,
   if (!is.null(ref_tau) && !(ref_tau %in% df_es$tau)) {
     df_es <- rbind(
       df_es,
-      data.frame(tau = as.integer(ref_tau), estimate = 0, se = NA_real_, ci_lo = NA_real_, ci_hi = NA_real_)
+      data.frame(
+        tau = as.integer(ref_tau),
+        estimate = 0,
+        se = NA_real_,
+        ci_lo = NA_real_,
+        ci_hi = NA_real_
+      )
     )
   }
   
@@ -138,70 +150,94 @@ get_es_df <- function(mod,
 save_preonly_plot <- function(mod,
                               ref_tau,
                               out_pdf,
-                              out_png,
                               tau_min = -24L,
                               tau_max = 0L,
                               highlight_taus = -3:-1,
                               xlab = "Months relative to treatment",
-                              ylab = "HPPD") {
+                              ylab = "HPRD") {
   
   d <- get_es_df(mod, ref_tau = ref_tau)
   d <- d[d$tau >= tau_min & d$tau <= tau_max, ]
   if (!nrow(d)) stop("No coefficients in requested plotting window.")
   
   d$is_hi <- d$tau %in% highlight_taus
-  
-  pt_col <- ifelse(d$is_hi, "red3", "black")
-  ci_col <- ifelse(d$is_hi, "red3", "gray40")
   has_ci <- is.finite(d$ci_lo) & is.finite(d$ci_hi)
   
-  ylim <- range(c(d$ci_lo, d$ci_hi, 0), na.rm = TRUE)
-  pad  <- 0.08 * diff(ylim)
-  if (!is.finite(pad) || pad == 0) pad <- 0.1
-  ylim <- c(ylim[1] - pad, ylim[2] + pad)
-  
   draw_panel <- function() {
-    set_plot_font()
+    old_par <- par(no.readonly = TRUE)
+    on.exit(par(old_par), add = TRUE)
     
-    plot(d$tau, d$estimate,
-         type = "n",
-         xlim = c(tau_min, tau_max),
-         ylim = ylim,
-         xlab = xlab,
-         ylab = ylab,
-         axes = TRUE)
+    set_presentation_plot_style()
     
-    # subtle shading for anticipation window
+    # Base plot with no built-in axis titles
+    iplot(
+      mod,
+      ref  = ref_tau,
+      xlim = c(tau_min, tau_max),
+      xlab = "",
+      ylab = "",
+      main = "",
+      sub  = ""
+    )
+    
+    # subtle anticipation-window shading
     if (length(highlight_taus)) {
-      lo <- min(highlight_taus); hi <- max(highlight_taus)
+      lo <- min(highlight_taus)
+      hi <- max(highlight_taus)
       usr <- par("usr")
-      rect(xleft = lo - 0.5, ybottom = usr[3],
-           xright = hi + 0.5, ytop = usr[4],
-           col = grDevices::adjustcolor("red", alpha.f = 0.06),
-           border = NA)
+      rect(
+        xleft   = lo - 0.5,
+        ybottom = usr[3],
+        xright  = hi + 0.5,
+        ytop    = usr[4],
+        col     = grDevices::adjustcolor("red", alpha.f = 0.06),
+        border  = NA
+      )
+      
+      # keep reference lines visible
+      abline(h = 0, lty = 2, col = "gray50")
+      abline(v = 0, lty = 1, col = "gray50")
     }
     
-    abline(h = 0, lty = 2, col = "gray50")
-    abline(v = 0, lty = 1, col = "gray50")
+    # highlighted anticipation coefficients
+    d_hi <- d[d$is_hi, ]
+    has_ci_hi <- is.finite(d_hi$ci_lo) & is.finite(d_hi$ci_hi)
     
-    segments(d$tau[has_ci], d$ci_lo[has_ci], d$tau[has_ci], d$ci_hi[has_ci],
-             col = ci_col[has_ci], lwd = 2)
+    if (nrow(d_hi) > 0) {
+      segments(
+        d_hi$tau[has_ci_hi], d_hi$ci_lo[has_ci_hi],
+        d_hi$tau[has_ci_hi], d_hi$ci_hi[has_ci_hi],
+        col = "red3",
+        lwd = 2
+      )
+      
+      points(
+        d_hi$tau, d_hi$estimate,
+        pch = 19,
+        cex = 1.0,
+        col = "red3"
+      )
+    }
     
-    points(d$tau, d$estimate, pch = 19, cex = 1.1, col = pt_col)
+    # manual axis titles with more separation
+    mtext(
+      text   = xlab,
+      side   = 1,
+      line   = 3.6,
+      cex    = 1.45,
+      family = "sans"
+    )
     
-    legend("topleft",
-           legend = c("Other pre-period months", "Anticipation months (-3 to -1)"),
-           col    = c("black", "red3"),
-           pch    = 19,
-           bty    = "n",
-           cex    = 0.95)
+    mtext(
+      text   = ylab,
+      side   = 2,
+      line   = 3.9,
+      cex    = 1.45,
+      family = "sans"
+    )
   }
   
   grDevices::cairo_pdf(out_pdf, width = 9.5, height = 6.2)
-  draw_panel()
-  grDevices::dev.off()
-  
-  grDevices::png(out_png, width = 1800, height = 1200, res = 200)
   draw_panel()
   grDevices::dev.off()
   
@@ -210,10 +246,10 @@ save_preonly_plot <- function(mod,
 
 # ------------------------------ 6) Run models + save plots for all 4 ------------------------------
 specs <- list(
-  list(var = "rn_hppd",    stem = "rn",    ylab = "RN HPPD"),
-  list(var = "lpn_hppd",   stem = "lpn",   ylab = "LPN HPPD"),
-  list(var = "cna_hppd",   stem = "cna",   ylab = "CNA HPPD"),
-  list(var = "total_hppd", stem = "total", ylab = "Total HPPD")
+  list(var = "rn_hppd",    stem = "rn",    ylab = "RN HPRD"),
+  list(var = "lpn_hppd",   stem = "lpn",   ylab = "LPN HPRD"),
+  list(var = "cna_hppd",   stem = "cna",   ylab = "CNA HPRD"),
+  list(var = "total_hppd", stem = "total", ylab = "Total HPRD")
 )
 
 for (s in specs) {
@@ -221,14 +257,15 @@ for (s in specs) {
   
   mod <- run_es_twfe(lhs = s$var, data = df, ref_tau = ref_tau)
   
-  pdf_fp <- file.path(out_pres, sprintf("twfe_es_%s_preonly_tau_m24_to_0_highlight_anticipation.pdf", s$stem))
-  png_fp <- file.path(out_pres, sprintf("twfe_es_%s_preonly_tau_m24_to_0_highlight_anticipation.png", s$stem))
+  pdf_fp <- file.path(
+    out_pres,
+    sprintf("twfe_es_%s_preonly_tau_m24_to_0_highlight_anticipation_presentation.pdf", s$stem)
+  )
   
   save_preonly_plot(
     mod = mod,
     ref_tau = ref_tau,
     out_pdf = pdf_fp,
-    out_png = png_fp,
     tau_min = -24L,
     tau_max = 0L,
     highlight_taus = -3:-1,
@@ -238,7 +275,6 @@ for (s in specs) {
   
   cat("Saved:\n")
   cat(" - ", pdf_fp, "\n", sep = "")
-  cat(" - ", png_fp, "\n", sep = "")
 }
 
 cat("\nDone.\n")

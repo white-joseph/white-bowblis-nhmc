@@ -12,8 +12,8 @@ ANL_FP  <- "C:/Repositories/white-bowblis-nhmc/data/clean/analytical_panel.csv"
 OUT_DIR <- "C:/Repositories/white-bowblis-nhmc/presentation"
 dir.create(OUT_DIR, recursive = TRUE, showWarnings = FALSE)
 
-# ------------------------------ Plot font (Times / newtx-like) ------------------------------
-theme_set(theme_minimal(base_size = 18, base_family = "Times New Roman"))
+# ------------------------------ Plot font ------------------------------
+theme_set(theme_minimal(base_size = 18, base_family = "sans"))
 
 # ------------------------------ Helpers ------------------------------
 normalize_ccn <- function(x) {
@@ -116,17 +116,8 @@ total_all_cells <- sum(ct$n, na.rm = TRUE)
 
 ct <- ct %>%
   mutate(
-    n_fmt_raw   = format(n, big.mark = ","),
-    pct_fmt_raw = pct_str(n, total_all_cells, digits = 1)
-  )
-
-# compute a consistent label width from the longest COUNT string
-LABEL_WIDTH <- max(nchar(ct$n_fmt_raw, type = "chars"), na.rm = TRUE)
-
-ct <- ct %>%
-  mutate(
-    n_fmt   = lpad(n_fmt_raw, LABEL_WIDTH),
-    pct_fmt = lpad(pct_fmt_raw, LABEL_WIDTH)
+    n_fmt = format(n, big.mark = ",", trim = TRUE),
+    pct_fmt = sprintf("(%.1f%%)", 100 * n / total_all_cells)
   )
 
 # ------------------------------ Plot styling ------------------------------
@@ -142,36 +133,38 @@ PCT_SIZE   <- 4.3
 p_ct <- ggplot(ct, aes(x = mcr_bin, y = nhc_bin)) +
   geom_tile(fill = "white", color = "black", linewidth = 0.7) +
   
+  # Light shading for the two cells of interest
+  geom_rect(
+    data = rects,
+    aes(xmin = xmin, xmax = xmax, ymin = ymin, ymax = ymax),
+    inherit.aes = FALSE,
+    fill = scales::alpha("red", 0.08),
+    color = "red",
+    linewidth = 1.4
+  ) +
+  
   # Count: above center
   geom_text(
     aes(label = n_fmt),
     size = COUNT_SIZE,
-    nudge_y = +0.12
+    nudge_y = +0.12,
+    hjust = 0.5
   ) +
   
   # Percent: below center
   geom_text(
     aes(label = pct_fmt),
     size = PCT_SIZE,
-    nudge_y = -0.16
+    nudge_y = -0.16,
+    hjust = 0.5
   ) +
   
-  geom_rect(
-    data = rects,
-    aes(xmin = xmin, xmax = xmax, ymin = ymin, ymax = ymax),
-    inherit.aes = FALSE,
-    fill = NA,
-    color = "red",
-    linewidth = 1.4
-  ) +
   labs(
     x = "Count of changes in HCRIS",
-    y = "Count of changes in NHC",
-    title = "Cross-tab of Ownership Changes"
+    y = "Count of changes in NHC"
   ) +
   theme(
     panel.grid = element_blank(),
-    plot.title = element_text(hjust = 0.5, size = 22),
     axis.title = element_text(size = 18),
     axis.text  = element_text(size = 16)
   )
