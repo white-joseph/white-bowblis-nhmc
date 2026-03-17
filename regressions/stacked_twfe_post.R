@@ -1,10 +1,12 @@
 # C:/Repositories/white-bowblis-nhmc/regressions/stacked_twfe_post.R
 # Basic TWFE DiD (post-only) on the STACKED dataset
-# - Baseline stacked sample with donut (-3,-2,-1 dropped for treated cohort)
-# - Outcomes: RN/LPN/CNA/Total in levels and logs
-# - FE: stack_id + year_month + cohort
-# - SE: cluster at facility (cms_certification_number)
-# - Outputs LaTeX table: stacked_twfe_post_full.tex (+ QA)
+# Fix: avoid "*** recursive gc invocation" by:
+#   - trimming stacked dataset columns
+#   - fitting ONE model at a time (no lapply over 24M rows)
+#   - extracting post coef/SE/p immediately, then rm()+gc()
+# Outputs:
+#   - outputs/tables/stacked_twfe_post_full.tex
+#   - outputs/tables/stacked_twfe_post_full_QA.tex
 
 suppressPackageStartupMessages({
   library(fixest)
@@ -14,8 +16,9 @@ suppressPackageStartupMessages({
 
 options(scipen = 999, digits = 4)
 
-panel_fp  <- "C:/Repositories/white-bowblis-nhmc/data/clean/panel.csv"
-out_dir   <- "C:/Repositories/white-bowblis-nhmc/outputs/tables"
+# ------------------------------ Paths ------------------------------
+panel_fp <- "C:/Repositories/white-bowblis-nhmc/data/clean/panel.csv"
+out_dir  <- "C:/Repositories/white-bowblis-nhmc/outputs/tables"
 dir.create(out_dir, showWarnings = FALSE, recursive = TRUE)
 
 # ------------------------------ Load ------------------------------
@@ -38,7 +41,7 @@ df <- raw[, keep_cols_present] %>%
   )
 rm(raw)
 
-# logs
+# ------------------------------ Logs ------------------------------
 mk_log <- function(x) ifelse(x > 0, log(x), NA_real_)
 df <- df %>%
   mutate(
@@ -51,7 +54,7 @@ df <- df %>%
 outs_lvl <- c("rn_hppd","lpn_hppd","cna_hppd","total_hppd")
 outs_log <- c(rn_hppd="ln_rn", lpn_hppd="ln_lpn", cna_hppd="ln_cna", total_hppd="ln_total")
 
-# controls
+# ------------------------------ Controls ------------------------------
 controls_rhs <- paste(
   "government + non_profit + chain + beds +",
   "occupancy_rate + pct_medicare + pct_medicaid +",
@@ -69,9 +72,7 @@ g_df <- df %>%
     .groups = "drop"
   )
 
-df <- df %>%
-  left_join(g_df, by = "cms_certification_number")
-
+df <- df %>% left_join(g_df, by = "cms_certification_number")
 cohorts <- sort(unique(df$g[!is.na(df$g)]))
 cat("Unique cohorts (treated months):", length(cohorts), "\n")
 
@@ -81,21 +82,22 @@ make_stacked_data <- function(data, cohorts_vec, L = 24L, R = 24L, drop_set = -3
   stacked <- lapply(cohorts_vec, function(g0) {
     
     d <- data %>%
-      filter(time >= g0 - L, time <= g0 + R) %>%
-      filter(is.na(g) | g > g0 | g == g0) %>%
-      mutate(
+      dplyr::filter(time >= g0 - L, time <= g0 + R) %>%
+      dplyr::filter(is.na(g) | g > g0 | g == g0) %>%
+      dplyr::mutate(
         cohort = as.integer(g0),
         rel = as.integer(time - g0),
         treated_stack = as.integer(!is.na(g) & g == g0),
         stack_id = interaction(cms_certification_number, cohort, drop = TRUE)
       ) %>%
       # baseline donut: drop treated obs at -3,-2,-1
-      filter(treated_stack == 0L | !(rel %in% drop_set)) %>%
-      # define post for TWFE DiD on stacked sample
-      mutate(post = as.integer(treated_stack == 1L & rel >= 0L)) %>%
-      select(
+      dplyr::filter(treated_stack == 0L | !(rel %in% drop_set)) %>%
+      # post for TWFE DiD on stacked
+      dplyr::mutate(post = as.integer(treated_stack == 1L & rel >= 0L)) %>%
+      # trim columns HARD to keep RAM down
+      dplyr::select(
         cms_certification_number, year_month,
-        cohort, rel, treated_stack, stack_id, post,
+        cohort, stack_id, post,
         government, non_profit, chain, beds,
         occupancy_rate, pct_medicare, pct_medicaid,
         cm_q_state_2, cm_q_state_3, cm_q_state_4,
@@ -106,59 +108,71 @@ make_stacked_data <- function(data, cohorts_vec, L = 24L, R = 24L, drop_set = -3
     d
   })
   
-  bind_rows(stacked)
+  dplyr::bind_rows(stacked)
 }
 
-stack <- make_stacked_data(df, cohorts, L = 24L, R = 24L, drop_set = -3:-1)
+L <- 24L
+R <- 24L
+stack <- make_stacked_data(df, cohorts, L = L, R = R, drop_set = -3:-1)
+rm(df); gc()
 cat("Stacked rows (baseline donut):", nrow(stack), "\n")
 
 # ------------------------------ Fit TWFE DiD on stacked ------------------------------
 make_fml <- function(lhs) as.formula(paste0(
   lhs, " ~ post + ", controls_rhs, " | stack_id + year_month + cohort"
 ))
-
 vc <- ~ cms_certification_number  # facility-only clustering (stable)
 
-mods_lvl <- lapply(outs_lvl, function(y) feols(make_fml(y), data = stack, vcov = vc, lean = TRUE))
-names(mods_lvl) <- outs_lvl
-
-mods_log <- lapply(outs_lvl, function(y) {
-  ly <- outs_log[[y]]
-  feols(make_fml(ly), data = stack, vcov = vc, lean = TRUE)
-})
-names(mods_log) <- outs_lvl
-
-# ------------------------------ Helpers to build LaTeX table ------------------------------
-coef_se_star <- function(mod, term = "post") {
-  sm <- summary(mod)
+# Extract post info without keeping giant model objects around
+extract_post <- function(mod, term = "post") {
   b  <- unname(coef(mod)[term])
-  se <- unname(sm$coeftable[term, "Std. Error"])
-  p  <- unname(sm$coeftable[term, "Pr(>|t|)"])
+  se <- unname(se(mod)[term])
+  p  <- unname(pvalue(mod)[term])
   stars <- if (is.na(p)) "" else if (p < 0.01) "***" else if (p < 0.05) "**" else if (p < 0.10) "*" else ""
-  list(coef = b, se = se, stars = stars)
+  list(b = b, se = se, stars = stars)
 }
 
+# Fit LEVELS one-by-one
+res_lvl <- list()
+for (y in outs_lvl) {
+  cat("[fit levels]", y, "\n")
+  m <- feols(make_fml(y), data = stack, vcov = vc, lean = TRUE)
+  res_lvl[[y]] <- extract_post(m)
+  rm(m); gc()
+}
+
+# Fit LOGS one-by-one
+res_log <- list()
+for (y in outs_lvl) {
+  ly <- outs_log[[y]]
+  cat("[fit logs]", ly, "\n")
+  m <- feols(make_fml(ly), data = stack, vcov = vc, lean = TRUE)
+  res_log[[y]] <- extract_post(m)
+  rm(m); gc()
+}
+
+# ------------------------------ LaTeX helpers ------------------------------
 fmt_est <- function(b, se, stars) {
-  bstr  <- sprintf("%.3f", b); if (b > 0) bstr <- paste0("\\phantom{-}", bstr)
+  bstr <- sprintf("%.3f", b)
+  if (b > 0) bstr <- paste0("\\phantom{-}", bstr)
   sestr <- sprintf("%.3f", se)
   sprintf("\\est{$%s$}{$%s$}{%s}", bstr, sestr, stars)
 }
 
-build_row <- function(modset) {
+row_from_res <- function(reslist) {
   paste(vapply(outs_lvl, function(y) {
-    s <- coef_se_star(modset[[y]])
-    fmt_est(s$coef, s$se, s$stars)
+    fmt_est(reslist[[y]]$b, reslist[[y]]$se, reslist[[y]]$stars)
   }, character(1)), collapse = "  &  ")
 }
 
-row_HPPD <- build_row(mods_lvl)
-row_LOG  <- build_row(mods_log)
+row_HPPD <- row_from_res(res_lvl)
+row_LOG  <- row_from_res(res_log)
 
 N_levels <- format(nrow(stack), big.mark = ",")
-# For logs: count rows where all needed logs are non-missing? Keep simple:
+# Logs N: rows where all logs are non-missing (simple, conservative)
 N_logs <- format(sum(complete.cases(stack[, c("ln_rn","ln_lpn","ln_cna","ln_total")])), big.mark = ",")
 
-# ------------------------------ Write LaTeX table (HPPD + Log(HPPD)) ------------------------------
+# ------------------------------ Write LaTeX table ------------------------------
 tab <- c(
   "\\begingroup",
   "\\begin{table}[!ht]",
