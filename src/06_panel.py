@@ -18,20 +18,36 @@ while not (PROJECT_ROOT / "src").is_dir() and PROJECT_ROOT != PROJECT_ROOT.paren
 
 REPO        = PROJECT_ROOT
 INTERIM     = REPO / "data" / "interim"
-CLEAN_DIR   = REPO / "data" / "clean"; CLEAN_DIR.mkdir(parents=True, exist_ok=True)
+CLEAN_DIR   = REPO / "data" / "clean"
+CLEAN_DIR.mkdir(parents=True, exist_ok=True)
 
 PROVIDER_FP = INTERIM / "provider.csv"
 PBJ_FP      = INTERIM / "pbj_nurse.csv"
 MCR_FP      = INTERIM / "mcr.csv"
 CHOW_FP     = INTERIM / "chow.csv"
-OUT_PBJ_FP  = CLEAN_DIR / "pbj_panel.csv"
-OUT_ANL_FP  = CLEAN_DIR / "analytical_panel.csv"
+
+# ============================== Spec Config ===================================
+SPEC_NAME = "date_mcr"          # baseline, date_nhc_m1, date_nhc_p1, date_nhc_m2, date_nhc_p2, date_mcr
+EVENT_DATE_SOURCE = "mcr"       # "nhc" or "mcr"
+EVENT_SHIFT_MONTHS = 0          # -2, -1, 0, +1, +2
+
+# ============================== Output Paths ==================================
+if SPEC_NAME == "baseline":
+    OUT_PBJ_FP   = CLEAN_DIR / "pbj_panel.csv"
+    OUT_ANL_FP   = CLEAN_DIR / "analytical_panel.csv"
+    OUT_FINAL_FP = CLEAN_DIR / "panel.csv"
+else:
+    OUT_PBJ_FP   = CLEAN_DIR / f"pbj_panel_{SPEC_NAME}.csv"
+    OUT_ANL_FP   = CLEAN_DIR / f"analytical_panel_{SPEC_NAME}.csv"
+    OUT_FINAL_FP = CLEAN_DIR / f"panel_{SPEC_NAME}.csv"
 
 print(f"[paths] provider={PROVIDER_FP.exists()}  pbj={PBJ_FP.exists()}  mcr={MCR_FP.exists()}  chow={CHOW_FP.exists()}")
+print(f"[spec]  SPEC_NAME={SPEC_NAME}  EVENT_DATE_SOURCE={EVENT_DATE_SOURCE}  EVENT_SHIFT_MONTHS={EVENT_SHIFT_MONTHS}")
 print(f"[out]   pbj={OUT_PBJ_FP}")
 print(f"[out]   analytical={OUT_ANL_FP}")
+print(f"[out]   final_panel={OUT_FINAL_FP}")
 
-# ============================== Config ========================================
+# ============================== Window Config =================================
 START_YM = "2017/01"
 END_YM   = "2024/06"
 START_Q  = "2017Q1"
@@ -49,6 +65,10 @@ def normalize_ccn_any(series: pd.Series) -> pd.Series:
 def to_monthstart(x) -> pd.Series:
     s = pd.to_datetime(x, errors="coerce")
     return s.dt.to_period("M").dt.to_timestamp("s")
+
+def shift_monthstart(x, k: int) -> pd.Series:
+    s = pd.to_datetime(x, errors="coerce").dt.to_period("M")
+    return (s + k).dt.to_timestamp("s")
 
 def first_chow_month(df: pd.DataFrame, patt: str) -> pd.Series:
     cols = [c for c in df.columns if re.search(patt, c, flags=re.I)]
@@ -180,6 +200,138 @@ def bridge_fill_equal(panel: pd.DataFrame, cols: list[str], group_key: str, nume
         return g
     return panel.groupby(group_key, group_keys=False, observed=True).apply(_apply)
 
+def finalize_regression_panel(df: pd.DataFrame) -> pd.DataFrame:
+    panel = df.copy()
+
+    # ---------- prep / ordering ----------
+    panel["_ord"] = pd.to_datetime(panel["year_month"].astype(str) + "/01", errors="coerce")
+    panel = panel.sort_values(["cms_certification_number", "_ord"], kind="mergesort")
+    g = panel.groupby("cms_certification_number", sort=False)
+
+    def interp_within_fac(series: pd.Series) -> pd.Series:
+        s = pd.to_numeric(series, errors="coerce")
+        return s.interpolate(method="linear", limit_direction="both")
+
+    # ---------- dummies: carry recent values ----------
+    for col in ["non_profit", "government", "chain"]:
+        if col in panel.columns:
+            panel[col] = pd.to_numeric(panel[col], errors="coerce")
+            panel[col] = g[col].transform(lambda s: s.ffill().bfill())
+            panel[col] = panel[col].fillna(0).astype("Int8")
+
+    # ---------- make key continuous vars numeric ----------
+    for col in ["occupancy_rate", "pct_medicare", "pct_medicaid"]:
+        if col in panel.columns:
+            panel[col] = pd.to_numeric(panel[col], errors="coerce")
+
+    # ---------- occupancy: within-facility interpolation ----------
+    if "occupancy_rate" in panel.columns:
+        panel["occupancy_rate"] = g["occupancy_rate"].transform(interp_within_fac)
+
+    # ---------- shares: within-facility interpolation ----------
+    for col in ["pct_medicare", "pct_medicaid"]:
+        if col in panel.columns:
+            panel[col] = g[col].transform(interp_within_fac)
+
+    # ---------- state×month medians ----------
+    have_state = all(c in panel.columns for c in ["state", "year_month"])
+    if have_state:
+        sm = (
+            panel.groupby(["state", "year_month"], dropna=False)[
+                ["occupancy_rate", "pct_medicare", "pct_medicaid"]
+            ]
+            .median()
+            .reset_index()
+            .rename(
+                columns={
+                    "occupancy_rate": "occupancy_rate_sm",
+                    "pct_medicare": "pct_medicare_sm",
+                    "pct_medicaid": "pct_medicaid_sm",
+                }
+            )
+        )
+        panel = panel.merge(sm, on=["state", "year_month"], how="left")
+    else:
+        panel["occupancy_rate_sm"] = np.nan
+        panel["pct_medicare_sm"] = np.nan
+        panel["pct_medicaid_sm"] = np.nan
+
+    # ---------- national medians ----------
+    nat_occ = pd.to_numeric(panel.get("occupancy_rate"), errors="coerce").median(skipna=True)
+    nat_mcr = pd.to_numeric(panel.get("pct_medicare"), errors="coerce").median(skipna=True)
+    nat_mcd = pd.to_numeric(panel.get("pct_medicaid"), errors="coerce").median(skipna=True)
+
+    # ---------- apply occupancy fallbacks ----------
+    if "occupancy_rate" in panel.columns:
+        m = panel["occupancy_rate"].isna()
+        if m.any():
+            panel.loc[m, "occupancy_rate"] = panel.loc[m, "occupancy_rate_sm"]
+        m = panel["occupancy_rate"].isna()
+        if m.any():
+            panel.loc[m, "occupancy_rate"] = nat_occ
+        panel["occupancy_rate"] = pd.to_numeric(panel["occupancy_rate"], errors="coerce").clip(0, 100)
+
+    # ---------- fallback to state×month, then national ----------
+    if "pct_medicare" in panel.columns:
+        m = panel["pct_medicare"].isna()
+        if m.any():
+            panel.loc[m, "pct_medicare"] = panel.loc[m, "pct_medicare_sm"]
+        m = panel["pct_medicare"].isna()
+        if m.any():
+            panel.loc[m, "pct_medicare"] = nat_mcr
+
+    if "pct_medicaid" in panel.columns:
+        m = panel["pct_medicaid"].isna()
+        if m.any():
+            panel.loc[m, "pct_medicaid"] = panel.loc[m, "pct_medicaid_sm"]
+        m = panel["pct_medicaid"].isna()
+        if m.any():
+            panel.loc[m, "pct_medicaid"] = nat_mcd
+
+    # ---------- if only one share is missing ----------
+    if {"pct_medicare", "pct_medicaid"}.issubset(panel.columns):
+        m = panel["pct_medicare"].isna() & panel["pct_medicaid"].notna()
+        if m.any():
+            candidate = 100 - panel.loc[m, "pct_medicaid"]
+            if "pct_medicare_sm" in panel.columns:
+                candidate = np.minimum(candidate, panel.loc[m, "pct_medicare_sm"].fillna(candidate))
+            panel.loc[m, "pct_medicare"] = candidate
+
+        m = panel["pct_medicaid"].isna() & panel["pct_medicare"].notna()
+        if m.any():
+            candidate = 100 - panel.loc[m, "pct_medicare"]
+            if "pct_medicaid_sm" in panel.columns:
+                candidate = np.minimum(candidate, panel.loc[m, "pct_medicaid_sm"].fillna(candidate))
+            panel.loc[m, "pct_medicaid"] = candidate
+
+    # ---------- final sanity ----------
+    for col in ["pct_medicare", "pct_medicaid"]:
+        if col in panel.columns:
+            panel[col] = pd.to_numeric(panel[col], errors="coerce").clip(0, 100)
+
+    if {"pct_medicare", "pct_medicaid"}.issubset(panel.columns):
+        sums = panel["pct_medicare"] + panel["pct_medicaid"]
+        too_high = sums > 100
+        if too_high.any():
+            scale = 100 / sums[too_high]
+            panel.loc[too_high, "pct_medicare"] *= scale
+            panel.loc[too_high, "pct_medicaid"] *= scale
+
+    # ---------- final typing ----------
+    for c in ["occupancy_rate", "pct_medicare", "pct_medicaid"]:
+        if c in panel.columns:
+            panel[c] = pd.to_numeric(panel[c], errors="coerce")
+
+    panel = panel.drop(
+        columns=["_ord", "occupancy_rate_sm", "pct_medicare_sm", "pct_medicaid_sm"],
+        errors="ignore",
+    )
+    panel = panel.sort_values(
+        ["cms_certification_number", "year_month"], kind="mergesort"
+    ).reset_index(drop=True)
+
+    return panel
+
 # ============================== Load ==========================================
 provider = pd.read_csv(PROVIDER_FP, low_memory=False)
 pbj      = pd.read_csv(PBJ_FP,      low_memory=False)
@@ -198,11 +350,11 @@ mcr      = filter_to_window(mcr)
 # ============================== CHOW agreement filter =========================
 chow["n_chow_nh_compare"] = pd.to_numeric(chow.get("n_chow_nh_compare"), errors="coerce").fillna(0).astype(int)
 chow["n_chow_mcr"]        = pd.to_numeric(chow.get("n_chow_mcr"),        errors="coerce").fillna(0).astype(int)
-chow["first_nh_month"]  = first_chow_month(chow, r"^nh_compare_chow_\d+_date$")
-chow["first_mcr_month"] = first_chow_month(chow, r"^mcr_chow_\d+_date$")
+chow["first_nh_month"]    = first_chow_month(chow, r"^nh_compare_chow_\d+_date$")
+chow["first_mcr_month"]   = first_chow_month(chow, r"^mcr_chow_\d+_date$")
 
 def _agree_row(r):
-    if r["n_chow_nh_compare"] in (0,1) and r["n_chow_mcr"] in (0,1):
+    if r["n_chow_nh_compare"] in (0, 1) and r["n_chow_mcr"] in (0, 1):
         if (r["n_chow_nh_compare"] == 0) and (r["n_chow_mcr"] == 0):
             return True
         if (r["n_chow_nh_compare"] == 1) and (r["n_chow_mcr"] == 1):
@@ -213,8 +365,18 @@ agree_mask = chow.apply(_agree_row, axis=1)
 agree_ccns = set(chow.loc[agree_mask, "cms_certification_number"].dropna().unique())
 print(f"[chow] CCNs passing (0/0 or 1/1 within 6m): {len(agree_ccns):,}")
 
-nh_timing = chow.loc[chow["cms_certification_number"].isin(agree_ccns),
-                     ["cms_certification_number","n_chow_nh_compare","first_nh_month"]].drop_duplicates("cms_certification_number")
+# Keep BOTH timing sources in the panel so we can choose timing later without rebuilding CHOW logic.
+chow_timing = (
+    chow.loc[chow["cms_certification_number"].isin(agree_ccns),
+             ["cms_certification_number", "n_chow_nh_compare", "n_chow_mcr", "first_nh_month", "first_mcr_month"]]
+        .drop_duplicates("cms_certification_number")
+        .copy()
+)
+
+# In the agreed sample, treated facilities are the validated 1/1 cases.
+chow_timing["treatment_agree"] = (
+    (chow_timing["n_chow_nh_compare"] == 1) & (chow_timing["n_chow_mcr"] == 1)
+).astype("Int8")
 
 # ============================== Outer join base ===============================
 keys = ["cms_certification_number","quarter","year_month"]
@@ -231,56 +393,71 @@ base["cms_certification_number"] = normalize_ccn_any(base["cms_certification_num
 base = base[base["cms_certification_number"].isin(agree_ccns)].copy()
 
 # Attach NH timing
-base = base.merge(nh_timing, on="cms_certification_number", how="left")
+base = base.merge(chow_timing, on="cms_certification_number", how="left")
 
 # ============================== Treatment / Post / Event-time =================
 ym_periods = pd.PeriodIndex(base["year_month"].astype(str), freq="M")
 
-base['time'] = (ym_periods.year * 12 + ym_periods.month) - (2017 * 12 + 1) + 1
-base['time'] = base['time'].astype('Int32')
+# Global month index starting at 2017/01 = 1
+base["time"] = (ym_periods.year * 12 + ym_periods.month) - (2017 * 12 + 1) + 1
+base["time"] = base["time"].astype("Int32")
 
-# First CHOW month as Period[M]
-first_p = pd.to_datetime(base["first_nh_month"], errors="coerce").dt.to_period("M")
+# Standardize both source dates to month start
+base["first_nh_month"]  = to_monthstart(base["first_nh_month"])
+base["first_mcr_month"] = to_monthstart(base["first_mcr_month"])
 
-# treatment = ever treated at the CCN level (1 if n_chow_nh_compare==1 anywhere for that CCN)
-base["treatment"] = (
-    base["n_chow_nh_compare"].eq(1)
-        .groupby(base["cms_certification_number"])
-        .transform("max")
-        .astype(int)
-)
+# treatment stays fixed to the validated agreed sample
+base["treatment"] = pd.to_numeric(base["treatment_agree"], errors="coerce").fillna(0).astype("Int8")
 
-# Month-difference calculation
+# Choose which raw event month to use
+if EVENT_DATE_SOURCE == "nhc":
+    base["event_month_unshifted"] = base["first_nh_month"]
+elif EVENT_DATE_SOURCE == "mcr":
+    base["event_month_unshifted"] = base["first_mcr_month"]
+else:
+    raise ValueError(f"EVENT_DATE_SOURCE must be 'nhc' or 'mcr', got: {EVENT_DATE_SOURCE}")
+
+# Apply month shift for timing robustness
+if EVENT_SHIFT_MONTHS != 0:
+    base["event_month"] = shift_monthstart(base["event_month_unshifted"], EVENT_SHIFT_MONTHS)
+else:
+    base["event_month"] = to_monthstart(base["event_month_unshifted"])
+
+# Store audit fields so later tables/plots always know what timing was used
+base["event_date_source"] = EVENT_DATE_SOURCE
+base["event_shift_months"] = EVENT_SHIFT_MONTHS
+
+# Convert chosen event month to Period[M]
+event_p = pd.to_datetime(base["event_month"], errors="coerce").dt.to_period("M")
+
+# Event time only for validated treated facilities
 base["event_time"] = np.nan
-mask = first_p.notna()
+mask = base["treatment"].eq(1) & event_p.notna()
+
 ym_y = pd.Series(ym_periods.year,  index=base.index)
 ym_m = pd.Series(ym_periods.month, index=base.index)
-fp_y = first_p.dt.year
-fp_m = first_p.dt.month
-et_vals = (ym_y[mask] - fp_y[mask]) * 12 + (ym_m[mask] - fp_m[mask])
+ep_y = event_p.dt.year
+ep_m = event_p.dt.month
+
+et_vals = (ym_y[mask] - ep_y[mask]) * 12 + (ym_m[mask] - ep_m[mask])
 base.loc[mask, "event_time"] = et_vals.astype(int)
 
-# --- time_treated: global 'time' at the treatment month (event_time == 0)
-tt = (
-    base.loc[base["event_time"].eq(0), ["cms_certification_number", "time"]]
-        .drop_duplicates("cms_certification_number")
-        .rename(columns={"time": "time_treated"})
-)
+# time_treated = global month index of chosen event month
+base["time_treated"] = pd.Series(pd.NA, index=base.index, dtype="Int32")
+tt_vals = (ep_y[mask] * 12 + ep_m[mask]) - (2017 * 12 + 1) + 1
+base.loc[mask, "time_treated"] = tt_vals.astype("Int32")
 
-base = base.merge(tt, on="cms_certification_number", how="left")
-base["time_treated"] = base["time_treated"].astype("Int32")  # <NA> for never-treated
-
-# post = 1 for months strictly AFTER the CHOW month (uses event_time > 0)
+# post = 1 strictly AFTER the chosen event month
 base["post"] = 0
-has_one = base["n_chow_nh_compare"].eq(1) & mask
-base.loc[has_one, "post"] = (base.loc[has_one, "event_time"] > 0).astype(int)
+base.loc[mask, "post"] = (base.loc[mask, "event_time"] > 0).astype("Int8")
 
-# anticipation1 dummy = 1 for event_time in {-3,-2,-1,0,1,2}
+# anticipation1 = 1 for event_time in {-3,-2,-1,0,1,2}
 base["anticipation1"] = 0
 base.loc[base["event_time"].isin([-3, -2, -1, 0, 1, 2]), "anticipation1"] = 1
-#anticipation2 which is a dummy = 1 for event_time in {-3,-2,-1}
+
+# anticipation2 = 1 for event_time in {-3,-2,-1}
 base["anticipation2"] = 0
-base.loc[base["event_time"].isin([-3,-2,-1]), "anticipation2"] = 1
+base.loc[base["event_time"].isin([-3, -2, -1]), "anticipation2"] = 1
 
 # ============================== Case-mix dummies ==============================
 if "case_mix_total" not in base.columns:
@@ -297,6 +474,12 @@ want_cols = [
     "treatment",
     "post",
     "event_time",
+    "event_month",
+    "event_month_unshifted",
+    "first_nh_month",
+    "first_mcr_month",
+    "event_date_source",
+    "event_shift_months",
     "anticipation1",
     "anticipation2",
     "provider_resides_in_hospital",
@@ -310,6 +493,7 @@ want_cols = [
     "ccrc_facility","sff_facility",
     "occupancy_rate",
     "pct_medicare","pct_medicaid",
+    "state",
     "urban",
 ]
 
@@ -411,8 +595,10 @@ for col in ["non_profit","government","chain","urban","ccrc_facility","sff_facil
         panel[col] = pd.to_numeric(panel[col], errors="coerce").astype("Int8")
 
 panel = panel.sort_values(["cms_certification_number","year_month"], kind="mergesort").reset_index(drop=True)
+
+# Always write spec-specific file
 panel.to_csv(OUT_PBJ_FP, index=False)
-print(f"[save] PBJ panel → {OUT_PBJ_FP} rows={len(panel):,} cols={panel.shape[1]}")
+print(f"[save] PBJ panel ({SPEC_NAME}) → {OUT_PBJ_FP} rows={len(panel):,} cols={panel.shape[1]}")
 
 # ============================== Analytical panel ==============================
 analytical = panel.copy()
@@ -467,5 +653,12 @@ if "provider_resides_in_hospital" in analytical.columns:
     analytical = analytical[analytical["provider_resides_in_hospital"] != 1]
     print(f"[filter] drop 'provider_resides_in_hospital'==1: {before:,} -> {len(analytical):,}")
 
+# Always write spec-specific analytical panel
 analytical.to_csv(OUT_ANL_FP, index=False)
-print(f"[done] saved analytical panel → {OUT_ANL_FP}")
+print(f"[done] saved analytical panel ({SPEC_NAME}) → {OUT_ANL_FP}")
+
+# ============================== Final regression panel ========================
+final_panel = finalize_regression_panel(analytical)
+
+final_panel.to_csv(OUT_FINAL_FP, index=False)
+print(f"[done] saved final regression panel ({SPEC_NAME}) → {OUT_FINAL_FP} rows={len(final_panel):,} cols={final_panel.shape[1]}")
