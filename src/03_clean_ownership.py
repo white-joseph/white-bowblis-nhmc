@@ -2,38 +2,43 @@
 # coding: utf-8
 # =============================================================================
 # CMS Ownership —> Extract -> Standardize -> Combine
+#
+# Notes:
+# - Uses shared paths/helpers from config.py where applicable
+# - Preserves existing ownership extraction, standardization, and combine logic
+# - Does not rename variables or change data content rules
 # =============================================================================
 
-import os, re, csv, zipfile, shutil, tempfile, warnings
+from __future__ import annotations
+
+import re
+import shutil
+import warnings
+import zipfile
 from io import BytesIO
 from pathlib import Path
+
 import numpy as np
 import pandas as pd
 
+import config as cfg
+
 # ============================== Config / Paths ================================
-PROJECT_ROOT = Path.cwd()
-while not (PROJECT_ROOT / "src").is_dir() and PROJECT_ROOT != PROJECT_ROOT.parent:
-    PROJECT_ROOT = PROJECT_ROOT.parent
+NH_ZIP_DIR = cfg.NH_COMPARE_DIR
+OWN_DIR = cfg.ensure_dir(cfg.OWNERSHIP_DIR)
+INTERIM_DIR = cfg.ensure_dir(cfg.INTERIM_DIR)
 
-RAW_DIR     = Path(os.getenv("NH_DATA_DIR", PROJECT_ROOT / "data" / "raw"))
-NH_ZIP_DIR  = RAW_DIR / "nh-compare"
-OWN_DIR     = RAW_DIR / "ownership-files"
-OWN_DIR.mkdir(parents=True, exist_ok=True)
-
-INTERIM_DIR = PROJECT_ROOT / "data" / "interim"
-INTERIM_DIR.mkdir(parents=True, exist_ok=True)
-
-# Provider outputs 
-PROV_DIR         = RAW_DIR / "provider-info-files"
-HOSP_PANEL_CSV   = PROV_DIR / "provider_resides_in_hospital_panel.csv"
+# Provider outputs
+PROV_DIR = cfg.PROVIDER_DIR
+HOSP_PANEL_CSV = PROV_DIR / "provider_resides_in_hospital_panel.csv"
 
 COMBINED_CSV = INTERIM_DIR / "ownership.csv"
 
 # Flags
-DRY_RUN        = False          # True = preview only
-NAME_STYLE     = "yyyy_mm"      # "mm_yyyy" or "yyyy_mm"
-DO_STANDARDIZE = True           # standardize in-place before combine
-DO_COMBINE     = True           # write final combined CSV
+DRY_RUN = False
+NAME_STYLE = "yyyy_mm"      # "mm_yyyy" or "yyyy_mm"
+DO_STANDARDIZE = True
+DO_COMBINE = True
 
 print(f"[paths] NH_ZIP_DIR={NH_ZIP_DIR}")
 print(f"[paths] OWN_DIR={OWN_DIR}")
@@ -44,38 +49,12 @@ for junk in (OWN_DIR / "profiling", OWN_DIR / "qa_reports"):
     if junk.exists() and junk.is_dir():
         shutil.rmtree(junk, ignore_errors=True)
 
-# =========================== Shared helpers ==================================
-def sniff_delim(fp: Path, nbytes=8192):
-    raw = fp.read_bytes()
-    sample = raw[:nbytes]
-    try:
-        dialect = csv.Sniffer().sniff(sample.decode("utf-8", errors="ignore"))
-        return dialect.delimiter
-    except Exception:
-        return "\t" if sample.count(b"\t") > sample.count(b",") else ","
+# =========================== Shared/local helpers =============================
+def norm_header_ownership(h: str) -> str:
+    return re.sub(r"\s+", " ", str(h or "").strip().lower().replace("_", " ")).strip()
 
-def read_csv_any(fp: Path, nrows=None):
-    """Robust reader (keeps strings) for arbitrary monthly files."""
-    delim = sniff_delim(fp)
-    encs = ("utf-8","utf-8-sig","cp1252","latin-1")
-    for enc in encs:
-        try:
-            return pd.read_csv(fp, dtype=str, sep=delim, encoding=enc,
-                               engine="c", low_memory=False, nrows=nrows)
-        except Exception:
-            try:
-                return pd.read_csv(fp, dtype=str, sep=delim, encoding=enc,
-                                   engine="python", on_bad_lines="skip", nrows=nrows)
-            except Exception:
-                continue
-    return pd.read_csv(fp, dtype=str, sep=delim, encoding="utf-8",
-                       encoding_errors="replace", engine="python",
-                       on_bad_lines="skip", nrows=nrows)
 
-def norm_header(h: str) -> str:
-    return re.sub(r"\s+"," ", str(h or "").strip().lower().replace("_"," ")).strip()
-
-def safe_to_datetime(series: pd.Series) -> pd.Series:
+def safe_to_datetime_ownership(series: pd.Series) -> pd.Series:
     """
     Robust date parser for association/processing dates.
     - strips leading 'since'
@@ -109,12 +88,12 @@ def safe_to_datetime(series: pd.Series) -> pd.Series:
 
     return out
 
-# =============== CCN cleaner (matches provider cleaning) ===============
+
 def clean_ccn_raw(val: object) -> object:
     """
     Preserve alphanumeric CCNs; drop scientific notation/junk.
     Rules:
-      - If value contains '.' or '+': drop (scientific notation or corrupted)
+      - If value contains '.' or '+': drop
       - Keep only [A-Za-z0-9]; uppercase
       - If purely digits -> left-pad to 6
       - Require length between 5 and 7 after cleaning, else drop
@@ -135,15 +114,6 @@ def clean_ccn_raw(val: object) -> object:
         return pd.NA
     return s
 
-# =============================== 1) EXTRACT ===================================
-MONTH_RE = r"(0[1-9]|1[0-2])"; YEAR_RE = r"(20\d{2})"
-INNER_PATTERNS = [
-    re.compile(rf"nh_archive_{MONTH_RE}_{YEAR_RE}\.zip", re.I),
-    re.compile(rf"nh_archive_{YEAR_RE}_{MONTH_RE}\.zip", re.I),
-    re.compile(rf"nursing_homes_including_rehab_services_archive_{MONTH_RE}_{YEAR_RE}\.zip", re.I),
-    re.compile(rf"(?:^|[_-]){MONTH_RE}[_-]{YEAR_RE}\.zip$", re.I),
-    re.compile(rf"(?:^|[_-]){YEAR_RE}[_-]{MONTH_RE}\.zip$", re.I),
-]
 
 def is_ownership_basename(name: str) -> bool:
     b = Path(name).name.strip().lower()
@@ -151,26 +121,28 @@ def is_ownership_basename(name: str) -> bool:
         return False
     return bool(re.search(r"\.(csv|txt|tsv)$", b))
 
-def parse_mm_yyyy_from_inner(name: str):
-    for pat in INNER_PATTERNS:
-        m = pat.search(name)
-        if m:
-            nums = [int(x) for x in m.groups() if x and x.isdigit()]
-            if len(nums) >= 2:
-                a, b = nums[0], nums[1]
-                if a <= 12 and b >= 2000: return a, b
-                if b <= 12 and a >= 2000: return b, a
-    return (None, None)
 
 def std_name(mm: int, yyyy: int):
-    return (f"ownership_{yyyy:04d}_{mm:02d}.csv"
-            if NAME_STYLE == "yyyy_mm" else
-            f"ownership_{mm:02d}_{yyyy:04d}.csv")
+    return (
+        f"ownership_{yyyy:04d}_{mm:02d}.csv"
+        if NAME_STYLE == "yyyy_mm"
+        else f"ownership_{mm:02d}_{yyyy:04d}.csv"
+    )
 
-def write_overwrite(path: Path, data: bytes):
-    path.write_bytes(data)
-    return path
 
+RE_MM_YYYY = re.compile(r"ownership_(0[1-9]|1[0-2])_(20\d{2})\.csv$", re.I)
+RE_YYYY_MM = re.compile(r"ownership_(20\d{2})_(0[1-9]|1[0-2])\.csv$", re.I)
+
+def parse_ym_from_fname(name: str):
+    m = RE_MM_YYYY.search(name)
+    if m:
+        return int(m.group(2)), int(m.group(1))
+    m = RE_YYYY_MM.search(name)
+    if m:
+        return int(m.group(1)), int(m.group(2))
+    return None, None
+
+# =================== 1) EXTRACT ==============================================
 def extract_by_filename_only():
     yearlies = sorted(p for p in NH_ZIP_DIR.glob("nh_archive_*.zip") if p.is_file())
     if not yearlies:
@@ -178,19 +150,23 @@ def extract_by_filename_only():
 
     extracted, skipped = 0, 0
     notes = []
+
     for yearly in yearlies:
         with zipfile.ZipFile(yearly, "r") as yz:
             inner_zips = [n for n in yz.namelist() if n.lower().endswith(".zip")]
+
             for inner in inner_zips:
-                mm, yyyy = parse_mm_yyyy_from_inner(Path(inner).name)
+                mm, yyyy = cfg.parse_mm_yyyy_from_inner(Path(inner).name)
                 if not (mm and yyyy):
                     skipped += 1
                     notes.append((yearly.name, inner, "no_mm_yyyy_in_inner_zip_name"))
                     continue
+
                 with yz.open(inner) as inner_bytes:
                     with zipfile.ZipFile(BytesIO(inner_bytes.read()), "r") as mz:
                         names = mz.namelist()
                         candidates = [n for n in names if is_ownership_basename(n)]
+
                         if not candidates:
                             skipped += 1
                             preview = ", ".join(Path(n).name for n in names[:8])
@@ -200,17 +176,24 @@ def extract_by_filename_only():
                         def sort_key(n):
                             bn = Path(n).name.strip().lower()
                             size = mz.getinfo(n).file_size
-                            return (0 if "download" in bn else (1 if "display" in bn else 2),
-                                    -len(bn), -size, bn)
+                            return (
+                                0 if "download" in bn else (1 if "display" in bn else 2),
+                                -len(bn),
+                                -size,
+                                bn,
+                            )
+
                         candidates.sort(key=sort_key)
                         target = candidates[0]
 
                         out_name = std_name(mm, yyyy)
                         out_path = OWN_DIR / out_name
                         print(f"[{yyyy}-{str(mm).zfill(2)}] {Path(inner).name} → {Path(target).name}  ⇒  {out_path.name}")
+
                         if not DRY_RUN:
                             data = mz.read(target)
-                            write_overwrite(out_path, data)
+                            out_path.write_bytes(data)
+
                         extracted += 1
 
     print(f"\n[extract] extracted={extracted}, skipped={skipped}")
@@ -262,29 +245,25 @@ CANON_MAP = {
 }
 
 KEEP_COLS = [
-    "cms_certification_number","role","owner_type","owner_name",
-    "ownership_percentage","association_date","processing_date"
+    "cms_certification_number",
+    "role",
+    "owner_type",
+    "owner_name",
+    "ownership_percentage",
+    "association_date",
+    "processing_date",
 ]
 
 ROLE_KEEP_MAP = {
-    "DIRECT":      r"5%\s*OR\s*GREATER\s+DIRECT\s+OWNERSHIP\s+INTEREST",
-    "INDIRECT":    r"5%\s*OR\s*GREATER\s+INDIRECT\s+OWNERSHIP\s+INTEREST",
+    "DIRECT": r"5%\s*OR\s*GREATER\s+DIRECT\s+OWNERSHIP\s+INTEREST",
+    "INDIRECT": r"5%\s*OR\s*GREATER\s+INDIRECT\s+OWNERSHIP\s+INTEREST",
     "PARTNERSHIP": r"\bPARTNERSHIP\s+INTEREST\b",
 }
 
-RE_MM_YYYY = re.compile(r"ownership_(0[1-9]|1[0-2])_(20\d{2})\.csv$", re.I)
-RE_YYYY_MM = re.compile(r"ownership_(20\d{2})_(0[1-9]|1[0-2])\.csv$", re.I)
-
-def parse_ym_from_fname(name: str):
-    m = RE_MM_YYYY.search(name)
-    if m: return int(m.group(2)), int(m.group(1))
-    m = RE_YYYY_MM.search(name)
-    if m: return int(m.group(1)), int(m.group(2))
-    return None, None
 
 def normalize_month_df(df: pd.DataFrame, fname: str) -> pd.DataFrame:
     # 1) rename to canonical
-    ren = {c: CANON_MAP.get(norm_header(c), c) for c in df.columns}
+    ren = {c: CANON_MAP.get(norm_header_ownership(c), c) for c in df.columns}
     df = df.rename(columns=ren)
 
     # 2) role filter -> DIRECT / INDIRECT / PARTNERSHIP
@@ -303,13 +282,16 @@ def normalize_month_df(df: pd.DataFrame, fname: str) -> pd.DataFrame:
 
     # 3) ownership % -> numeric 0..100 (auto-scale 0..1 -> 0..100)
     if "ownership_percentage" in df.columns:
-        pct = (df["ownership_percentage"].astype(str)
-               .str.replace("%","",regex=False)
-               .str.replace(",","",regex=False)
-               .str.strip())
+        pct = (
+            df["ownership_percentage"]
+            .astype(str)
+            .str.replace("%", "", regex=False)
+            .str.replace(",", "", regex=False)
+            .str.strip()
+        )
         pct = pct.mask(pct.eq("") | pct.str.contains("NO PERCENTAGE", case=False))
         val = pd.to_numeric(pct, errors="coerce")
-        if val.dropna().between(0,1).mean() > 0.85 and val.dropna().between(0,100).mean() < 0.9:
+        if val.dropna().between(0, 1).mean() > 0.85 and val.dropna().between(0, 100).mean() < 0.9:
             val = val * 100.0
         df["ownership_percentage"] = val
 
@@ -319,9 +301,9 @@ def normalize_month_df(df: pd.DataFrame, fname: str) -> pd.DataFrame:
 
     # 5) dates -> datetime64
     if "processing_date" in df.columns:
-        df["processing_date"] = safe_to_datetime(df["processing_date"])
+        df["processing_date"] = safe_to_datetime_ownership(df["processing_date"])
     if "association_date" in df.columns:
-        df["association_date"] = safe_to_datetime(df["association_date"])
+        df["association_date"] = safe_to_datetime_ownership(df["association_date"])
 
     # 6) processing_date from filename if missing anywhere
     y, m = parse_ym_from_fname(fname)
@@ -338,11 +320,11 @@ def normalize_month_df(df: pd.DataFrame, fname: str) -> pd.DataFrame:
     else:
         df["association_date"] = df["processing_date"]
 
-    # 6c) FINALIZE DATE COLUMNS AS STRINGS (YYYY-MM-DD)
+    # 6c) finalize date columns as strings (YYYY-MM-DD)
     for dc in ["association_date", "processing_date"]:
         if dc in df.columns:
             if not np.issubdtype(df[dc].dtype, np.datetime64):
-                df[dc] = safe_to_datetime(df[dc])
+                df[dc] = safe_to_datetime_ownership(df[dc])
             df[dc] = df[dc].dt.strftime("%Y-%m-%d")
 
     # 7) keep only columns
@@ -363,12 +345,6 @@ def normalize_month_df(df: pd.DataFrame, fname: str) -> pd.DataFrame:
 
     return df
 
-def atomic_overwrite_csv(fp: Path, df: pd.DataFrame):
-    tmp_dir = Path(tempfile.mkdtemp())
-    tmp_fp = tmp_dir / ("~" + fp.name)
-    df.to_csv(tmp_fp, index=False, date_format="%Y-%m-%d")
-    shutil.move(str(tmp_fp), str(fp))
-    shutil.rmtree(tmp_dir, ignore_errors=True)
 
 def standardize_in_place_and_combine():
     files = sorted(p for p in OWN_DIR.glob("ownership_*.csv"))
@@ -379,9 +355,9 @@ def standardize_in_place_and_combine():
     rewritten = 0
     for fp in files:
         try:
-            raw = read_csv_any(fp)
+            raw = cfg.read_delim_robust(fp, dtype=str)
             clean = normalize_month_df(raw, fp.name)
-            atomic_overwrite_csv(fp, clean)
+            cfg.atomic_overwrite_csv(clean, fp, index=False)
             rewritten += 1
             print(f"[rewrite] {fp.name}  rows={len(clean)}")
         except Exception as e:
@@ -392,9 +368,10 @@ def standardize_in_place_and_combine():
     if DO_COMBINE:
         frames = []
         files = sorted(p for p in OWN_DIR.glob("ownership_*.csv"))  # refresh list
+
         for fp in files:
             try:
-                frames.append(read_csv_any(fp))
+                frames.append(cfg.read_delim_robust(fp, dtype=str))
             except Exception as e:
                 print(f"[warn] combine read failed {fp.name}: {e}")
 
@@ -404,37 +381,38 @@ def standardize_in_place_and_combine():
 
         combined = pd.concat(frames, ignore_index=True)
 
-        # ---- Build ownership 'date' as month start mirroring provider panel ----
-        # Prefer processing_date; fall back to association_date; both are strings -> parse
+        # Build ownership 'date' as month start mirroring provider panel
         proc = pd.to_datetime(combined.get("processing_date"), errors="coerce")
         assoc = pd.to_datetime(combined.get("association_date"), errors="coerce")
         date_used = proc.fillna(assoc)
         combined["date"] = date_used.dt.to_period("M").dt.to_timestamp("s")
 
-        # ---- Month-by-month hospital filter via TRUE-only panel on (CCN, date) ----
+        # Month-by-month hospital filter via TRUE-only panel on (CCN, date)
         if HOSP_PANEL_CSV.exists():
             panel = pd.read_csv(
                 HOSP_PANEL_CSV,
                 dtype={"cms_certification_number": str, "provider_resides_in_hospital": str},
-                low_memory=False
+                low_memory=False,
             )
-            # Keep TRUE only (panel is already TRUE-only, but be safe)
-            m = {"True": True, "False": False, True: True, False: False, "true": True, "false": False}
+
+            m = {
+                "True": True, "False": False,
+                True: True, False: False,
+                "true": True, "false": False
+            }
             panel["provider_resides_in_hospital"] = panel["provider_resides_in_hospital"].map(m).fillna(False)
             panel = panel[panel["provider_resides_in_hospital"] == True].copy()
 
             panel["date"] = pd.to_datetime(panel["date"], errors="coerce")
             panel_key = panel[["cms_certification_number", "date"]].dropna().drop_duplicates()
 
-            # Left-merge to mark rows to drop
             merged = combined.merge(
                 panel_key.assign(_drop=True),
                 on=["cms_certification_number", "date"],
                 how="left",
-                validate="m:1"
+                validate="m:1",
             )
 
-            # Count removals
             drop_mask = merged["_drop"].fillna(False)
             removed_rows = int(drop_mask.sum())
             removed_ccns = merged.loc[drop_mask, "cms_certification_number"].nunique()
@@ -443,7 +421,7 @@ def standardize_in_place_and_combine():
 
             combined = merged.loc[~drop_mask].drop(columns=["_drop"])
 
-        # ---- EXACT DEDUP ACROSS ALL FILES (before save) ----
+        # Exact dedup across all files
         for c in ["role", "owner_type", "owner_name"]:
             if c in combined.columns:
                 combined[c] = combined[c].astype(str).str.strip()
@@ -456,47 +434,57 @@ def standardize_in_place_and_combine():
         before = len(combined)
         combined = combined.drop_duplicates(
             subset=[
-                "cms_certification_number", "role", "owner_type", "owner_name",
-                "ownership_percentage", "association_date", "processing_date"
+                "cms_certification_number",
+                "role",
+                "owner_type",
+                "owner_name",
+                "ownership_percentage",
+                "association_date",
+                "processing_date",
             ],
-            keep="first"
+            keep="first",
         ).reset_index(drop=True)
         removed = before - len(combined)
         print(f"[dedup-combined] removed {removed:,} exact duplicate row(s) across all months")
 
-        # Sort by CCN (string) then month 'date'
+        # Sort by CCN
         key = combined["cms_certification_number"].fillna("~")
         combined = combined.iloc[key.argsort(kind="mergesort")].reset_index(drop=True)
 
-        # --- Build year_month (YYYY/MM) and quarter (YYYYQ#) from processing_date ---
+        # Build year_month and quarter from processing_date
         proc_dt = pd.to_datetime(combined["processing_date"], errors="coerce")
         combined["year_month"] = proc_dt.dt.strftime("%Y/%m")
-        qnum = ((proc_dt.dt.month - 1)//3 + 1).astype("Int64")
+        qnum = ((proc_dt.dt.month - 1) // 3 + 1).astype("Int64")
         combined["quarter"] = proc_dt.dt.year.astype("Int64").astype("string") + "Q" + qnum.astype("string")
 
-        # Drop helper 'date' and replace processing_date with year_month
+        # Drop helper date and replace processing_date with year_month
         combined = combined.drop(columns=["date", "processing_date"])
 
-        # Keep same columns as before, but with year_month (and new quarter added)
         desired = [
-            "cms_certification_number","role","owner_type","owner_name",
-            "ownership_percentage","association_date","year_month","quarter"
+            "cms_certification_number",
+            "role",
+            "owner_type",
+            "owner_name",
+            "ownership_percentage",
+            "association_date",
+            "year_month",
+            "quarter",
         ]
-        # Include any additional passthrough columns, preserving them at the end
         extras = [c for c in combined.columns if c not in desired]
         combined = combined[desired + extras]
 
-        # Sort for readability by CCN then year_month if present
         if "year_month" in combined.columns:
             ord_dt = pd.to_datetime(combined["year_month"] + "/01", format="%Y/%m/%d", errors="coerce")
-            combined = combined.assign(_ord=ord_dt) \
-                               .sort_values(["cms_certification_number","_ord"], kind="mergesort") \
-                               .drop(columns=["_ord"]) \
-                               .reset_index(drop=True)
+            combined = (
+                combined.assign(_ord=ord_dt)
+                .sort_values(["cms_certification_number", "_ord"], kind="mergesort")
+                .drop(columns=["_ord"])
+                .reset_index(drop=True)
+            )
 
-        # Save
-        combined.to_csv(COMBINED_CSV, index=False)
+        cfg.atomic_overwrite_csv(combined, COMBINED_CSV, index=False)
         print(f"[save] ownership panel → {COMBINED_CSV}  ({len(combined):,} rows)")
+
 
 # =============================== RUN PIPELINE =================================
 if __name__ == "__main__":

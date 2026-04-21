@@ -1,53 +1,52 @@
 # ================================================================
 # Joint Wald pretrend tests in ONE table with THREE rows per panel:
 #
-# Levels (HPPD):
+# Levels (HPRD):
 #   1) With anticipation
 #   2) Without anticipation (-24)   [event-time window kept: -24..24]
 #   3) Without anticipation (-12)   [event-time window kept: -12..12]
 #
-# Logs (HPPD): same three rows
+# Logs (HPRD): same three rows
 #
-# Outputs (same filenames as your existing Wald script):
+# Outputs (same filenames as existing Wald script):
 #   - outputs/tables/pretrend_wald_tests_fragment.tex
 #   - outputs/tables/pretrend_wald_tests_QA.tex
 # ================================================================
 
+source("C:/Repositories/white-bowblis-nhmc/regressions/_setup.R")
+
 suppressPackageStartupMessages({
-  library(fixest)
-  library(readr)
-  library(dplyr)
   library(MASS)  # ginv
 })
 
 options(scipen = 999, digits = 4)
 
 # ------------------------------ Paths ------------------------------
-panel_fp <- "C:/Repositories/white-bowblis-nhmc/data/clean/panel.csv"
-out_dir  <- "C:/Repositories/white-bowblis-nhmc/outputs/tables"
+out_dir <- out_tables_dir
 dir.create(out_dir, showWarnings = FALSE, recursive = TRUE)
 
 # ------------------------------ Load ------------------------------
 keep_cols <- c(
-  "cms_certification_number","year_month","event_time","treatment",
-  "government","non_profit","chain","beds",
-  "occupancy_rate","pct_medicare","pct_medicaid",
-  "cm_q_state_2","cm_q_state_3","cm_q_state_4",
-  "rn_hppd","lpn_hppd","cna_hppd","total_hppd"
+  "cms_certification_number", "year_month", "event_time", "treated",
+  "government", "non_profit", "chain", "beds",
+  "occupancy_rate", "pct_medicare", "pct_medicaid",
+  "cm_q_state_2", "cm_q_state_3", "cm_q_state_4",
+  "rn_hprd", "lpn_hprd", "cna_hprd", "total_hprd"
 )
 
-df0 <- read_csv(panel_fp, show_col_types = FALSE, col_select = all_of(keep_cols)) %>%
-  mutate(
+df0 <- load_staffing_panel() %>%
+  dplyr::select(any_of(keep_cols)) %>%
+  dplyr::mutate(
     cms_certification_number = as.factor(cms_certification_number),
     year_month = as.factor(year_month)
   ) %>%
-  group_by(cms_certification_number) %>%
-  mutate(ever_treated = as.integer(any(treatment == 1, na.rm = TRUE) | any(!is.na(event_time)))) %>%
-  ungroup()
+  dplyr::group_by(cms_certification_number) %>%
+  dplyr::mutate(
+    ever_treated = as.integer(any(treated == 1, na.rm = TRUE) | any(!is.na(event_time)))
+  ) %>%
+  dplyr::ungroup()
 
 # ------------------------------ Helpers ------------------------------
-mk_log <- function(x) ifelse(x > 0, log(x), NA_real_)
-
 # cap event_time to [-WIN, WIN] for treated; set 9999 for never-treated
 prep_df <- function(dat, WIN) {
   dat %>%
@@ -56,18 +55,14 @@ prep_df <- function(dat, WIN) {
         ever_treated == 1L & !is.na(event_time) ~ pmin(pmax(as.integer(event_time), -as.integer(WIN)), as.integer(WIN)),
         TRUE ~ 9999L
       ),
-      ln_rn    = mk_log(rn_hppd),
-      ln_lpn   = mk_log(lpn_hppd),
-      ln_cna   = mk_log(cna_hppd),
-      ln_total = mk_log(total_hppd)
+      ln_rn    = mk_log(rn_hprd),
+      ln_lpn   = mk_log(lpn_hprd),
+      ln_cna   = mk_log(cna_hprd),
+      ln_total = mk_log(total_hprd)
     )
 }
 
-controls_rhs <- paste(
-  "government + non_profit + chain + beds +",
-  "occupancy_rate + pct_medicare + pct_medicaid +",
-  "cm_q_state_2 + cm_q_state_3 + cm_q_state_4"
-)
+controls_rhs <- make_controls_rhs(df0)
 
 pick_ref <- function(dat, desired = NULL) {
   ev <- sort(unique(dat$event_time_capped[dat$ever_treated == 1L]))
@@ -132,12 +127,12 @@ fmt_wald_cell <- function(res) {
   sprintf("$%.2f$ (%d) [%.4f]", res$statistic, res$df, res$p.value)
 }
 
-outs_lvl <- c("rn_hppd","lpn_hppd","cna_hppd","total_hppd")
-nice_out <- c(rn_hppd="RN", lpn_hppd="LPN", cna_hppd="CNA", total_hppd="Total")
-outs_log <- c(rn_hppd="ln_rn", lpn_hppd="ln_lpn", cna_hppd="ln_cna", total_hppd="ln_total")
+outs_lvl <- c("rn_hprd", "lpn_hprd", "cna_hprd", "total_hprd")
+nice_out <- c(rn_hprd = "RN", lpn_hprd = "LPN", cna_hprd = "CNA", total_hprd = "Total")
+outs_log <- c(rn_hprd = "ln_rn", lpn_hprd = "ln_lpn", cna_hprd = "ln_cna", total_hprd = "ln_total")
 
 # ------------------------------ Build three specs ------------------------------
-skip2 <- c(-3L,-2L,-1L)
+skip2 <- c(-3L, -2L, -1L)
 
 # Spec 1: WITH anticipation, WIN=24
 WIN_A <- 24L
@@ -221,7 +216,7 @@ for (nm in names(specs)) {
   wald_log[[nm]] <- wald_for_spec(mods_log, sp)
   
   N_rows[[nm]] <- nrow(sp$dat)
-  cat("[spec]", nm, "|", sp$row_label, "| N =", format(N_rows[[nm]], big.mark=","), "\n")
+  cat("[spec]", nm, "|", sp$row_label, "| N =", format(N_rows[[nm]], big.mark = ","), "\n")
 }
 
 mk_row <- function(rowlabel, reslist) {
@@ -233,7 +228,6 @@ mk_row <- function(rowlabel, reslist) {
 wald_caption <- "Joint Wald Tests of Pre-trends (Event Study)"
 wald_label   <- "tab:pretrend-wald-tests"
 
-# Notes: spell out tested windows + refs for each row (keeps table standalone)
 notes_windows <- paste0(
   "\\item Tested windows and reference periods: ",
   "2 Year Full Pre-Window tests $\\tau=", specs$with_anticip$test_from, "$ to $\\tau=", specs$with_anticip$test_to,
@@ -246,9 +240,9 @@ notes_windows <- paste0(
 
 notes_N <- paste0(
   "\\item Sample sizes (rows): ",
-  "2 Year Full Pre-Window ($N=", format(N_rows$with_anticip, big.mark=","), "$); ",
-  "2 Year Window with Donut ($N=", format(N_rows$wo_anticip_24, big.mark=","), "$); ",
-  "1 Year Window with Donut ($N=", format(N_rows$wo_anticip_12, big.mark=","), "$)."
+  "2 Year Full Pre-Window ($N=", format(N_rows$with_anticip, big.mark = ","), "$); ",
+  "2 Year Window with Donut ($N=", format(N_rows$wo_anticip_24, big.mark = ","), "$); ",
+  "1 Year Window with Donut ($N=", format(N_rows$wo_anticip_12, big.mark = ","), "$)."
 )
 
 wald_tab <- c(
@@ -266,7 +260,7 @@ wald_tab <- c(
   " & \\multicolumn{4}{c}{\\textbf{Outcomes}} \\\\",
   "\\cmidrule(lr){2-5}",
   sprintf(" & \\textbf{%s} & \\textbf{%s} & \\textbf{%s} & \\textbf{%s} \\\\",
-          nice_out[["rn_hppd"]], nice_out[["lpn_hppd"]], nice_out[["cna_hppd"]], nice_out[["total_hppd"]]),
+          nice_out[["rn_hprd"]], nice_out[["lpn_hprd"]], nice_out[["cna_hprd"]], nice_out[["total_hprd"]]),
   "\\midrule",
   
   "\\multicolumn{5}{@{}l}{\\textbf{Panel A: Levels (HPPD)}} \\\\[2pt]",
@@ -321,5 +315,5 @@ wald_qa_path <- file.path(out_dir, "pretrend_wald_tests_QA.tex")
 writeLines(wald_qa_doc, wald_qa_path, useBytes = TRUE)
 
 cat("\n[write] ", normalizePath(wald_frag_path, winslash = "\\"), "\n", sep = "")
-cat("[write] ", normalizePath(wald_qa_path,   winslash = "\\"), "\n", sep = "")
+cat("[write] ", normalizePath(wald_qa_path, winslash = "\\"), "\n", sep = "")
 cat("Done.\n")
