@@ -5,8 +5,11 @@
 #
 # Updated version:
 # - preserves the existing monthly PBJ pipeline
+# - allows skipping monthly rebuild if pbj_nurse.csv already exists
 # - adds a quarterly PBJ output built from the finalized monthly pbj_nurse.csv
 # - quarterly staffing/intensity measures are recomputed from quarterly totals
+# - applies only light monthly validity cleaning before quarterly aggregation
+# - adds quarterly QA / plausibility flags
 # =============================================================================
 
 from __future__ import annotations
@@ -31,12 +34,18 @@ OUT_FP = INTERIM_DIR / "pbj_nurse.csv"
 OUT_FP_QUARTERLY = INTERIM_DIR / "pbj_nurse_quarterly.csv"
 
 KEEP_HOUR_TOTALS = True
+
+# Run flags
+RUN_BUILD_MONTHLY = False
 RUN_BUILD_QUARTERLY = True
 
 print(f"[paths] PBJ_DIR={PBJ_DIR}")
 print(f"[paths] OUT_FP={OUT_FP}")
 print(f"[paths] OUT_FP_QUARTERLY={OUT_FP_QUARTERLY}")
-print(f"[flags] RUN_BUILD_QUARTERLY={RUN_BUILD_QUARTERLY}")
+print(
+    f"[flags] RUN_BUILD_MONTHLY={RUN_BUILD_MONTHLY}, "
+    f"RUN_BUILD_QUARTERLY={RUN_BUILD_QUARTERLY}"
+)
 
 # ============================== Helpers ======================================
 def to_date_from_int_yyyymmdd(s: pd.Series) -> pd.Series:
@@ -211,6 +220,82 @@ def process_file_monthly(fp: Path) -> pd.DataFrame:
     return monthly
 
 
+# ======================= Monthly builder ======================================
+def build_monthly_from_raw():
+    files = sorted(PBJ_DIR.glob(PBJ_GLOB))
+    print(f"[scan] {len(files)} files found")
+
+    frames = []
+    failed = 0
+
+    for fp in files:
+        try:
+            m = process_file_monthly(fp)
+            print(f"[ok] {fp.name}: {len(m):,} rows")
+            if not m.empty:
+                frames.append(m)
+        except Exception as e:
+            print(f"[fail] {fp.name}: {e}")
+            failed += 1
+
+    monthly = pd.concat(frames, ignore_index=True) if frames else pd.DataFrame()
+    print(f"[concat] monthly rows = {len(monthly):,}")
+
+    if monthly.empty:
+        cfg.atomic_overwrite_csv(monthly, OUT_FP, index=False)
+        print(f"[saved] pbj nurse panel → {OUT_FP} (rows=0)")
+        return
+
+    cols = [
+        "cms_certification_number",
+        "quarter",
+        "year_month",
+        *(["rn_hours_month", "lpn_hours_month", "cna_hours_month", "total_hours"] if KEEP_HOUR_TOTALS else []),
+        "resident_days",
+        "avg_daily_census",
+        "rn_hprd",
+        "lpn_hprd",
+        "cna_hprd",
+        "total_hprd",
+        "days_reported",
+        "days_in_month",
+        "coverage_ratio",
+    ]
+    monthly = monthly[cols]
+
+    # ---------- Sort and compute gap_from_prev_months once ----------
+    ord_dt = pd.to_datetime(monthly["year_month"] + "/01", format="%Y/%m/%d", errors="coerce")
+    monthly = monthly.assign(
+        _ord=ord_dt,
+        _mi=(ord_dt.dt.year * 12 + ord_dt.dt.month).astype("Int32"),
+    )
+
+    monthly = monthly.sort_values(["cms_certification_number", "_ord"], kind="mergesort")
+
+    monthly["gap_from_prev_months"] = (
+        monthly.groupby("cms_certification_number")["_mi"]
+        .diff()
+        .fillna(1)
+        .astype("Int16")
+        - 1
+    ).clip(lower=0)
+
+    monthly = (
+        monthly.drop(columns=["_ord", "_mi"])
+        .sort_values(["cms_certification_number", "year_month"], kind="mergesort")
+        .reset_index(drop=True)
+    )
+
+    cfg.atomic_overwrite_csv(monthly, OUT_FP, index=False)
+
+    print(f"[saved] pbj nurse panel → {OUT_FP} (rows={len(monthly):,})")
+    print(
+        f"[qa] files_read={len(files):,}, "
+        f"failed_files={failed:,}, "
+        f"unique_ccn={monthly['cms_certification_number'].nunique(dropna=True):,}"
+    )
+
+
 # ======================= Quarterly builder from monthly ========================
 def build_quarterly_from_monthly():
     if not OUT_FP.exists():
@@ -234,6 +319,47 @@ def build_quarterly_from_monthly():
     )
 
     monthly = monthly.dropna(subset=["cms_certification_number", "year_month", "_ord"]).copy()
+
+    # ---------------- Light monthly validity cleaning BEFORE quarterly aggregation
+    # Drop only mechanically impossible monthly rows, not the full monthly HPRD filter
+    for col in [
+        "rn_hours_month", "lpn_hours_month", "cna_hours_month", "total_hours",
+        "resident_days", "avg_daily_census", "days_reported", "days_in_month",
+        "coverage_ratio", "gap_from_prev_months"
+    ]:
+        if col in monthly.columns:
+            monthly[col] = pd.to_numeric(monthly[col], errors="coerce")
+
+    before_light = len(monthly)
+
+    valid_mask = pd.Series(True, index=monthly.index)
+
+    # IDs / dates already partly handled, but keep explicit
+    valid_mask &= monthly["cms_certification_number"].notna()
+    valid_mask &= monthly["year_month"].notna()
+    valid_mask &= monthly["_ord"].notna()
+
+    # nonnegative monthly quantities
+    for col in ["rn_hours_month", "lpn_hours_month", "cna_hours_month", "total_hours", "resident_days", "days_reported"]:
+        if col in monthly.columns:
+            valid_mask &= (monthly[col].isna() | (monthly[col] >= 0))
+
+    # positive days in month
+    if "days_in_month" in monthly.columns:
+        valid_mask &= monthly["days_in_month"].notna()
+        valid_mask &= monthly["days_in_month"] > 0
+
+    # days_reported cannot exceed calendar days
+    if {"days_reported", "days_in_month"}.issubset(monthly.columns):
+        valid_mask &= (monthly["days_reported"] <= monthly["days_in_month"])
+
+    # coverage ratio should be roughly within [0, 1]
+    if "coverage_ratio" in monthly.columns:
+        valid_mask &= (monthly["coverage_ratio"].isna() | ((monthly["coverage_ratio"] >= 0) & (monthly["coverage_ratio"] <= 1.01)))
+
+    monthly = monthly.loc[valid_mask].copy()
+
+    print(f"[qa-quarterly] light monthly validity cleaning: {before_light:,} -> {len(monthly):,}")
 
     monthly["year"] = monthly["_ord"].dt.year.astype("Int64")
     monthly["quarter_num"] = ((monthly["_ord"].dt.month - 1) // 3 + 1).astype("Int64")
@@ -307,6 +433,31 @@ def build_quarterly_from_monthly():
         - 1
     ).clip(lower=0)
 
+    # ---------------- Quarterly QA / plausibility flags
+    qtr["pbj_partial_quarter"] = (qtr["months_observed_in_quarter"] < 3).astype("Int8")
+    qtr["pbj_low_coverage"] = (qtr["coverage_ratio"] < 0.80).fillna(False).astype("Int8")
+    qtr["pbj_zero_rn_lpn"] = (((qtr["rn_hprd"] == 0) & (qtr["lpn_hprd"] == 0))).fillna(False).astype("Int8")
+    qtr["pbj_implausible_hprd"] = (
+        (
+            (qtr["total_hprd"] < 1.5)
+            | (qtr["total_hprd"] > 12)
+            | (qtr["cna_hprd"] > 5.25)
+        )
+    ).fillna(False).astype("Int8")
+
+    # Optional hard impossible-row flags
+    qtr["pbj_invalid_quarter"] = (
+        (
+            qtr["resident_days_quarter"].isna()
+            | (qtr["resident_days_quarter"] <= 0)
+            | qtr["days_in_quarter"].isna()
+            | (qtr["days_in_quarter"] <= 0)
+            | qtr["coverage_ratio"].isna()
+            | (qtr["coverage_ratio"] < 0)
+            | (qtr["coverage_ratio"] > 1.01)
+        )
+    ).astype("Int8")
+
     # Final ordering / casts
     float_cols = [
         "rn_hours_quarter",
@@ -324,7 +475,17 @@ def build_quarterly_from_monthly():
     for col in float_cols:
         qtr[col] = pd.to_numeric(qtr[col], errors="coerce").astype("float32")
 
-    for col in ["days_reported_quarter", "days_in_quarter", "months_observed_in_quarter", "gap_from_prev_quarters"]:
+    for col in [
+        "days_reported_quarter",
+        "days_in_quarter",
+        "months_observed_in_quarter",
+        "gap_from_prev_quarters",
+        "pbj_partial_quarter",
+        "pbj_low_coverage",
+        "pbj_zero_rn_lpn",
+        "pbj_implausible_hprd",
+        "pbj_invalid_quarter",
+    ]:
         qtr[col] = pd.to_numeric(qtr[col], errors="coerce").astype("Int16")
 
     qtr = (
@@ -339,89 +500,25 @@ def build_quarterly_from_monthly():
     print(
         f"[qa-quarterly] unique_ccn={qtr['cms_certification_number'].nunique(dropna=True):,}, "
         f"missing_rn_hprd={int(qtr['rn_hprd'].isna().sum()):,}, "
-        f"missing_total_hprd={int(qtr['total_hprd'].isna().sum()):,}"
+        f"missing_total_hprd={int(qtr['total_hprd'].isna().sum()):,}, "
+        f"partial_qtrs={int(qtr['pbj_partial_quarter'].sum()):,}, "
+        f"low_coverage_qtrs={int(qtr['pbj_low_coverage'].sum()):,}, "
+        f"implausible_hprd_qtrs={int(qtr['pbj_implausible_hprd'].sum()):,}, "
+        f"invalid_qtrs={int(qtr['pbj_invalid_quarter'].sum()):,}"
     )
 
 
 # ============================== Main ==========================================
 def main():
-    files = sorted(PBJ_DIR.glob(PBJ_GLOB))
-    print(f"[scan] {len(files)} files found")
-
-    frames = []
-    failed = 0
-
-    for fp in files:
-        try:
-            m = process_file_monthly(fp)
-            print(f"[ok] {fp.name}: {len(m):,} rows")
-            if not m.empty:
-                frames.append(m)
-        except Exception as e:
-            print(f"[fail] {fp.name}: {e}")
-            failed += 1
-
-    monthly = pd.concat(frames, ignore_index=True) if frames else pd.DataFrame()
-    print(f"[concat] monthly rows = {len(monthly):,}")
-
-    if monthly.empty:
-        cfg.atomic_overwrite_csv(monthly, OUT_FP, index=False)
-        print(f"[saved] pbj nurse panel → {OUT_FP} (rows=0)")
-        if RUN_BUILD_QUARTERLY:
-            build_quarterly_from_monthly()
-        return
-
-    cols = [
-        "cms_certification_number",
-        "quarter",
-        "year_month",
-        *(["rn_hours_month", "lpn_hours_month", "cna_hours_month", "total_hours"] if KEEP_HOUR_TOTALS else []),
-        "resident_days",
-        "avg_daily_census",
-        "rn_hprd",
-        "lpn_hprd",
-        "cna_hprd",
-        "total_hprd",
-        "days_reported",
-        "days_in_month",
-        "coverage_ratio",
-    ]
-    monthly = monthly[cols]
-
-    # ---------- Sort and compute gap_from_prev_months once ----------
-    ord_dt = pd.to_datetime(monthly["year_month"] + "/01", format="%Y/%m/%d", errors="coerce")
-    monthly = monthly.assign(
-        _ord=ord_dt,
-        _mi=(ord_dt.dt.year * 12 + ord_dt.dt.month).astype("Int32"),
-    )
-
-    monthly = monthly.sort_values(["cms_certification_number", "_ord"], kind="mergesort")
-
-    monthly["gap_from_prev_months"] = (
-        monthly.groupby("cms_certification_number")["_mi"]
-        .diff()
-        .fillna(1)
-        .astype("Int16")
-        - 1
-    ).clip(lower=0)
-
-    monthly = (
-        monthly.drop(columns=["_ord", "_mi"])
-        .sort_values(["cms_certification_number", "year_month"], kind="mergesort")
-        .reset_index(drop=True)
-    )
-
-    cfg.atomic_overwrite_csv(monthly, OUT_FP, index=False)
-
-    print(f"[saved] pbj nurse panel → {OUT_FP} (rows={len(monthly):,})")
-    print(
-        f"[qa] files_read={len(files):,}, "
-        f"failed_files={failed:,}, "
-        f"unique_ccn={monthly['cms_certification_number'].nunique(dropna=True):,}"
-    )
+    if RUN_BUILD_MONTHLY:
+        build_monthly_from_raw()
+    else:
+        print("[skip] monthly rebuild skipped")
 
     if RUN_BUILD_QUARTERLY:
         build_quarterly_from_monthly()
+    else:
+        print("[skip] quarterly build skipped")
 
 
 if __name__ == "__main__":

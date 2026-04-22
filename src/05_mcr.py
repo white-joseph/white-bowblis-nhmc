@@ -6,8 +6,11 @@
 # Notes:
 # - Uses shared paths/helpers from config.py where applicable
 # - Preserves existing monthly logic, formulas, corrections, and output names
+# - Allows skipping monthly rebuild if mcr.csv already exists
 # - Adds a quarterly output built from finalized monthly mcr.csv
-# - Quarterly controls use last nonmissing month in the quarter
+# - Quarterly controls use within-quarter mode
+# - Ties in the mode are broken by the last observed month in the quarter
+# - Adds QA fields describing within-quarter agreement
 # -----------------------------------------------------------------------------
 
 from __future__ import annotations
@@ -28,12 +31,16 @@ INTERIM_DIR = cfg.ensure_dir(cfg.INTERIM_DIR)
 OUT_FP = INTERIM_DIR / "mcr.csv"
 OUT_FP_QUARTERLY = INTERIM_DIR / "mcr_quarterly.csv"
 
+RUN_BUILD_MONTHLY = False
 RUN_BUILD_QUARTERLY = True
 
 print(f"[paths] MCR_DIR={MCR_DIR}")
 print(f"[out]   {OUT_FP}")
 print(f"[out]   {OUT_FP_QUARTERLY}")
-print(f"[flags] RUN_BUILD_QUARTERLY={RUN_BUILD_QUARTERLY}")
+print(
+    f"[flags] RUN_BUILD_MONTHLY={RUN_BUILD_MONTHLY}, "
+    f"RUN_BUILD_QUARTERLY={RUN_BUILD_QUARTERLY}"
+)
 
 # ============================== Helpers =======================================
 def map_ownership_bucket(code_str: str):
@@ -102,6 +109,71 @@ def last_nonmissing(s: pd.Series):
     if len(s2) == 0:
         return pd.NA
     return s2.iloc[-1]
+
+
+def mode_with_last_tiebreak(s: pd.Series, round_digits: int | None = None):
+    """
+    Return within-quarter mode.
+    If multiple modes tie, use the last nonmissing observed value among the tied values.
+    Optionally round numeric values first to stabilize floating-point behavior.
+    """
+    s2 = s.dropna()
+    if len(s2) == 0:
+        return pd.NA
+
+    if round_digits is not None:
+        s_work = pd.to_numeric(s2, errors="coerce").round(round_digits)
+        s_work.index = s2.index
+    else:
+        s_work = s2.copy()
+
+    counts = s_work.value_counts(dropna=True)
+    if counts.empty:
+        return pd.NA
+
+    top_n = counts.iloc[0]
+    top_vals = set(counts[counts == top_n].index.tolist())
+
+    for val in reversed(s_work.tolist()):
+        if val in top_vals:
+            return val
+
+    return s_work.iloc[-1]
+
+
+def mode_share(s: pd.Series, round_digits: int | None = None):
+    """
+    Share of nonmissing monthly observations in the quarter equal to the chosen modal value.
+    """
+    s2 = s.dropna()
+    if len(s2) == 0:
+        return np.nan
+
+    if round_digits is not None:
+        s_work = pd.to_numeric(s2, errors="coerce").round(round_digits)
+        s_work.index = s2.index
+    else:
+        s_work = s2.copy()
+
+    counts = s_work.value_counts(dropna=True)
+    if counts.empty:
+        return np.nan
+
+    return float(counts.iloc[0] / len(s_work))
+
+
+def disagreement_flag(s: pd.Series, round_digits: int | None = None):
+    """
+    1 if more than one distinct nonmissing value appears within quarter, else 0.
+    """
+    s2 = s.dropna()
+    if len(s2) == 0:
+        return pd.NA
+
+    if round_digits is not None:
+        s2 = pd.to_numeric(s2, errors="coerce").round(round_digits)
+
+    return int(s2.nunique(dropna=True) > 1)
 
 
 # ============================== Load & Select =================================
@@ -196,6 +268,232 @@ def read_one_file(fp: Path) -> pd.DataFrame:
     return df
 
 
+def _ts_month_start(ym: str) -> pd.Timestamp:
+    return pd.Period(ym, "M").to_timestamp("s")
+
+
+def _ts_month_end(ym: str) -> pd.Timestamp:
+    return pd.Period(ym, "M").to_timestamp("s") + pd.offsets.MonthEnd(0)
+
+
+def apply_value_corrections(df: pd.DataFrame, corrections: list[dict]) -> int:
+    """
+    Each correction is a dict:
+      {"ccn":"015417", "start":"2018/04", "end":"2019/04", "col":"num_beds", "value":75}
+    Applied at the FY-row level if [FY_BGN_DT .. FY_END_DT] overlaps [start..end].
+    Returns number of rows updated.
+    """
+    total = 0
+    for item in corrections:
+        ccn = str(item["ccn"])
+        col = str(item["col"])
+        start, end = item["start"], item["end"]
+        val = item["value"]
+        ccn_norm = cfg.normalize_ccn_any(pd.Series([ccn])).iloc[0]
+        s_ts, e_ts = _ts_month_start(start), _ts_month_end(end)
+
+        m = (
+            df["cms_certification_number"].eq(ccn_norm)
+            & df["FY_BGN_DT"].notna()
+            & df["FY_END_DT"].notna()
+            & (df["FY_BGN_DT"] <= e_ts)
+            & (df["FY_END_DT"] >= s_ts)
+        )
+        if m.any():
+            df.loc[m, col] = val
+            total += int(m.sum())
+
+    return total
+
+
+def build_monthly_from_raw():
+    files = sorted(sas_files + xpt_files + csv_files)
+    if not files:
+        raise FileNotFoundError(f"No MCR flatfiles found in {MCR_DIR}")
+
+    frames = [read_one_file(fp) for fp in files]
+    raw = pd.concat(frames, ignore_index=True, sort=False).copy()
+
+    # ============================== Normalize & Types =============================
+    raw["cms_certification_number"] = cfg.normalize_ccn_any(raw["PRVDR_NUM"])
+    raw["FY_BGN_DT"] = pd.to_datetime(raw["FY_BGN_DT"], errors="coerce")
+    raw["FY_END_DT"] = pd.to_datetime(raw["FY_END_DT"], errors="coerce")
+
+    for c in ["PAT_DAYS_TOT", "PAT_DAYS_MCR", "PAT_DAYS_MCD", "BEDDAYS_AVAIL", "TOT_BEDS"]:
+        raw[c] = pd.to_numeric(raw[c], errors="coerce")
+
+    raw["ownership_type"] = raw["MRC_OWNERSHIP"].map(map_ownership_bucket)
+
+    # State / urban
+    raw["state"] = raw["STATE"].astype("string").str.strip().str.upper()
+    raw.loc[raw["state"].isin(["", "NA", "NAN", "NONE"]), "state"] = pd.NA
+    raw["urban"] = raw["URBAN"].apply(norm_urban).astype("Int8")
+
+    # Chain ONLY from MCR_homeoffice
+    raw["chain"] = raw["MCR_homeoffice"].apply(chain_from_homeoffice).astype("Int8")
+
+    # Beds (from S3_1_BEDS only)
+    raw["num_beds"] = raw["TOT_BEDS"]
+
+    # ============================== OUTLIER / MANUAL CORRECTIONS ==================
+    CORR_BEDS = [
+        {"ccn": "015417", "start": "2018/04", "end": "2019/04", "col": "num_beds", "value": 75},
+        {"ccn": "056337", "start": "2017/01", "end": "2017/12", "col": "num_beds", "value": 142},
+        {"ccn": "105782", "start": "2017/01", "end": "2017/12", "col": "num_beds", "value": 120},
+        {"ccn": "135080", "start": "2018/01", "end": "2019/12", "col": "num_beds", "value": 60},
+        {"ccn": "145816", "start": "2024/01", "end": "2024/06", "col": "num_beds", "value": 203},
+        {"ccn": "235022", "start": "2019/01", "end": "2019/12", "col": "num_beds", "value": 92},
+        {"ccn": "235157", "start": "2021/01", "end": "2021/12", "col": "num_beds", "value": 104},
+        {"ccn": "235638", "start": "2019/01", "end": "2019/12", "col": "num_beds", "value": 77},
+        {"ccn": "425129", "start": "2020/04", "end": "2020/12", "col": "num_beds", "value": 108},
+    ]
+
+    updated_beds = apply_value_corrections(raw, CORR_BEDS)
+    print(f"[beds corrections] updated FY rows: {updated_beds}")
+
+    CORR_INPUTS = []
+    updated_inputs = apply_value_corrections(raw, CORR_INPUTS)
+    if updated_inputs:
+        print(f"[input corrections] updated FY rows: {updated_inputs}")
+
+    # Occupancy rate (primary + fallback)
+    fy_days = (raw["FY_END_DT"] - raw["FY_BGN_DT"]).dt.days.add(1).where(lambda s: s > 0)
+
+    primary = np.where(
+        raw["PAT_DAYS_TOT"].notna()
+        & raw["BEDDAYS_AVAIL"].notna()
+        & (raw["BEDDAYS_AVAIL"] > 0),
+        (raw["PAT_DAYS_TOT"] / raw["BEDDAYS_AVAIL"]) * 100.0,
+        np.nan,
+    )
+
+    fallback = np.where(
+        raw["PAT_DAYS_TOT"].notna()
+        & raw["num_beds"].notna()
+        & fy_days.notna()
+        & (raw["num_beds"] * fy_days > 0),
+        (raw["PAT_DAYS_TOT"] / (raw["num_beds"] * fy_days)) * 100.0,
+        np.nan,
+    )
+
+    raw["occupancy_rate"] = pd.to_numeric(
+        np.where(np.isnan(primary), fallback, primary),
+        errors="coerce",
+    ).clip(0, 100)
+
+    # Shares
+    raw["pct_medicare"] = _share(raw["PAT_DAYS_MCR"], raw["PAT_DAYS_TOT"]).clip(0, 100)
+    raw["pct_medicaid"] = _share(raw["PAT_DAYS_MCD"], raw["PAT_DAYS_TOT"]).clip(0, 100)
+
+    CORR_DERIVED = []
+    updated_derived = apply_value_corrections(raw, CORR_DERIVED)
+    if updated_derived:
+        print(f"[derived corrections] updated FY rows: {updated_derived}")
+
+    # ============================== Expand to Monthly =============================
+    eligible = raw.dropna(subset=["cms_certification_number", "FY_BGN_DT", "FY_END_DT"]).copy()
+
+    rows = []
+    for r in eligible.itertuples(index=False):
+        months = month_range_df(r.FY_BGN_DT, r.FY_END_DT)
+        if months.empty:
+            continue
+
+        block = months.copy()
+        block["cms_certification_number"] = getattr(r, "cms_certification_number")
+        block["state"] = getattr(r, "state", pd.NA)
+        block["urban"] = getattr(r, "urban", pd.NA)
+        block["chain"] = getattr(r, "chain", pd.NA)
+        block["num_beds"] = getattr(r, "num_beds", np.nan)
+        block["occupancy_rate"] = getattr(r, "occupancy_rate", np.nan)
+        block["pct_medicare"] = getattr(r, "pct_medicare", np.nan)
+        block["pct_medicaid"] = getattr(r, "pct_medicaid", np.nan)
+        block["ownership_type"] = getattr(r, "ownership_type", None)
+        rows.append(block)
+
+    monthly = (
+        pd.concat(rows, ignore_index=True)
+        if rows
+        else pd.DataFrame(
+            columns=[
+                "cms_certification_number",
+                "month",
+                "state",
+                "urban",
+                "chain",
+                "num_beds",
+                "occupancy_rate",
+                "pct_medicare",
+                "pct_medicaid",
+                "ownership_type",
+            ]
+        )
+    )
+
+    # Deduplicate overlaps within CCN×month
+    monthly = (
+        monthly.sort_values(["cms_certification_number", "month"])
+        .groupby(["cms_certification_number", "month"], as_index=False)
+        .agg(
+            {
+                "state": lambda s: s.dropna().iloc[0] if s.dropna().size else pd.NA,
+                "urban": "max",
+                "chain": "max",
+                "num_beds": "mean",
+                "occupancy_rate": "mean",
+                "pct_medicare": "mean",
+                "pct_medicaid": "mean",
+                "ownership_type": lambda s: s.dropna().iloc[0] if s.dropna().size else pd.NA,
+            }
+        )
+    )
+
+    # Ownership dummies (For-profit is reference)
+    ot = monthly["ownership_type"].astype("string").str.strip().str.lower()
+    ot = (
+        ot.str.replace(r"[\s_]+", "-", regex=True)
+        .str.replace(r"^non[- ]?profit$", "nonprofit", regex=True)
+        .str.replace(r"^for[- ]?profit$", "for-profit", regex=True)
+    )
+
+    monthly["non_profit"] = ot.eq("nonprofit").astype("Int8")
+    monthly["government"] = ot.eq("government").astype("Int8")
+
+    # Period labels
+    monthly["year_month"] = monthly["month"].dt.strftime("%Y/%m")
+    monthly["quarter"] = monthly["month"].dt.to_period("Q").astype(str).str.replace("Q", "Q", regex=False)
+
+    # Coerce numeric ranges/types
+    for c in ["pct_medicare", "pct_medicaid", "occupancy_rate"]:
+        monthly[c] = pd.to_numeric(monthly[c], errors="coerce").clip(0, 100)
+    monthly["num_beds"] = pd.to_numeric(monthly["num_beds"], errors="coerce")
+
+    # Reorder
+    keep = [
+        "cms_certification_number",
+        "quarter",
+        "year_month",
+        "pct_medicare",
+        "pct_medicaid",
+        "num_beds",
+        "occupancy_rate",
+        "urban",
+        "chain",
+        "state",
+        "non_profit",
+        "government",
+    ]
+    monthly = monthly[keep].sort_values(["cms_certification_number", "year_month"]).reset_index(drop=True)
+
+    # Save monthly
+    cfg.atomic_overwrite_csv(monthly, OUT_FP, index=False)
+    print(
+        f"[save] controls → {OUT_FP}  rows={len(monthly):,}  "
+        f"CCNs={monthly['cms_certification_number'].nunique():,}"
+    )
+    print(monthly.head(10).to_string(index=False))
+
+
 def build_quarterly_from_monthly():
     if not OUT_FP.exists():
         raise FileNotFoundError(f"Monthly MCR panel not found: {OUT_FP}")
@@ -245,17 +543,38 @@ def build_quarterly_from_monthly():
     qtr = (
         monthly.groupby(grp, sort=False)
         .agg(
-            pct_medicare=("pct_medicare", last_nonmissing),
-            pct_medicaid=("pct_medicaid", last_nonmissing),
-            num_beds=("num_beds", last_nonmissing),
-            occupancy_rate=("occupancy_rate", last_nonmissing),
-            urban=("urban", last_nonmissing),
-            chain=("chain", last_nonmissing),
-            state=("state", last_nonmissing),
-            non_profit=("non_profit", last_nonmissing),
-            government=("government", last_nonmissing),
+            pct_medicare=("pct_medicare", lambda s: mode_with_last_tiebreak(s, round_digits=4)),
+            pct_medicaid=("pct_medicaid", lambda s: mode_with_last_tiebreak(s, round_digits=4)),
+            num_beds=("num_beds", lambda s: mode_with_last_tiebreak(s, round_digits=0)),
+            occupancy_rate=("occupancy_rate", lambda s: mode_with_last_tiebreak(s, round_digits=4)),
+            urban=("urban", mode_with_last_tiebreak),
+            chain=("chain", mode_with_last_tiebreak),
+            state=("state", mode_with_last_tiebreak),
+            non_profit=("non_profit", mode_with_last_tiebreak),
+            government=("government", mode_with_last_tiebreak),
+
             months_observed_in_quarter=("year_month", "nunique"),
             last_year_month_in_quarter=("year_month", "last"),
+
+            pct_medicare_mode_share=("pct_medicare", lambda s: mode_share(s, round_digits=4)),
+            pct_medicaid_mode_share=("pct_medicaid", lambda s: mode_share(s, round_digits=4)),
+            num_beds_mode_share=("num_beds", lambda s: mode_share(s, round_digits=0)),
+            occupancy_rate_mode_share=("occupancy_rate", lambda s: mode_share(s, round_digits=4)),
+            urban_mode_share=("urban", mode_share),
+            chain_mode_share=("chain", mode_share),
+            state_mode_share=("state", mode_share),
+            non_profit_mode_share=("non_profit", mode_share),
+            government_mode_share=("government", mode_share),
+
+            pct_medicare_disagreement=("pct_medicare", lambda s: disagreement_flag(s, round_digits=4)),
+            pct_medicaid_disagreement=("pct_medicaid", lambda s: disagreement_flag(s, round_digits=4)),
+            num_beds_disagreement=("num_beds", lambda s: disagreement_flag(s, round_digits=0)),
+            occupancy_rate_disagreement=("occupancy_rate", lambda s: disagreement_flag(s, round_digits=4)),
+            urban_disagreement=("urban", disagreement_flag),
+            chain_disagreement=("chain", disagreement_flag),
+            state_disagreement=("state", disagreement_flag),
+            non_profit_disagreement=("non_profit", disagreement_flag),
+            government_disagreement=("government", disagreement_flag),
         )
         .reset_index()
     )
@@ -275,6 +594,34 @@ def build_quarterly_from_monthly():
     qtr["months_observed_in_quarter"] = pd.to_numeric(
         qtr["months_observed_in_quarter"], errors="coerce"
     ).astype("Int16")
+
+    for col in [
+        "pct_medicare_mode_share",
+        "pct_medicaid_mode_share",
+        "num_beds_mode_share",
+        "occupancy_rate_mode_share",
+        "urban_mode_share",
+        "chain_mode_share",
+        "state_mode_share",
+        "non_profit_mode_share",
+        "government_mode_share",
+    ]:
+        if col in qtr.columns:
+            qtr[col] = pd.to_numeric(qtr[col], errors="coerce").astype("float32")
+
+    for col in [
+        "pct_medicare_disagreement",
+        "pct_medicaid_disagreement",
+        "num_beds_disagreement",
+        "occupancy_rate_disagreement",
+        "urban_disagreement",
+        "chain_disagreement",
+        "state_disagreement",
+        "non_profit_disagreement",
+        "government_disagreement",
+    ]:
+        if col in qtr.columns:
+            qtr[col] = pd.to_numeric(qtr[col], errors="coerce").astype("Int8")
 
     q_order = {"Q1": 1, "Q2": 2, "Q3": 3, "Q4": 4}
     qtr["_qord"] = qtr["quarter"].map(q_order)
@@ -296,240 +643,17 @@ def build_quarterly_from_monthly():
     )
 
 
-files = sorted(sas_files + xpt_files + csv_files)
-if not files:
-    raise FileNotFoundError(f"No MCR flatfiles found in {MCR_DIR}")
+def main():
+    if RUN_BUILD_MONTHLY:
+        build_monthly_from_raw()
+    else:
+        print("[skip] monthly rebuild skipped")
 
-frames = [read_one_file(fp) for fp in files]
-raw = pd.concat(frames, ignore_index=True, sort=False).copy()
-
-# ============================== Normalize & Types =============================
-raw["cms_certification_number"] = cfg.normalize_ccn_any(raw["PRVDR_NUM"])
-raw["FY_BGN_DT"] = pd.to_datetime(raw["FY_BGN_DT"], errors="coerce")
-raw["FY_END_DT"] = pd.to_datetime(raw["FY_END_DT"], errors="coerce")
-
-for c in ["PAT_DAYS_TOT", "PAT_DAYS_MCR", "PAT_DAYS_MCD", "BEDDAYS_AVAIL", "TOT_BEDS"]:
-    raw[c] = pd.to_numeric(raw[c], errors="coerce")
-
-raw["ownership_type"] = raw["MRC_OWNERSHIP"].map(map_ownership_bucket)
-
-# State / urban
-raw["state"] = raw["STATE"].astype("string").str.strip().str.upper()
-raw.loc[raw["state"].isin(["", "NA", "NAN", "NONE"]), "state"] = pd.NA
-raw["urban"] = raw["URBAN"].apply(norm_urban).astype("Int8")
-
-# Chain ONLY from MCR_homeoffice
-raw["chain"] = raw["MCR_homeoffice"].apply(chain_from_homeoffice).astype("Int8")
-
-# Beds (from S3_1_BEDS only)
-raw["num_beds"] = raw["TOT_BEDS"]
-
-# ============================== OUTLIER / MANUAL CORRECTIONS ==================
-def _ts_month_start(ym: str) -> pd.Timestamp:
-    return pd.Period(ym, "M").to_timestamp("s")
+    if RUN_BUILD_QUARTERLY:
+        build_quarterly_from_monthly()
+    else:
+        print("[skip] quarterly build skipped")
 
 
-def _ts_month_end(ym: str) -> pd.Timestamp:
-    return pd.Period(ym, "M").to_timestamp("s") + pd.offsets.MonthEnd(0)
-
-
-def apply_value_corrections(df: pd.DataFrame, corrections: list[dict]) -> int:
-    """
-    Each correction is a dict:
-      {"ccn":"015417", "start":"2018/04", "end":"2019/04", "col":"num_beds", "value":75}
-    Applied at the FY-row level if [FY_BGN_DT .. FY_END_DT] overlaps [start..end].
-    Returns number of rows updated.
-    """
-    total = 0
-    for item in corrections:
-        ccn = str(item["ccn"])
-        col = str(item["col"])
-        start, end = item["start"], item["end"]
-        val = item["value"]
-        ccn_norm = cfg.normalize_ccn_any(pd.Series([ccn])).iloc[0]
-        s_ts, e_ts = _ts_month_start(start), _ts_month_end(end)
-
-        m = (
-            df["cms_certification_number"].eq(ccn_norm)
-            & df["FY_BGN_DT"].notna()
-            & df["FY_END_DT"].notna()
-            & (df["FY_BGN_DT"] <= e_ts)
-            & (df["FY_END_DT"] >= s_ts)
-        )
-        if m.any():
-            df.loc[m, col] = val
-            total += int(m.sum())
-
-    return total
-
-
-# (A) Hard-coded corrections for beds
-CORR_BEDS = [
-    {"ccn": "015417", "start": "2018/04", "end": "2019/04", "col": "num_beds", "value": 75},
-    {"ccn": "056337", "start": "2017/01", "end": "2017/12", "col": "num_beds", "value": 142},
-    {"ccn": "105782", "start": "2017/01", "end": "2017/12", "col": "num_beds", "value": 120},
-    {"ccn": "135080", "start": "2018/01", "end": "2019/12", "col": "num_beds", "value": 60},
-    {"ccn": "145816", "start": "2024/01", "end": "2024/06", "col": "num_beds", "value": 203},
-    {"ccn": "235022", "start": "2019/01", "end": "2019/12", "col": "num_beds", "value": 92},
-    {"ccn": "235157", "start": "2021/01", "end": "2021/12", "col": "num_beds", "value": 104},
-    {"ccn": "235638", "start": "2019/01", "end": "2019/12", "col": "num_beds", "value": 77},
-    {"ccn": "425129", "start": "2020/04", "end": "2020/12", "col": "num_beds", "value": 108},
-]
-
-updated_beds = apply_value_corrections(raw, CORR_BEDS)
-print(f"[beds corrections] updated FY rows: {updated_beds}")
-
-# (B) Placeholder for corrections to raw input fields
-CORR_INPUTS = [
-    # Example:
-    # {"ccn":"123456", "start":"2020/01", "end":"2020/03", "col":"PAT_DAYS_TOT", "value": 9999},
-]
-updated_inputs = apply_value_corrections(raw, CORR_INPUTS)
-if updated_inputs:
-    print(f"[input corrections] updated FY rows: {updated_inputs}")
-
-# Occupancy rate (primary + fallback) —> AFTER beds corrections
-fy_days = (raw["FY_END_DT"] - raw["FY_BGN_DT"]).dt.days.add(1).where(lambda s: s > 0)
-
-primary = np.where(
-    raw["PAT_DAYS_TOT"].notna()
-    & raw["BEDDAYS_AVAIL"].notna()
-    & (raw["BEDDAYS_AVAIL"] > 0),
-    (raw["PAT_DAYS_TOT"] / raw["BEDDAYS_AVAIL"]) * 100.0,
-    np.nan,
-)
-
-fallback = np.where(
-    raw["PAT_DAYS_TOT"].notna()
-    & raw["num_beds"].notna()
-    & fy_days.notna()
-    & (raw["num_beds"] * fy_days > 0),
-    (raw["PAT_DAYS_TOT"] / (raw["num_beds"] * fy_days)) * 100.0,
-    np.nan,
-)
-
-raw["occupancy_rate"] = pd.to_numeric(
-    np.where(np.isnan(primary), fallback, primary),
-    errors="coerce",
-).clip(0, 100)
-
-# Shares
-raw["pct_medicare"] = _share(raw["PAT_DAYS_MCR"], raw["PAT_DAYS_TOT"]).clip(0, 100)
-raw["pct_medicaid"] = _share(raw["PAT_DAYS_MCD"], raw["PAT_DAYS_TOT"]).clip(0, 100)
-
-# (C) Placeholder for corrections to derived outputs
-CORR_DERIVED = [
-    # Example:
-    # {"ccn":"123456", "start":"2021/05", "end":"2021/07", "col":"occupancy_rate", "value": 88.0},
-    # {"ccn":"123456", "start":"2021/05", "end":"2021/07", "col":"pct_medicare",   "value": 55.0},
-]
-updated_derived = apply_value_corrections(raw, CORR_DERIVED)
-if updated_derived:
-    print(f"[derived corrections] updated FY rows: {updated_derived}")
-
-# ============================== Expand to Monthly =============================
-eligible = raw.dropna(subset=["cms_certification_number", "FY_BGN_DT", "FY_END_DT"]).copy()
-
-rows = []
-for r in eligible.itertuples(index=False):
-    months = month_range_df(r.FY_BGN_DT, r.FY_END_DT)
-    if months.empty:
-        continue
-
-    block = months.copy()
-    block["cms_certification_number"] = getattr(r, "cms_certification_number")
-    block["state"] = getattr(r, "state", pd.NA)
-    block["urban"] = getattr(r, "urban", pd.NA)
-    block["chain"] = getattr(r, "chain", pd.NA)
-    block["num_beds"] = getattr(r, "num_beds", np.nan)
-    block["occupancy_rate"] = getattr(r, "occupancy_rate", np.nan)
-    block["pct_medicare"] = getattr(r, "pct_medicare", np.nan)
-    block["pct_medicaid"] = getattr(r, "pct_medicaid", np.nan)
-    block["ownership_type"] = getattr(r, "ownership_type", None)
-    rows.append(block)
-
-monthly = (
-    pd.concat(rows, ignore_index=True)
-    if rows
-    else pd.DataFrame(
-        columns=[
-            "cms_certification_number",
-            "month",
-            "state",
-            "urban",
-            "chain",
-            "num_beds",
-            "occupancy_rate",
-            "pct_medicare",
-            "pct_medicaid",
-            "ownership_type",
-        ]
-    )
-)
-
-# Deduplicate overlaps within CCN×month
-monthly = (
-    monthly.sort_values(["cms_certification_number", "month"])
-    .groupby(["cms_certification_number", "month"], as_index=False)
-    .agg(
-        {
-            "state": lambda s: s.dropna().iloc[0] if s.dropna().size else pd.NA,
-            "urban": "max",
-            "chain": "max",
-            "num_beds": "mean",
-            "occupancy_rate": "mean",
-            "pct_medicare": "mean",
-            "pct_medicaid": "mean",
-            "ownership_type": lambda s: s.dropna().iloc[0] if s.dropna().size else pd.NA,
-        }
-    )
-)
-
-# Ownership dummies (For-profit is reference)
-ot = monthly["ownership_type"].astype("string").str.strip().str.lower()
-ot = (
-    ot.str.replace(r"[\s_]+", "-", regex=True)
-    .str.replace(r"^non[- ]?profit$", "nonprofit", regex=True)
-    .str.replace(r"^for[- ]?profit$", "for-profit", regex=True)
-)
-
-monthly["non_profit"] = ot.eq("nonprofit").astype("Int8")
-monthly["government"] = ot.eq("government").astype("Int8")
-
-# Period labels
-monthly["year_month"] = monthly["month"].dt.strftime("%Y/%m")
-monthly["quarter"] = monthly["month"].dt.to_period("Q").astype(str).str.replace("Q", "Q", regex=False)
-
-# Coerce numeric ranges/types
-for c in ["pct_medicare", "pct_medicaid", "occupancy_rate"]:
-    monthly[c] = pd.to_numeric(monthly[c], errors="coerce").clip(0, 100)
-monthly["num_beds"] = pd.to_numeric(monthly["num_beds"], errors="coerce")
-
-# Reorder
-keep = [
-    "cms_certification_number",
-    "quarter",
-    "year_month",
-    "pct_medicare",
-    "pct_medicaid",
-    "num_beds",
-    "occupancy_rate",
-    "urban",
-    "chain",
-    "state",
-    "non_profit",
-    "government",
-]
-monthly = monthly[keep].sort_values(["cms_certification_number", "year_month"]).reset_index(drop=True)
-
-# Save monthly
-cfg.atomic_overwrite_csv(monthly, OUT_FP, index=False)
-print(
-    f"[save] controls → {OUT_FP}  rows={len(monthly):,}  "
-    f"CCNs={monthly['cms_certification_number'].nunique():,}"
-)
-print(monthly.head(10).to_string(index=False))
-
-# Save quarterly
-if RUN_BUILD_QUARTERLY:
-    build_quarterly_from_monthly()
+if __name__ == "__main__":
+    main()

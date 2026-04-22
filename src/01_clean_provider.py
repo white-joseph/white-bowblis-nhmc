@@ -6,7 +6,9 @@
 # Updated version:
 # - preserves the existing monthly provider pipeline
 # - adds a quarterly provider output built from the finalized monthly provider.csv
-# - quarterly values use the last nonmissing month in the quarter within facility
+# - quarterly values use the within-quarter mode
+# - ties in the mode are broken using the last nonmissing month in the quarter
+# - adds QA fields describing within-quarter agreement
 # =============================================================================
 
 from __future__ import annotations
@@ -93,6 +95,72 @@ def last_nonmissing(s: pd.Series):
     if len(s2) == 0:
         return pd.NA
     return s2.iloc[-1]
+
+
+def mode_with_last_tiebreak(s: pd.Series, round_digits: int | None = None):
+    """
+    Return within-quarter mode.
+    If multiple modes tie, use the last nonmissing observed value among the tied values.
+    Optionally round numeric values first to stabilize floating-point behavior.
+    """
+    s2 = s.dropna()
+    if len(s2) == 0:
+        return pd.NA
+
+    if round_digits is not None:
+        s_work = pd.to_numeric(s2, errors="coerce").round(round_digits)
+        s_work.index = s2.index
+    else:
+        s_work = s2.copy()
+
+    counts = s_work.value_counts(dropna=True)
+    if counts.empty:
+        return pd.NA
+
+    top_n = counts.iloc[0]
+    top_vals = set(counts[counts == top_n].index.tolist())
+
+    # tie-break: among tied modal values, use the last observed within quarter
+    for val in reversed(s_work.tolist()):
+        if val in top_vals:
+            return val
+
+    return s_work.iloc[-1]
+
+
+def mode_share(s: pd.Series, round_digits: int | None = None):
+    """
+    Share of nonmissing monthly observations in the quarter equal to the chosen modal value.
+    """
+    s2 = s.dropna()
+    if len(s2) == 0:
+        return np.nan
+
+    if round_digits is not None:
+        s_work = pd.to_numeric(s2, errors="coerce").round(round_digits)
+        s_work.index = s2.index
+    else:
+        s_work = s2.copy()
+
+    counts = s_work.value_counts(dropna=True)
+    if counts.empty:
+        return np.nan
+
+    return float(counts.iloc[0] / len(s_work))
+
+
+def disagreement_flag(s: pd.Series, round_digits: int | None = None):
+    """
+    1 if more than one distinct nonmissing value appears within quarter, else 0.
+    """
+    s2 = s.dropna()
+    if len(s2) == 0:
+        return pd.NA
+
+    if round_digits is not None:
+        s2 = pd.to_numeric(s2, errors="coerce").round(round_digits)
+
+    return int(s2.nunique(dropna=True) > 1)
 
 
 # ============================ Column candidates ===============================
@@ -468,13 +536,28 @@ def build_quarterly_from_monthly():
     qtr = (
         prov.groupby(grp, sort=False)
         .agg(
-            provider_resides_in_hospital=("provider_resides_in_hospital", last_nonmissing),
-            ccrc_facility=("ccrc_facility", last_nonmissing),
-            sff_facility=("sff_facility", last_nonmissing),
-            case_mix_total=("case_mix_total", last_nonmissing),
-            beds_prov=("beds_prov", last_nonmissing),
+            provider_resides_in_hospital=("provider_resides_in_hospital", mode_with_last_tiebreak),
+            ccrc_facility=("ccrc_facility", mode_with_last_tiebreak),
+            sff_facility=("sff_facility", mode_with_last_tiebreak),
+
+            # round numeric slow-moving vars before taking quarterly mode
+            case_mix_total=("case_mix_total", lambda s: mode_with_last_tiebreak(s, round_digits=4)),
+            beds_prov=("beds_prov", lambda s: mode_with_last_tiebreak(s, round_digits=0)),
+
             months_in_quarter=("year_month", "nunique"),
             last_year_month_in_quarter=("year_month", "last"),
+
+            provider_resides_in_hospital_mode_share=("provider_resides_in_hospital", mode_share),
+            ccrc_facility_mode_share=("ccrc_facility", mode_share),
+            sff_facility_mode_share=("sff_facility", mode_share),
+            case_mix_total_mode_share=("case_mix_total", lambda s: mode_share(s, round_digits=4)),
+            beds_prov_mode_share=("beds_prov", lambda s: mode_share(s, round_digits=0)),
+
+            provider_resides_in_hospital_disagreement=("provider_resides_in_hospital", disagreement_flag),
+            ccrc_facility_disagreement=("ccrc_facility", disagreement_flag),
+            sff_facility_disagreement=("sff_facility", disagreement_flag),
+            case_mix_total_disagreement=("case_mix_total", lambda s: disagreement_flag(s, round_digits=4)),
+            beds_prov_disagreement=("beds_prov", lambda s: disagreement_flag(s, round_digits=0)),
         )
         .reset_index()
     )
@@ -489,6 +572,26 @@ def build_quarterly_from_monthly():
 
     if "case_mix_total" in qtr.columns:
         qtr["case_mix_total"] = pd.to_numeric(qtr["case_mix_total"], errors="coerce")
+
+    for col in [
+        "provider_resides_in_hospital_mode_share",
+        "ccrc_facility_mode_share",
+        "sff_facility_mode_share",
+        "case_mix_total_mode_share",
+        "beds_prov_mode_share",
+    ]:
+        if col in qtr.columns:
+            qtr[col] = pd.to_numeric(qtr[col], errors="coerce").astype("float32")
+
+    for col in [
+        "provider_resides_in_hospital_disagreement",
+        "ccrc_facility_disagreement",
+        "sff_facility_disagreement",
+        "case_mix_total_disagreement",
+        "beds_prov_disagreement",
+    ]:
+        if col in qtr.columns:
+            qtr[col] = pd.to_numeric(qtr[col], errors="coerce").astype("Int8")
 
     q_order = {"Q1": 1, "Q2": 2, "Q3": 3, "Q4": 4}
     qtr["_qord"] = qtr["quarter"].map(q_order)

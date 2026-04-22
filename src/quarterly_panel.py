@@ -11,6 +11,8 @@
 # - Converts event month to event quarter
 # - Creates quarterly treated / event_time / post / time / time_treated
 # - Applies lighter cleanup appropriate for quarterly quality regressions
+# - Renames overlapping quarterly metadata columns before merge
+# - Carries PBJ QA flags into the final panel
 # -----------------------------------------------------------------------------
 
 from __future__ import annotations
@@ -29,7 +31,7 @@ warnings.filterwarnings("ignore", category=FutureWarning)
 INTERIM = cfg.INTERIM_DIR
 CLEAN_DIR = cfg.ensure_dir(cfg.CLEAN_DIR)
 
-QUALITY_FP = INTERIM / "quality_measures.csv"          # change if your filename differs
+QUALITY_FP = INTERIM / "quality_measures.csv"   # change if needed
 PROVIDER_Q_FP = INTERIM / "provider_quarterly.csv"
 PBJ_Q_FP = INTERIM / "pbj_nurse_quarterly.csv"
 MCR_Q_FP = INTERIM / "mcr_quarterly.csv"
@@ -52,9 +54,6 @@ END_Q = cfg.END_Q       # e.g. "2024Q2"
 
 # ============================== Helpers =======================================
 def normalize_quarter_string(s: pd.Series) -> pd.Series:
-    """
-    Normalize quarter labels to 'Q1', 'Q2', 'Q3', 'Q4'
-    """
     out = s.astype("string").str.strip().str.upper()
     out = out.str.replace(r"^\s*(\d)\s*$", r"Q\1", regex=True)
     out = out.str.replace(r"^\s*(\d{4})Q([1-4])\s*$", r"Q\2", regex=True)
@@ -72,12 +71,6 @@ def year_quarter_period(year: pd.Series, quarter: pd.Series) -> pd.PeriodIndex:
     y = pd.to_numeric(year, errors="coerce").astype("Int64")
     vals = y.astype("string") + "Q" + qn.astype("string")
     return pd.PeriodIndex(vals, freq="Q")
-
-
-def quarter_index(year: pd.Series, quarter: pd.Series) -> pd.Series:
-    qn = quarter_num_from_label(quarter)
-    y = pd.to_numeric(year, errors="coerce").astype("Int64")
-    return (y * 4 + qn).astype("Int32")
 
 
 def to_monthstart(x) -> pd.Series:
@@ -126,7 +119,6 @@ def make_case_mix_bins_and_dummies_quarter(panel: pd.DataFrame, cm_col: str, sta
     out = panel.copy()
     out[cm_col] = pd.to_numeric(out[cm_col], errors="coerce")
 
-    # national bins per quarter
     out["cm_quart_nat"] = out.groupby(["year", "quarter"], observed=True)[cm_col].transform(
         lambda s: rank_bins_pct(s, 4)
     )
@@ -134,7 +126,6 @@ def make_case_mix_bins_and_dummies_quarter(panel: pd.DataFrame, cm_col: str, sta
         lambda s: rank_bins_pct(s, 10)
     )
 
-    # state x quarter bins
     if state_col in out.columns:
         mask = out[state_col].notna()
         out.loc[mask, "cm_quart_state"] = (
@@ -203,6 +194,28 @@ provider_q = filter_to_window_quarter(provider_q)
 pbj_q = filter_to_window_quarter(pbj_q)
 mcr_q = filter_to_window_quarter(mcr_q)
 
+# ============================== Rename overlapping metadata ====================
+provider_rename = {}
+if "months_in_quarter" in provider_q.columns:
+    provider_rename["months_in_quarter"] = "provider_months_in_quarter"
+if "last_year_month_in_quarter" in provider_q.columns:
+    provider_rename["last_year_month_in_quarter"] = "provider_last_year_month_in_quarter"
+provider_q = provider_q.rename(columns=provider_rename)
+
+pbj_rename = {}
+if "months_observed_in_quarter" in pbj_q.columns:
+    pbj_rename["months_observed_in_quarter"] = "pbj_months_observed_in_quarter"
+if "last_year_month_in_quarter" in pbj_q.columns:
+    pbj_rename["last_year_month_in_quarter"] = "pbj_last_year_month_in_quarter"
+pbj_q = pbj_q.rename(columns=pbj_rename)
+
+mcr_rename = {}
+if "months_observed_in_quarter" in mcr_q.columns:
+    mcr_rename["months_observed_in_quarter"] = "mcr_months_observed_in_quarter"
+if "last_year_month_in_quarter" in mcr_q.columns:
+    mcr_rename["last_year_month_in_quarter"] = "mcr_last_year_month_in_quarter"
+mcr_q = mcr_q.rename(columns=mcr_rename)
+
 # ============================== CHOW agreement filter =========================
 chow["n_chow_nh_compare"] = pd.to_numeric(chow.get("n_chow_nh_compare"), errors="coerce").fillna(0).astype(int)
 chow["n_chow_mcr"] = pd.to_numeric(chow.get("n_chow_mcr"), errors="coerce").fillna(0).astype(int)
@@ -230,12 +243,10 @@ chow_timing = (
     .copy()
 )
 
-# same agreed-sample treated definition as monthly script
 chow_timing["treated_agree"] = (
     (chow_timing["n_chow_nh_compare"] == 1) & (chow_timing["n_chow_mcr"] == 1)
 ).astype("Int8")
 
-# same baseline event source as monthly script: MCR month
 chow_timing["event_month"] = to_monthstart(chow_timing["first_mcr_month"])
 event_parts = month_to_quarter_parts(chow_timing["event_month"])
 chow_timing = pd.concat([chow_timing, event_parts], axis=1)
@@ -254,22 +265,17 @@ base = (
     .merge(mcr_q, on=keys, how="left")
 )
 
-# keep only CHOW-agree CCNs
 base["cms_certification_number"] = cfg.normalize_ccn_any(base["cms_certification_number"])
 base = base[base["cms_certification_number"].isin(agree_ccns)].copy()
 
-# attach CHOW timing
 base = base.merge(chow_timing, on="cms_certification_number", how="left")
 
 # ============================== Treatment / Post / Event-time =================
-# global quarter index starting at 2017Q1 = 1
 qnum = quarter_num_from_label(base["quarter"])
 base["time"] = ((base["year"].astype("Int64") - 2017) * 4 + qnum).astype("Int32")
 
-# treated fixed from agreed sample
 base["treated"] = pd.to_numeric(base["treated_agree"], errors="coerce").fillna(0).astype("Int8")
 
-# event-time in QUARTERS using same event source as monthly script
 base["event_time"] = np.nan
 base["time_treated"] = pd.Series(pd.NA, index=base.index, dtype="Int32")
 
@@ -279,9 +285,11 @@ curr_qi = (base.loc[mask, "year"].astype("Int64") * 4 + quarter_num_from_label(b
 event_qi = (base.loc[mask, "event_year"].astype("Int64") * 4 + base.loc[mask, "event_quarter_num"].astype("Int64")).astype("Int32")
 
 base.loc[mask, "event_time"] = (curr_qi - event_qi).astype(int)
-base.loc[mask, "time_treated"] = ((base.loc[mask, "event_year"].astype("Int64") - 2017) * 4 + base.loc[mask, "event_quarter_num"].astype("Int64")).astype("Int32")
+base.loc[mask, "time_treated"] = (
+    ((base.loc[mask, "event_year"].astype("Int64") - 2017) * 4 + base.loc[mask, "event_quarter_num"].astype("Int64"))
+    .astype("Int32")
+)
 
-# post = 1 strictly AFTER the chosen event quarter (same style as monthly script)
 base["post"] = 0
 base.loc[mask, "post"] = (base.loc[mask, "event_time"] > 0).astype("Int8")
 
@@ -307,9 +315,16 @@ want_cols = [
     "event_quarter",
     "first_nh_month",
     "first_mcr_month",
+
+    # provider
     "provider_resides_in_hospital",
-    "months_in_quarter",
-    "last_year_month_in_quarter",
+    "provider_months_in_quarter",
+    "provider_last_year_month_in_quarter",
+    "ccrc_facility",
+    "sff_facility",
+    "beds_prov",
+
+    # pbj
     "rn_hprd",
     "lpn_hprd",
     "cna_hprd",
@@ -317,19 +332,30 @@ want_cols = [
     "days_reported_quarter",
     "days_in_quarter",
     "coverage_ratio",
+    "pbj_months_observed_in_quarter",
+    "pbj_last_year_month_in_quarter",
+    "gap_from_prev_quarters",
+    "pbj_partial_quarter",
+    "pbj_low_coverage",
+    "pbj_zero_rn_lpn",
+    "pbj_implausible_hprd",
+    "pbj_invalid_quarter",
+
+    # mcr
     "non_profit",
     "government",
     "chain",
     "num_beds",
-    "beds_prov",
-    "beds",
-    "ccrc_facility",
-    "sff_facility",
     "occupancy_rate",
     "pct_medicare",
     "pct_medicaid",
     "state",
     "urban",
+    "mcr_months_observed_in_quarter",
+    "mcr_last_year_month_in_quarter",
+
+    # unified beds if already present
+    "beds",
 ] + metric_cols
 
 cm_dummy_cols_all = [
@@ -344,13 +370,11 @@ want_cols = [c for c in want_cols if c in base.columns]
 panel = base[want_cols].copy()
 
 # ============================== Light cleanup =================================
-# drop AK / HI
 if "state" in panel.columns:
     before = len(panel)
     panel = panel.loc[~panel["state"].isin(["AK", "HI"])].copy()
     print(f"[filter] drop AK/HI: {before:,} -> {len(panel):,}")
 
-# numeric coercions
 for c in [
     "rn_hprd", "lpn_hprd", "cna_hprd", "total_hprd",
     "coverage_ratio", "occupancy_rate", "pct_medicare", "pct_medicaid",
@@ -365,12 +389,14 @@ for c in metric_cols:
 for col in [
     "non_profit", "government", "chain", "urban",
     "ccrc_facility", "sff_facility", "provider_resides_in_hospital",
-    "post", "treated"
+    "post", "treated",
+    "pbj_partial_quarter", "pbj_low_coverage", "pbj_zero_rn_lpn",
+    "pbj_implausible_hprd", "pbj_invalid_quarter",
 ]:
     if col in panel.columns:
         panel[col] = pd.to_numeric(panel[col], errors="coerce").astype("Int8")
 
-# construct a unified beds variable if not already present
+# construct unified beds if absent
 if "beds" not in panel.columns:
     nb = panel["num_beds"] if "num_beds" in panel.columns else pd.Series(np.nan, index=panel.index)
     bp = panel["beds_prov"] if "beds_prov" in panel.columns else pd.Series(np.nan, index=panel.index)
@@ -384,28 +410,23 @@ if "beds" not in panel.columns:
 
     panel["beds"] = pd.to_numeric(beds_clean, errors="coerce")
 
-# drop beds < 15
 if "beds" in panel.columns:
     before = len(panel)
     panel = panel.loc[~(panel["beds"] < 15)].copy()
     print(f"[filter] drop beds < 15: {before:,} -> {len(panel):,}")
 
-# drop hospital-based rows
 if "provider_resides_in_hospital" in panel.columns:
     before = len(panel)
     panel = panel.loc[panel["provider_resides_in_hospital"] != 1].copy()
     print(f"[filter] drop provider_resides_in_hospital==1: {before:,} -> {len(panel):,}")
 
-# clamp percentage/rate controls
 for c in ["pct_medicare", "pct_medicaid", "occupancy_rate"]:
     if c in panel.columns:
         panel[c] = pd.to_numeric(panel[c], errors="coerce").clip(0, 100)
 
-# clamp PBJ coverage ratio if present
 if "coverage_ratio" in panel.columns:
     panel["coverage_ratio"] = pd.to_numeric(panel["coverage_ratio"], errors="coerce").clip(0, 1)
 
-# ensure medicare + medicaid does not exceed 100
 if {"pct_medicare", "pct_medicaid"}.issubset(panel.columns):
     sums = panel["pct_medicare"] + panel["pct_medicaid"]
     too_high = sums > 100
@@ -414,12 +435,22 @@ if {"pct_medicare", "pct_medicaid"}.issubset(panel.columns):
         panel.loc[too_high, "pct_medicare"] *= scale
         panel.loc[too_high, "pct_medicaid"] *= scale
 
-# optional mild PBJ plausibility cleaning if present
-for c in ["rn_hprd", "lpn_hprd", "cna_hprd", "total_hprd"]:
-    if c in panel.columns:
-        panel[c] = pd.to_numeric(panel[c], errors="coerce")
+# PBJ filtering using upstream QA flags
+if "pbj_invalid_quarter" in panel.columns:
+    before = len(panel)
+    panel = panel.loc[panel["pbj_invalid_quarter"] != 1].copy()
+    print(f"[filter] drop pbj_invalid_quarter==1: {before:,} -> {len(panel):,}")
 
-if {"rn_hprd", "lpn_hprd", "cna_hprd", "total_hprd"}.issubset(panel.columns):
+if "pbj_implausible_hprd" in panel.columns:
+    before = len(panel)
+    panel = panel.loc[panel["pbj_implausible_hprd"] != 1].copy()
+    print(f"[filter] drop pbj_implausible_hprd==1: {before:,} -> {len(panel):,}")
+
+# Fallback if flags absent
+if (
+    "pbj_invalid_quarter" not in panel.columns
+    and {"rn_hprd", "lpn_hprd", "cna_hprd", "total_hprd"}.issubset(panel.columns)
+):
     before = len(panel)
     mask_bad = (
         ((panel["rn_hprd"] == 0) & (panel["lpn_hprd"] == 0))
@@ -428,7 +459,7 @@ if {"rn_hprd", "lpn_hprd", "cna_hprd", "total_hprd"}.issubset(panel.columns):
         | (panel["cna_hprd"] > 5.25)
     )
     panel = panel.loc[~mask_bad].copy()
-    print(f"[filter] drop implausible quarterly HPRD rows: {before:,} -> {len(panel):,}")
+    print(f"[filter] fallback PBJ plausibility filter: {before:,} -> {len(panel):,}")
 
 # final ordering
 qord = quarter_num_from_label(panel["quarter"])
@@ -439,7 +470,6 @@ panel = (
     .reset_index(drop=True)
 )
 
-# ============================== Save ==========================================
 cfg.atomic_overwrite_csv(panel, OUT_FINAL_FP, index=False)
 print(
     f"[done] saved quality panel → {OUT_FINAL_FP} "
