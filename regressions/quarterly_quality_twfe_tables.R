@@ -67,7 +67,7 @@ subset_window <- function(df, start_year, start_quarter, end_year, end_quarter) 
 }
 
 drop_tau_minus1 <- function(df) {
-  df %>% filter(is.na(event_time) | event_time != -1)
+  df %>% filter(is.na(event_time) | event_time != 0)
 }
 
 get_case_mix_controls <- function(df) {
