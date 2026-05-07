@@ -1,0 +1,58 @@
+\documentclass[11pt]{article}
+\usepackage[margin=1in]{geometry}
+\usepackage{booktabs}
+\usepackage{tabularx}
+\usepackage{threeparttable}
+\usepackage{array}
+\usepackage{makecell}
+\usepackage{caption}
+\usepackage{newtxtext}
+\usepackage{newtxmath}
+\captionsetup{labelfont=bf, font=small}
+\newcolumntype{Y}{>{\centering\arraybackslash}X}
+\newcommand{\est}[2]{\makecell[c]{#1 \\ #2}}
+
+\begin{document}
+
+\begin{table}[!ht]
+\centering
+\begin{threeparttable}
+\caption{Two-Way Fixed Effects Estimates of \textit{post} on Selected Quality Metrics}
+\label{tab:qtwfe_mechanisms}
+\small
+\setlength{\tabcolsep}{8pt}
+
+\begin{tabularx}{\textwidth}{@{} l Y Y @{} }
+\toprule
+\textbf{Metric} & \textbf{w/o staffing as a control} & \textbf{w/ staffing as a control} \\
+\midrule
+\multicolumn{3}{@{}l}{\textbf{Labor Saving Mechanisms}} \\[2pt]
+Catheter & \est{$-0.173^{***}$}{$(0.050)$} & \est{$-0.175^{***}$}{$(0.051)$} \\
+Antipsychotic & \est{$-0.116$}{$(0.218)$} & \est{$-0.134$}{$(0.218)$} \\
+Hypnotics & \est{$-0.439^{**}$}{$(0.211)$} & \est{$-0.421^{*}$}{$(0.212)$} \\
+\addlinespace[4pt]
+\multicolumn{3}{@{}l}{\textbf{Outcomes}} \\[2pt]
+Pressure injuries & \est{$\phantom{-}0.148$}{$(0.179)$} & \est{$\phantom{-}0.159$}{$(0.181)$} \\
+Falls with major injury & \est{$-0.009$}{$(0.067)$} & \est{$-0.007$}{$(0.067)$} \\
+Weight Loss & \est{$\phantom{-}0.102$}{$(0.114)$} & \est{$\phantom{-}0.095$}{$(0.113)$} \\
+ADL Increase & \est{$\phantom{-}0.228$}{$(0.257)$} & \est{$\phantom{-}0.254$}{$(0.262)$} \\
+Urinary Tract Infections & \est{$-0.310^{***}$}{$(0.076)$} & \est{$-0.302^{***}$}{$(0.076)$} \\
+\addlinespace[4pt]
+\bottomrule
+\end{tabularx}
+
+\begin{tablenotes}[flushleft]
+\footnotesize
+\item \textit{Notes:} Each cell reports the coefficient on \textit{post} with two-way clustered standard errors (by facility and quarter) in parentheses.
+\item All specifications exclude observations with $\tau = 0$.
+\item The first column of estimates includes standard controls only. The second column additionally includes RN, LPN, and CNA HPRD as staffing controls.
+\item Standard controls: government + non\_profit + chain + beds + occupancy\_rate + pct\_medicare + pct\_medicaid + cm\_q\_state\_2 + cm\_q\_state\_3 + cm\_q\_state\_4.
+\item Staffing-controlled specification: government + non\_profit + chain + beds + occupancy\_rate + pct\_medicare + pct\_medicaid + cm\_q\_state\_2 + cm\_q\_state\_3 + cm\_q\_state\_4 + rn\_hprd + lpn\_hprd + cna\_hprd.
+\item Outcome-specific windows and estimation sample sizes: Catheter [2017Q1--2024Q2; N=197,438]; Antipsychotic [2017Q1--2024Q2; N=195,998]; Hypnotics [2017Q1--2024Q2; N=196,555]; Pressure injuries [2018Q1--2023Q3; N=139,764]; Falls with major injury [2017Q1--2024Q2; N=200,132]; Weight Loss [2017Q1--2024Q2; N=195,249]; ADL Increase [2017Q1--2024Q2; N=187,542]; Urinary Tract Infections [2017Q1--2024Q2; N=199,311].
+\item Statistical significance: $^{***}p<0.01$, $^{**}p<0.05$, $^{*}p<0.10$.
+\end{tablenotes}
+\end{threeparttable}
+\end{table}
+
+\end{document}
+

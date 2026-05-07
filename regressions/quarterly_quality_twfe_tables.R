@@ -1,15 +1,16 @@
 # =============================================================================
-# quarterly_quality_twfe_tables_panel_style.R
+# quarterly_quality_twfe_mechanism_table.R
 #
-# Quarterly quality TWFE post regressions
-# Styled to mirror staffing TWFE tables:
-#   - columns = outcomes
-#   - Panel A = with tau = -1
-#   - Panel B = without tau = -1
-#   - rows inside each panel = Metric, Log(Metric)
+# Builds a standalone LaTeX table with selected quarterly quality outcomes:
+#   - Column 1: post estimate without staffing controls
+#   - Column 2: post estimate with staffing controls
+#   - Grouped into "Labor Saving Mechanisms" and "Outcomes"
+#
+# Sample restriction:
+#   - exclude tau = 0  (drop event_time == 0)
 #
 # Output:
-#   C:/Repositories/white-bowblis-nhmc/tables/quarterly_quality_twfe_panel_style.tex
+#   C:/Repositories/white-bowblis-nhmc/tables/quarterly_quality_mechanism_table.tex
 # =============================================================================
 
 suppressPackageStartupMessages({
@@ -17,6 +18,7 @@ suppressPackageStartupMessages({
   library(readr)
   library(fixest)
   library(stringr)
+  library(tibble)
 })
 
 # -----------------------------------------------------------------------------
@@ -24,11 +26,11 @@ suppressPackageStartupMessages({
 # -----------------------------------------------------------------------------
 project_root <- "C:/Repositories/white-bowblis-nhmc"
 panel_fp     <- file.path(project_root, "data", "clean", "quality_panel.csv")
-tables_dir   <- file.path(project_root, "tables")
+tables_dir   <- file.path(project_root, "outputs/tables")
 
 if (!dir.exists(tables_dir)) dir.create(tables_dir, recursive = TRUE)
 
-tex_out_fp <- file.path(tables_dir, "quarterly_quality_twfe_panel_style.tex")
+tex_out_fp <- file.path(tables_dir, "quarterly_quality_mechanism_table.tex")
 
 # -----------------------------------------------------------------------------
 # Helpers
@@ -66,7 +68,7 @@ subset_window <- function(df, start_year, start_quarter, end_year, end_quarter) 
   df[idx >= start_idx & idx <= end_idx, , drop = FALSE]
 }
 
-drop_tau_minus1 <- function(df) {
+drop_tau_zero <- function(df) {
   df %>% filter(is.na(event_time) | event_time != 0)
 }
 
@@ -78,7 +80,7 @@ get_case_mix_controls <- function(df) {
   fallback
 }
 
-get_controls <- function(df) {
+get_base_controls <- function(df) {
   base_controls <- c(
     "government",
     "non_profit",
@@ -86,170 +88,26 @@ get_controls <- function(df) {
     "beds",
     "occupancy_rate",
     "pct_medicare",
-    "pct_medicaid",
-    "rn_hprd",
-    "lpn_hprd",
-    "cna_hprd"
+    "pct_medicaid"
   )
   c(intersect_existing(base_controls, df), get_case_mix_controls(df))
 }
 
-make_controls_rhs <- function(df) {
-  ctrls <- get_controls(df)
+get_staffing_controls <- function(df) {
+  intersect_existing(c("rn_hprd", "lpn_hprd", "cna_hprd"), df)
+}
+
+make_controls_rhs <- function(df, include_staffing = FALSE) {
+  ctrls <- get_base_controls(df)
+  if (include_staffing) {
+    ctrls <- c(ctrls, get_staffing_controls(df))
+  }
   if (length(ctrls) == 0) return("1")
   paste(ctrls, collapse = " + ")
 }
 
 make_fml <- function(lhs, rhs) {
   as.formula(sprintf("%s ~ %s | cms_certification_number + year_quarter", lhs, rhs))
-}
-
-escape_latex <- function(x) {
-  x <- gsub("\\\\", "\\\\textbackslash{}", x)
-  x <- gsub("([#$%&_{}])", "\\\\\\1", x, perl = TRUE)
-  x <- gsub("~", "\\\\textasciitilde{}", x, fixed = TRUE)
-  x <- gsub("\\^", "\\\\textasciicircum{}", x)
-  x
-}
-
-pretty_outcome_label <- function(x) {
-  code <- str_replace(x, "^qm_", "")
-  paste0("QM ", code)
-}
-
-# -----------------------------------------------------------------------------
-# Load panel
-# -----------------------------------------------------------------------------
-if (!file.exists(panel_fp)) {
-  stop(sprintf("Panel file not found: %s", panel_fp), call. = FALSE)
-}
-
-df <- readr::read_csv(panel_fp, show_col_types = FALSE)
-
-required_cols <- c(
-  "cms_certification_number",
-  "year",
-  "quarter",
-  "treated",
-  "post",
-  "event_time"
-)
-assert_has_cols(df, required_cols, "quality_panel")
-
-df <- df %>%
-  mutate(
-    cms_certification_number = as.factor(cms_certification_number),
-    year = suppressWarnings(as.integer(year)),
-    quarter = toupper(trimws(as.character(quarter))),
-    year_quarter = paste0(year, "_", quarter)
-  )
-
-numeric_candidates <- c(
-  "beds",
-  "occupancy_rate",
-  "pct_medicare",
-  "pct_medicaid",
-  "time",
-  "time_treated",
-  "event_time",
-  "coverage_ratio",
-  "government",
-  "non_profit",
-  "chain"
-)
-numeric_candidates <- intersect_existing(numeric_candidates, df)
-
-if (length(numeric_candidates) > 0) {
-  df <- df %>%
-    mutate(across(all_of(numeric_candidates), ~ suppressWarnings(as.numeric(.x))))
-}
-
-controls_rhs <- make_controls_rhs(df)
-rhs <- if (controls_rhs == "1") "post" else paste("post +", controls_rhs)
-vc <- ~ cms_certification_number + year_quarter
-
-# -----------------------------------------------------------------------------
-# Outcome windows
-# -----------------------------------------------------------------------------
-outcomes_full <- c("qm_401", "qm_404", "qm_406", "qm_407", "qm_410", "qm_419", "qm_434", "qm_452")
-outcomes_2017_2023q3 <- c("qm_405", "qm_451", "qm_471")
-outcomes_2018_2023q3 <- c("qm_453")
-
-all_requested <- c(outcomes_full, outcomes_2017_2023q3, outcomes_2018_2023q3)
-missing_outcomes <- setdiff(all_requested, names(df))
-if (length(missing_outcomes) > 0) {
-  stop(
-    sprintf("These requested outcomes are missing from quality_panel.csv: %s",
-            paste(missing_outcomes, collapse = ", ")),
-    call. = FALSE
-  )
-}
-
-# -----------------------------------------------------------------------------
-# Logged variables
-# -----------------------------------------------------------------------------
-make_log_quality_vars <- function(df, outcomes) {
-  out <- df
-  for (y in outcomes) {
-    ln_name <- paste0("ln_", y)
-    out[[ln_name]] <- ifelse(is.na(out[[y]]), NA_real_, log(out[[y]] + 1))
-  }
-  out
-}
-
-# -----------------------------------------------------------------------------
-# Fit helpers
-# -----------------------------------------------------------------------------
-fit_one <- function(dsub, y, rhs, vc) {
-  if (!(y %in% names(dsub))) return(NULL)
-  
-  dsub_y <- dsub %>% filter(!is.na(.data[[y]]))
-  if (nrow(dsub_y) == 0) return(NULL)
-  if (length(unique(dsub_y[[y]])) <= 1) return(NULL)
-  
-  feols(
-    fml = make_fml(y, rhs),
-    data = dsub_y,
-    vcov = vc,
-    lean = TRUE
-  )
-}
-
-fit_block_levels_logs <- function(dsub, outcomes, rhs, vc) {
-  dsub <- make_log_quality_vars(dsub, outcomes)
-  
-  res <- list(level = list(), log = list(), n_level = list(), n_log = list())
-  
-  for (y in outcomes) {
-    d_level <- dsub %>% filter(!is.na(.data[[y]]))
-    res$n_level[[y]] <- nrow(d_level)
-    if (nrow(d_level) > 0 && length(unique(d_level[[y]])) > 1) {
-      res$level[[y]] <- feols(
-        fml = make_fml(y, rhs),
-        data = d_level,
-        vcov = vc,
-        lean = TRUE
-      )
-    } else {
-      res$level[[y]] <- NULL
-    }
-    
-    lncol <- paste0("ln_", y)
-    d_log <- dsub %>% filter(!is.na(.data[[lncol]]))
-    res$n_log[[y]] <- nrow(d_log)
-    if (nrow(d_log) > 0 && length(unique(d_log[[lncol]])) > 1) {
-      res$log[[y]] <- feols(
-        fml = make_fml(lncol, rhs),
-        data = d_log,
-        vcov = vc,
-        lean = TRUE
-      )
-    } else {
-      res$log[[y]] <- NULL
-    }
-  }
-  
-  res
 }
 
 coef_se_star <- function(mod, term = "post") {
@@ -297,140 +155,185 @@ fmt_est <- function(b, se, stars) {
   sprintf("\\est{%s}{$(%s)$}", coef_part, sestr)
 }
 
-build_row <- function(mset, outcomes) {
-  cells <- lapply(outcomes, function(y) {
-    s <- coef_se_star(mset[[y]])
-    fmt_est(s$coef, s$se, s$stars)
-  })
-  paste(cells, collapse = " & ")
+escape_latex <- function(x) {
+  x <- gsub("\\\\", "\\\\textbackslash{}", x)
+  x <- gsub("([#$%&_{}])", "\\\\\\1", x, perl = TRUE)
+  x <- gsub("~", "\\\\textasciitilde{}", x, fixed = TRUE)
+  x <- gsub("\\^", "\\\\textasciicircum{}", x)
+  x
 }
 
-# -----------------------------------------------------------------------------
-# Table builder
-# -----------------------------------------------------------------------------
-two_panel_quality_table <- function(res_with, res_without, outcomes,
-                                    caption, label, notes_extra = NULL,
-                                    landscape = FALSE) {
+fit_one <- function(dsub, y, rhs, vc) {
+  if (!(y %in% names(dsub))) return(NULL)
   
-  header_labels <- paste(vapply(outcomes, pretty_outcome_label, character(1)), collapse = " & ")
-  colspec <- paste0("@{} l ", paste(rep("Y", length(outcomes)), collapse = " "), " @{}")
+  dsub_y <- dsub %>% filter(!is.na(.data[[y]]))
+  if (nrow(dsub_y) == 0) return(NULL)
+  if (length(unique(dsub_y[[y]])) <= 1) return(NULL)
   
-  rowA1 <- build_row(res_with$level, outcomes)
-  rowA2 <- build_row(res_with$log, outcomes)
-  rowB1 <- build_row(res_without$level, outcomes)
-  rowB2 <- build_row(res_without$log, outcomes)
-  
-  Ns_with_level <- paste(vapply(outcomes, function(y) format(res_with$n_level[[y]], big.mark = ","), character(1)), collapse = ", ")
-  Ns_with_log   <- paste(vapply(outcomes, function(y) format(res_with$n_log[[y]], big.mark = ","), character(1)), collapse = ", ")
-  Ns_wo_level   <- paste(vapply(outcomes, function(y) format(res_without$n_level[[y]], big.mark = ","), character(1)), collapse = ", ")
-  Ns_wo_log     <- paste(vapply(outcomes, function(y) format(res_without$n_log[[y]], big.mark = ","), character(1)), collapse = ", ")
-  
-  open_landscape  <- if (landscape) "\\begin{landscape}" else NULL
-  close_landscape <- if (landscape) "\\end{landscape}" else NULL
-  
-  c(
-    "\\begingroup",
-    open_landscape,
-    "\\begin{table}[!ht]",
-    "\\centering",
-    "\\begin{threeparttable}",
-    sprintf("\\caption{%s}", caption),
-    sprintf("\\label{%s}", label),
-    "\\small",
-    "\\setlength{\\tabcolsep}{5pt}",
-    "",
-    sprintf("\\begin{tabularx}{\\textwidth}{%s}", colspec),
-    "\\toprule",
-    paste0(" & \\multicolumn{", length(outcomes), "}{c}{\\textbf{Outcomes}} \\\\"),
-    sprintf("\\cmidrule(lr){2-%d}", length(outcomes) + 1),
-    paste0(" & ", header_labels, " \\\\"),
-    "\\midrule",
-    sprintf("\\multicolumn{%d}{@{}l}{\\textbf{Panel A: With $\\tau=-1$}} \\\\[2pt]", length(outcomes) + 1),
-    paste0("Metric & ", rowA1, " \\\\"),
-    paste0("Log(Metric) & ", rowA2, " \\\\"),
-    "\\addlinespace[4pt]",
-    sprintf("\\multicolumn{%d}{@{}l}{\\textbf{Panel B: Without $\\tau=-1$}} \\\\[2pt]", length(outcomes) + 1),
-    paste0("Metric & ", rowB1, " \\\\"),
-    paste0("Log(Metric) & ", rowB2, " \\\\"),
-    "\\bottomrule",
-    "\\end{tabularx}",
-    "",
-    "\\begin{tablenotes}[flushleft]",
-    "\\footnotesize",
-    "\\item \\textit{Notes:} Each cell reports the coefficient on \\textit{post} with two-way clustered standard errors (by facility and quarter) in parentheses. Panel~A uses the sample with $\\tau=-1$ retained. Panel~B excludes observations with $\\tau=-1$. Rows report levels and log-transformed quality metrics, where logs are computed as $\\log(1+y)$.",
-    paste0("\\item Sample sizes by outcome. Panel~A levels: [", Ns_with_level, "]. Panel~A logs: [", Ns_with_log, "]. Panel~B levels: [", Ns_wo_level, "]. Panel~B logs: [", Ns_wo_log, "]."),
-    sprintf("\\item All specifications include facility and quarter fixed effects and covariates: %s.", escape_latex(controls_rhs)),
-    "\\item Statistical significance: $^{***}p<0.01$, $^{**}p<0.05$, $^{*}p<0.10$.",
-    if (!is.null(notes_extra)) paste0("\\item ", notes_extra) else NULL,
-    "\\end{tablenotes}",
-    "\\end{threeparttable}",
-    "\\end{table}",
-    close_landscape,
-    "\\endgroup",
-    ""
+  feols(
+    fml = make_fml(y, rhs),
+    data = dsub_y,
+    vcov = vc,
+    lean = TRUE
   )
 }
 
 # -----------------------------------------------------------------------------
-# Build datasets
+# Load panel
 # -----------------------------------------------------------------------------
-df_full_with    <- subset_window(df, 2017, 1, 2024, 2)
-df_full_without <- drop_tau_minus1(df_full_with)
+if (!file.exists(panel_fp)) {
+  stop(sprintf("Panel file not found: %s", panel_fp), call. = FALSE)
+}
 
-df_2017q3_with    <- subset_window(df, 2017, 1, 2023, 3)
-df_2017q3_without <- drop_tau_minus1(df_2017q3_with)
+df <- readr::read_csv(panel_fp, show_col_types = FALSE)
 
-df_2018q3_with    <- subset_window(df, 2018, 1, 2023, 3)
-df_2018q3_without <- drop_tau_minus1(df_2018q3_with)
+required_cols <- c(
+  "cms_certification_number",
+  "year",
+  "quarter",
+  "post",
+  "event_time"
+)
+assert_has_cols(df, required_cols, "quality_panel")
+
+df <- df %>%
+  mutate(
+    cms_certification_number = as.factor(cms_certification_number),
+    year = suppressWarnings(as.integer(year)),
+    quarter = toupper(trimws(as.character(quarter))),
+    year_quarter = paste0(year, "_", quarter)
+  )
+
+numeric_candidates <- c(
+  "beds",
+  "occupancy_rate",
+  "pct_medicare",
+  "pct_medicaid",
+  "event_time",
+  "post",
+  "government",
+  "non_profit",
+  "chain",
+  "rn_hprd",
+  "lpn_hprd",
+  "cna_hprd"
+)
+numeric_candidates <- intersect_existing(numeric_candidates, df)
+
+if (length(numeric_candidates) > 0) {
+  df <- df %>%
+    mutate(across(all_of(numeric_candidates), ~ suppressWarnings(as.numeric(.x))))
+}
+
+vc <- ~ cms_certification_number + year_quarter
 
 # -----------------------------------------------------------------------------
-# Fit models
+# Outcomes and windows
 # -----------------------------------------------------------------------------
-fits_full_with    <- fit_block_levels_logs(df_full_with, outcomes_full, rhs, vc)
-fits_full_without <- fit_block_levels_logs(df_full_without, outcomes_full, rhs, vc)
-
-fits_2017q3_with    <- fit_block_levels_logs(df_2017q3_with, outcomes_2017_2023q3, rhs, vc)
-fits_2017q3_without <- fit_block_levels_logs(df_2017q3_without, outcomes_2017_2023q3, rhs, vc)
-
-fits_2018q3_with    <- fit_block_levels_logs(df_2018q3_with, outcomes_2018_2023q3, rhs, vc)
-fits_2018q3_without <- fit_block_levels_logs(df_2018q3_without, outcomes_2018_2023q3, rhs, vc)
-
-# -----------------------------------------------------------------------------
-# Build LaTeX tables
-# -----------------------------------------------------------------------------
-tab1 <- two_panel_quality_table(
-  res_with    = fits_full_with,
-  res_without = fits_full_without,
-  outcomes    = outcomes_full,
-  caption     = "Two-Way Fixed Effects Estimates of \\textit{post} on Quality Outcomes (2017~Q1--2024~Q2)",
-  label       = "tab:qtwfe_full",
-  notes_extra = "Outcomes included: QM 401, 404, 406, 407, 410, 419, 434, and 452.",
-  landscape   = FALSE
+outcome_map <- tribble(
+  ~section,                    ~label,                         ~var,      ~start_y, ~start_q, ~end_y, ~end_q,
+  "Labor Saving Mechanisms",   "Catheter",                     "qm_406",  2017L,    1L,       2024L,  2L,
+  "Labor Saving Mechanisms",   "Antipsychotic",                "qm_419",  2017L,    1L,       2024L,  2L,
+  "Labor Saving Mechanisms",   "Hypnotics",                    "qm_452",  2017L,    1L,       2024L,  2L,
+  
+  "Outcomes",                  "Pressure injuries",            "qm_453",  2018L,    1L,       2023L,  3L,
+  "Outcomes",                  "Falls with major injury",      "qm_410",  2017L,    1L,       2024L,  2L,
+  "Outcomes",                  "Weight Loss",                  "qm_404",  2017L,    1L,       2024L,  2L,
+  "Outcomes",                  "ADL Increase",                 "qm_401",  2017L,    1L,       2024L,  2L,
+  "Outcomes",                  "Urinary Tract Infections",     "qm_407",  2017L,    1L,       2024L,  2L
 )
 
-tab2 <- two_panel_quality_table(
-  res_with    = fits_2017q3_with,
-  res_without = fits_2017q3_without,
-  outcomes    = outcomes_2017_2023q3,
-  caption     = "Two-Way Fixed Effects Estimates of \\textit{post} on Quality Outcomes (2017~Q1--2023~Q3)",
-  label       = "tab:qtwfe_2017_2023q3",
-  notes_extra = "Outcomes included: QM 405, 451, and 471.",
-  landscape   = FALSE
-)
-
-tab3 <- two_panel_quality_table(
-  res_with    = fits_2018q3_with,
-  res_without = fits_2018q3_without,
-  outcomes    = outcomes_2018_2023q3,
-  caption     = "Two-Way Fixed Effects Estimates of \\textit{post} on Quality Outcome QM 453 (2018~Q1--2023~Q3)",
-  label       = "tab:qtwfe_453",
-  notes_extra = "Outcome included: QM 453.",
-  landscape   = FALSE
-)
+missing_outcomes <- setdiff(outcome_map$var, names(df))
+if (length(missing_outcomes) > 0) {
+  stop(
+    sprintf("These requested outcomes are missing from quality_panel.csv: %s",
+            paste(missing_outcomes, collapse = ", ")),
+    call. = FALSE
+  )
+}
 
 # -----------------------------------------------------------------------------
-# Write standalone LaTeX document
+# Run models
 # -----------------------------------------------------------------------------
+results <- vector("list", nrow(outcome_map))
+
+for (i in seq_len(nrow(outcome_map))) {
+  row_i <- outcome_map[i, ]
+  
+  dsub <- df %>%
+    subset_window(row_i$start_y, row_i$start_q, row_i$end_y, row_i$end_q) %>%
+    drop_tau_zero()
+  
+  rhs_no_staff <- make_controls_rhs(dsub, include_staffing = FALSE)
+  rhs_staff    <- make_controls_rhs(dsub, include_staffing = TRUE)
+  
+  fit_no_staff <- fit_one(dsub, row_i$var, paste("post +", rhs_no_staff), vc)
+  fit_staff    <- fit_one(dsub, row_i$var, paste("post +", rhs_staff), vc)
+  
+  n_no_staff <- dsub %>% filter(!is.na(.data[[row_i$var]])) %>% nrow()
+  n_staff    <- dsub %>% filter(!is.na(.data[[row_i$var]])) %>% nrow()
+  
+  results[[i]] <- tibble(
+    section = row_i$section,
+    label   = row_i$label,
+    var     = row_i$var,
+    est_no_staff = fmt_est(
+      coef_se_star(fit_no_staff)$coef,
+      coef_se_star(fit_no_staff)$se,
+      coef_se_star(fit_no_staff)$stars
+    ),
+    est_staff = fmt_est(
+      coef_se_star(fit_staff)$coef,
+      coef_se_star(fit_staff)$se,
+      coef_se_star(fit_staff)$stars
+    ),
+    n_no_staff = n_no_staff,
+    n_staff = n_staff,
+    window = paste0(row_i$start_y, "Q", row_i$start_q, "--", row_i$end_y, "Q", row_i$end_q)
+  )
+}
+
+res_tbl <- bind_rows(results)
+
+# -----------------------------------------------------------------------------
+# Build LaTeX table
+# -----------------------------------------------------------------------------
+build_rows <- function(tbl) {
+  out <- c()
+  sections <- unique(tbl$section)
+  
+  for (sec in sections) {
+    sec_tbl <- tbl %>% filter(section == sec)
+    
+    out <- c(
+      out,
+      paste0("\\multicolumn{3}{@{}l}{\\textbf{", sec, "}} \\\\[2pt]")
+    )
+    
+    sec_lines <- sec_tbl %>%
+      transmute(
+        line = paste0(label, " & ", est_no_staff, " & ", est_staff, " \\\\")
+      ) %>%
+      pull(line)
+    
+    out <- c(out, sec_lines, "\\addlinespace[4pt]")
+  }
+  
+  out
+}
+
+body_lines <- build_rows(res_tbl)
+
+ns_note <- paste(
+  res_tbl %>%
+    transmute(txt = paste0(label, " [", window, "; N=", format(n_no_staff, big.mark = ","), "]")) %>%
+    pull(txt),
+  collapse = "; "
+)
+
+controls_no_staff <- make_controls_rhs(df, include_staffing = FALSE)
+controls_staff    <- make_controls_rhs(df, include_staffing = TRUE)
+
 full_doc <- c(
   "\\documentclass[11pt]{article}",
   "\\usepackage[margin=1in]{geometry}",
@@ -440,7 +343,6 @@ full_doc <- c(
   "\\usepackage{array}",
   "\\usepackage{makecell}",
   "\\usepackage{caption}",
-  "\\usepackage{pdflscape}",
   "\\usepackage{newtxtext}",
   "\\usepackage{newtxmath}",
   "\\captionsetup{labelfont=bf, font=small}",
@@ -449,10 +351,34 @@ full_doc <- c(
   "",
   "\\begin{document}",
   "",
-  tab1,
-  tab2,
-  "\\clearpage",
-  tab3,
+  "\\begin{table}[!ht]",
+  "\\centering",
+  "\\begin{threeparttable}",
+  "\\caption{Two-Way Fixed Effects Estimates of \\textit{post} on Selected Quality Metrics}",
+  "\\label{tab:qtwfe_mechanisms}",
+  "\\small",
+  "\\setlength{\\tabcolsep}{8pt}",
+  "",
+  "\\begin{tabularx}{\\textwidth}{@{} l Y Y @{} }",
+  "\\toprule",
+  "\\textbf{Metric} & \\textbf{w/o staffing as a control} & \\textbf{w/ staffing as a control} \\\\",
+  "\\midrule",
+  body_lines,
+  "\\bottomrule",
+  "\\end{tabularx}",
+  "",
+  "\\begin{tablenotes}[flushleft]",
+  "\\footnotesize",
+  "\\item \\textit{Notes:} Each cell reports the coefficient on \\textit{post} with two-way clustered standard errors (by facility and quarter) in parentheses.",
+  "\\item All specifications exclude observations with $\\tau = 0$.",
+  "\\item The first column of estimates includes standard controls only. The second column additionally includes RN, LPN, and CNA HPRD as staffing controls.",
+  paste0("\\item Standard controls: ", escape_latex(controls_no_staff), "."),
+  paste0("\\item Staffing-controlled specification: ", escape_latex(controls_staff), "."),
+  paste0("\\item Outcome-specific windows and estimation sample sizes: ", escape_latex(ns_note), "."),
+  "\\item Statistical significance: $^{***}p<0.01$, $^{**}p<0.05$, $^{*}p<0.10$.",
+  "\\end{tablenotes}",
+  "\\end{threeparttable}",
+  "\\end{table}",
   "",
   "\\end{document}",
   ""
