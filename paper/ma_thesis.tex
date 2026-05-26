@@ -163,48 +163,67 @@ To account for other factors that are correlated with nursing staff levels, we i
 
 \subsection{Analytic Approach}
 
-Ownership changes occur at different dates across facilities in our study period, so identification relies on staggered adoption within a two-way fixed effects event-study framework. Recent literature shows that conventional two-way fixed effects (TWFE) estimators can produce biased estimates in staggered adoption settings when treatment effects are heterogeneous over time \citep{goodman_bacon_2021}. In particular, TWFE estimates can place negative weights on certain comparisons and implicitly rely on already treated units as controls. To circumvent this, we employ a staggered adoption event study regression design. This approach allows us to estimate treatment effects before and after ownership changes while assessing pre-trends. Specifically we estimate the following event study regression:
+Ownership changes occur at different dates across facilities during the study period. Because these changes are not randomly assigned, our empirical strategy does not compare facilities that change ownership to facilities that do not in levels. Instead, we exploit the timing of verified control-changing ownership transitions to compare within-facility changes in staffing and quality before and after ownership change, relative to simultaneous changes among not-yet-treated and untreated facilities \citep{goodman_bacon_2021}. All specifications condition on facility fixed effects, time fixed effects, and observable time-varying facility characteristics.
+
+This design is well suited to the institutional setting. Following an ownership change, the facility remains in the same location, operates under the same certification framework, and serves the same local market. As a result, any post-transition changes are likely to operate through internal production decisions, including staffing, routines, and management practices, rather than through a mechanical change in local market structure.
+
+We estimate event-study models to follow the evolution of staffing and quality outcomes before and after ownership change. Let \(Y_{ip}^{m}\) denote outcome \(m\) for facility \(i\) in period \(p\). For staffing outcomes, \(p\) indexes calendar months and \(m\) includes RN, LPN, CNA, and total HPRD. For quality outcomes, \(p\) indexes calendar quarters and \(m\) includes the selected CMS quality measures. We estimate:
 
 \begin{equation}
-\label{eq:es_twfe}
-Y_{it}
+\label{eq:event-study}
+Y_{ip}^{m}
 =
-\sum_{\tau = -24}^{24}
-    \beta_{\tau}\,
-    \mathbf{1}\!\left\{ \text{event\_time}_{it} = \tau \right\}
+\sum_{\tau \in \mathcal{K}^{m}}
+    \beta_{\tau}^{m}
+    \mathbf{1}\!\left( \text{EventTime}_{ip}^{m} = \tau \right)
     \cdot \text{Treat}_{i}
 +
-X_{it}\gamma
+X_{ip}^{m}\gamma^{m}
 +
-\alpha_i
+\alpha_i^{m}
 +
-\lambda_t
+\lambda_p^{m}
 +
-\varepsilon_{it}.
+\varepsilon_{ip}^{m}.
 \end{equation}
 
-where $Y_{it}$ denotes nursing staff levels in HPRD for facility $i$ in in month $t$. The variable $\text{event\_time}_{it}$ measures the number of months relative to the month of ownership change. Thus, the coefficients $\beta_{\tau}$ capture the evolution of the nursing staff levels before and after ownership transitions. The vector $X_{it}$ includes time-varying facility characteristics, while $\alpha_i$ and $\lambda_t$ denote facility and month fixed effects, respectively. Identification comes from within-facility changes in staffing relative to the timing of ownership transitions, using facilities that have not yet experienced a change as controls.
+The variable \(\text{EventTime}_{ip}^{m}\) measures time relative to the ownership change. For staffing outcomes, event time is measured in months. For quality outcomes, event time is measured in quarters. \(X_{ip}^{m}\) includes time-varying facility characteristics, while \(\alpha_i^{m}\) and \(\lambda_p^{m}\) denote facility and calendar-period fixed effects, respectively. The coefficients \(\beta_{\tau}^{m}\) describe how outcome \(m\) evolves before and after ownership change relative to the omitted reference period.
 
-In addition to estimating using levels, we also estimate specifications where the dependent variable is expressed in logarithms, log($Y_{it}$). Log specifications allow coefficients to be interpreted as approximate percentage changes in staffing and reduce sensitivity to differences in baseline staffing levels across facilities. For outcomes with zero staffing in a given month, log specifications are omitted.
+Because staffing and quality outcomes are measured at different frequencies, the included event-time indicators differ across outcome families. For staffing outcomes, the event-study window is \([-24,24]\) months. In the preferred staffing specification, we omit \(\tau=-4\) as the reference period and exclude \(\tau\in\{-3,-2,-1\}\) to remove the immediate pre-transition period most likely to be contaminated by anticipation. Thus,
+
+\[
+\mathcal{K}^{S}=\{-24,\ldots,24\}\setminus\{-4,-3,-2,-1\}.
+\]
+
+For quality outcomes, the event-study window is \([-8,8]\) quarters. In the preferred quality specification, we omit 
+\(\tau=-1\) as the reference period and exclude \(\tau=0\), the quarter containing the ownership change. Thus,
+
+\[
+\mathcal{K}^{Q}=\{-8,\ldots,8\}\setminus\{-1,0\}.
+\]
+
+For staffing outcomes, we estimate models in both levels and logs. Log specifications allow the coefficients to be interpreted as approximate percentage changes and reduce sensitivity to differences in baseline staffing levels across facilities. Log specifications are omitted when staffing is zero.
+
+We also estimate average post-change models that summarize the event-study results with a single coefficient:
 
 \begin{equation}
-\label{eq:es_twfe}
-Y_{it}
+\label{eq:twfe-post}
+Y_{ip}^{m}
 =
-\sum_{\tau = -8}^{8}
-    \beta_{\tau}\,
-    \mathbf{1}\!\left\{ \text{event\_time}_{it} = \tau \right\}
-    \cdot \text{Treat}_{i}
+\delta^{m}\textit{Post}_{ip}^{m}
 +
-X_{it}\gamma
+X_{ip}^{m}\gamma^{m}
 +
-\alpha_i
+\alpha_i^{m}
 +
-\lambda_t
+\lambda_p^{m}
 +
-\varepsilon_{it}.
+\varepsilon_{ip}^{m}.
 \end{equation}
 
+The indicator \(\textit{Post}_{ip}^{m}\) equals one in periods after the ownership change and zero otherwise. For staffing outcomes, this indicator is defined at the facility-month level. For quality outcomes, it is defined at the facility-quarter level. The coefficient \(\delta^{m}\) captures the average post-ownership-change difference in outcome \(m\), relative to the pre-change period, after absorbing facility fixed effects and common calendar-time shocks.
+
+For quality outcomes, we estimate specifications both with and without RN, LPN, and CNA HPRD controls. Because staffing is itself affected by ownership change, the staffing-controlled quality specifications are not interpreted as preferred estimates of the total causal effect of ownership change on quality. Instead, they are used descriptively to assess whether the estimated quality responses are weakened after conditioning on measured staffing inputs.
 
 \subsubsection{Parallel Trends}
 
