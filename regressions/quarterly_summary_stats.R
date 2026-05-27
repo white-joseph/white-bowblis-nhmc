@@ -73,7 +73,6 @@ fmt_dec <- function(x, k = 3) ifelse(is.na(x), "NA", formatC(x, format = "f", di
 fmt_pct1 <- function(x) ifelse(is.na(x), "NA", formatC(x, format = "f", digits = 1))
 
 digits_for <- function(var) {
-  if (str_detect(var, "^qm_")) return(3)
   if (var %in% c("rn_hprd","lpn_hprd","cna_hprd","total_hprd")) return(3)
   if (var %in% c("occupancy_rate","pct_medicare","pct_medicaid")) return(1)
   if (var %in% c("beds")) return(1)
@@ -81,10 +80,16 @@ digits_for <- function(var) {
   3
 }
 
-pretty_qm <- function(x) {
-  code <- str_replace(x, "^qm_", "")
-  paste0("QM ", code)
-}
+pretty_qm <- c(
+  qm_406 = "Catheter",
+  qm_419 = "Antipsychotic",
+  qm_452 = "Hypnotics",
+  qm_453 = "Pressure injuries",
+  qm_410 = "Falls with major injury",
+  qm_404 = "Weight Loss",
+  qm_401 = "ADL Increase",
+  qm_407 = "Urinary Tract Infections"
+)
 
 pretty_name <- c(
   government     = "Government (dummy)",
@@ -99,32 +104,29 @@ pretty_name <- c(
   cm_q_state_4   = "Acuity quartile 4 (state-quarter)",
   rn_hprd        = "RN HPRD",
   lpn_hprd       = "LPN HPRD",
-  cna_hprd       = "CNA HPRD",
-  total_hprd     = "Total HPRD"
+  cna_hprd       = "CNA HPRD"
 )
 
 # ---- Define variables ----
-# Main quality outcomes
 preferred_qm <- c(
-  "qm_401","qm_404","qm_406","qm_407",
-  "qm_410","qm_419","qm_434","qm_452",
-  "qm_405","qm_451","qm_471","qm_453"
+  "qm_406",
+  "qm_419",
+  "qm_452",
+  "qm_453",
+  "qm_410",
+  "qm_404",
+  "qm_401",
+  "qm_407"
 )
 
 panelA_vars <- intersect(preferred_qm, names(df))
 
-# Optional staffing rows if you want them in Panel B
-staffing_vars <- c("rn_hprd","lpn_hprd","cna_hprd","total_hprd")
-staffing_vars <- intersect(staffing_vars, names(df))
-
-panelB_vars <- c(
-  staffing_vars,
-  intersect(c(
-    "government","non_profit","chain",
-    "beds","occupancy_rate","pct_medicare","pct_medicaid",
-    "cm_q_state_2","cm_q_state_3","cm_q_state_4"
-  ), names(df))
-)
+panelB_vars <- intersect(c(
+  "rn_hprd","lpn_hprd","cna_hprd",
+  "government","non_profit","chain",
+  "beds","occupancy_rate","pct_medicare","pct_medicaid",
+  "cm_q_state_2","cm_q_state_3","cm_q_state_4"
+), names(df))
 
 # ---- Build summary rows ----
 make_panel_rows <- function(vars, panel_title) {
@@ -140,8 +142,8 @@ make_panel_rows <- function(vars, panel_title) {
   }) %>%
     rowwise() %>%
     mutate(
-      VarLabel = if (str_detect(variable, "^qm_")) {
-        pretty_qm(variable)
+      VarLabel = if (variable %in% names(pretty_qm)) {
+        unname(pretty_qm[variable])
       } else if (variable %in% names(pretty_name)) {
         unname(pretty_name[variable])
       } else {
@@ -168,7 +170,7 @@ make_panel_rows <- function(vars, panel_title) {
   )
 }
 
-panelA_lines <- make_panel_rows(panelA_vars, "Panel A: Quality outcome variables")
+panelA_lines <- make_panel_rows(panelA_vars, "Panel A: Selected quality metrics")
 panelB_lines <- make_panel_rows(panelB_vars, "Panel B: Staffing and control variables")
 
 # ---- Strings for notes ----
@@ -181,8 +183,7 @@ avgq_str   <- fmt_dec(overview$avg_quarters_per_ccn, 1)
 # ---- Notes ----
 notes_line <- paste0(
   "\\item \\textit{Notes:} The unit of observation is facility--quarter. ",
-  "QM denotes a CMS quality metric. ",
-  "When included, RN, LPN, and CNA denote registered nurses, licensed practical nurses, and certified nursing assistants, respectively. ",
+  "RN, LPN, and CNA denote registered nurses, licensed practical nurses, and certified nursing assistants, respectively. ",
   "HPRD denotes hours per resident day. ",
   "Occupancy rate is the ratio of residents to certified beds (percent). ",
   "\\% Medicare and \\% Medicaid are the shares of residents covered by Medicare and Medicaid, respectively. ",
