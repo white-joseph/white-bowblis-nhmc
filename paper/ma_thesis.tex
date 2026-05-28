@@ -15,11 +15,12 @@
 \usepackage{subcaption} % preferred over subfigure
 \usepackage[section]{placeins}
 \usepackage{pdflscape}
+\usepackage{pdfcomment}
 \usepackage{adjustbox}
 
 %\usepackage{newtxtext}
 %\usepackage{newtxmath}
-
+\usepackage[colorinlistoftodos,prependcaption,textsize=small]{todonotes}
 \usepackage{soul,xcolor}
 \usepackage[normalem]{ulem}
 \usepackage{setspace}
@@ -58,6 +59,18 @@
 \newcolumntype{Y}{>{\centering\arraybackslash}X}
 \newcommand{\sym}[1]{\rlap{$^{#1}$}}
 \newcommand{\est}[3]{\makecell[c]{#1\sym{#3}\\ \footnotesize(#2)}}
+
+\newcommand{\jcomment}[1]{%
+  \todo[inline,color=yellow!25]{\textbf{Comment:} #1}%
+}
+
+\newcommand{\question}[1]{%
+  \todo[inline,color=blue!15]{\textbf{Question:} #1}%
+}
+
+\newcommand{\revise}[1]{%
+  \todo[inline,color=red!15]{\textbf{Revise:} #1}%
+}
 
 \geometry{left=1.0in,right=1.0in,top=1.0in,bottom=1.0in}
 
@@ -137,7 +150,7 @@ The first step was to use the HCRIS data which contains an indicator for an owne
 
 Using this information, we define a change in ownership when a majority of ownership shares turn over between month $t-1$ and month $t$. Intuitively, this captures transactions in which control of the facility changes hands, including cases where a new operator acquires most or all shares. Secondly, when ownership percentages are partially or completely missing, we approximate shares by normalizing any reported percentages and, where necessary, assigning equal weights across remaining owners. To reduce false positives from purely legal restructuring, we do not flag a change in ownership if at least 80 percent of the ownership stake remains within the same surname family (e.g., a change from “Smith Holdings LLC” to “Smith Family Partners LP”). 
 
-Using these verified ownership changes, the analytic sample included Nursing Homes that either (i) have no ownership change in either source or (ii) have exactly one ownership change in each source with the ownership change date within six months of one another. For these Nursing Homes, we define the change in ownership month as the first month in which the NHC Archive data indicate a change. All dates are converted to calendar months, so changes occurring at the beginning or end of a month are treated identically. 
+Using these verified ownership changes, the analytic sample included Nursing Homes that either (i) have no ownership change in either source or (ii) have exactly one ownership change in each source with the ownership change date within six months of one another. For these Nursing Homes, we define the change in ownership month as the first month in which HCRIS identifies a change. All dates are converted to calendar months, so changes occurring at the beginning or end of a month are treated identically. \question{Should I be more specific about what percentage these exclusions are of the original sample?}
 
 \subsection{Nursing Staff Levels}
 
@@ -166,7 +179,7 @@ We study two categories of quality metrics, routine-sensitive process measure an
 
 \subsection{Other Controls}
 
-To account for facility characteristics that may be correlated with staffing, quality, and ownership changes, we included a number of control variables that are consistent with other studies (cite here). The following variables come from NHC and HCRIS and are used as controls in all specifications: Ownership type (government, non-profit, and for-profit), chain affiliation, total number of beds, occupancy rate, payer mix (percent of revenue coming from Medicare, and percent of revenue coming from Medicaid), and acuity. Our measure of acuity is case-mix provided by CMS in the NHC archive data. During our study period CMS altered the methodology used to construct case-mix indices. As a result, raw case-mix values are not directly comparable over time. To address this issue, we measure acuity using relative rankings rather than levels. Specifically, we construct case-mix quartiles within each state and calendar month.
+To account for facility characteristics that may be correlated with staffing, quality, and ownership changes, we included a number of control variables that are consistent with other studies. The following variables come from NHC and HCRIS and are used as controls in all specifications: Ownership type (government, non-profit, and for-profit), chain affiliation, total number of beds, occupancy rate, payer mix (percent of revenue coming from Medicare, and percent of revenue coming from Medicaid), and acuity. Our measure of acuity is case-mix provided by CMS in the NHC archive data. During our study period CMS altered the methodology used to construct case-mix indices. As a result, raw case-mix values are not directly comparable over time. To address this issue, we measure acuity using relative rankings rather than levels. Specifically, we construct case-mix quartiles within each state and calendar month.
 
 \subsection{Analytic Approach}
 
@@ -174,7 +187,7 @@ Ownership changes occur at different dates across facilities during the study pe
 
 This design is well suited to the institutional setting. Following an ownership change, the facility remains in the same location, operates under the same certification framework, and serves the same local market. As a result, any post-transition changes are likely to operate through internal production decisions, including staffing, routines, and management practices, rather than through a mechanical change in local market structure.
 
-A complication in defining event time is that the recorded ownership-change date may not perfectly align with the start of operational adjustment. Transactions are negotiated before closing, and staffing or management changes may begin before the formal transfer is recorded. For staffing outcomes, our preferred event-study specification therefore excludes the three months immediately preceding the recorded ownership change, \(\tau \in \{-3,-2,-1\}\), and uses \(\tau=-4\) as the reference period. For quality outcomes, which are measured quarterly, we exclude the ownership-change quarter, \(\tau=0\), because it may combine pre- and post-transfer care, reporting, and documentation. The quality event studies use \(\tau=-1\) as the reference period.
+A complication in defining event time is that the recorded ownership-change date may not perfectly align with the start of operational adjustment. Transactions are negotiated before closing, and staffing or management changes may begin before the formal transfer is recorded. For staffing outcomes, our preferred event-study specification therefore excludes the three months immediately preceding the recorded ownership change, \(\tau \in \{-3,-2,-1\}\), and uses \(\tau=-4\) as the reference period. For quality outcomes, which are measured quarterly, we exclude the ownership-change quarter, \(\tau=0\), because it may combine pre- and post-transfer care, reporting, and documentation. The quality event studies use \(\tau=-1\) as the reference period. \jcomment{I added this brief description before I introduce the specifications}
 
 \begin{equation}
 \label{eq:event-study-staffing}
@@ -246,7 +259,7 @@ For staffing outcomes, we compare pre-trend tests from the full pre-window to th
 
 \subsubsection{Subgroup Analysis}
 
-[I know I have to rewrite this section, but I am not sure what direction we want to go]
+\jcomment{I know I need to rewrite this section, but I am not sure what direction we want to go. Are we including differing results by Covid-19? Am I }
 
 \section{Results}
 
@@ -321,6 +334,8 @@ All specifications include control variables and facility and month fixed effect
 
 \normalsize
 \doublespacing
+
+\question{Should I present results (here or in the appendix) for a wald test of the post treatment event-time coefficients?}
 
 To summarize these dynamic effects with a single average treatment estimate, Table~\ref{tab:twfe-post-full} reports two-way fixed effects estimates of the ownership change effect (i.e., Equation~\ref{eq:twfe-post}). Panel A reports results in levels, while Panel B reports logged results. Consistent with the event study results, ownership changes lead to meaningful reductions in staffing levels. RN staffing declines by approximately 0.03 hours per resident day (roughly 9 percent), CNA staffing falls by about 0.05 hours (approximately 3 percent), and total staffing decreases by 0.08 hours per resident day (roughly 3 percent). LPN staffing shows no statistically significant change. Estimates are nearly identical whether the observations for the three month period before the ownership change occurred is included or excluded from the model.
 
