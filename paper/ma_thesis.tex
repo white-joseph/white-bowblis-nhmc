@@ -20,7 +20,10 @@
 
 %\usepackage{newtxtext}
 %\usepackage{newtxmath}
-\usepackage[colorinlistoftodos,prependcaption,textsize=small]{todonotes}
+\usepackage[colorinlistoftodos,prependcaption,textsize=scriptsize]{todonotes}
+\definecolor{pastelyellow}{rgb}{1.0, 1.0, 0.53}
+\usepackage{verbatim}
+
 \usepackage{soul,xcolor}
 \usepackage[normalem]{ulem}
 \usepackage{setspace}
@@ -136,25 +139,28 @@ To answer the research question, we use Centers for Medicare and Medicaid Servic
 \section{Data and Methods}
 
 \subsection{Data Sources}
-We utilize three main sources of data: Nursing Home Compare (NHC) Archive data, Healthcare Cost Report Information System (HCRIS), and Payroll Based Journal (PBJ) data. The NHC Archive contains monthly facility level information on ownership, chain affiliation, certification status, and quarterly quality measures. The second is HCRIS, also known as the Medicare Cost Reports, which contains annual cost reports submitted by every Medicare certified nursing home in the United States. The cost reports contain information about costs, revenue, financial data for each reporting facility, and dates of ownership changes. Lastly, we use the PBJ data to obtain staffing information. The PBJ data contains the census and the number of hours worked by various types of NH staff on a daily basis.
+
+We utilize three main sources of data: Nursing Home Compare (NHC) Archive data, Healthcare Cost Report Information System (HCRIS), and Payroll Based Journal (PBJ) data. The NHC Archive contains monthly facility level information on ownership, chain affiliation, certification status, as well as quarterly reported quality measures. Second, we use HCRIS, also known as the Medicare Cost Reports, which contains annual cost reports submitted by every Medicare certified nursing home in the United States. The cost reports contain information about costs, revenue, financial data for each reporting facility, and dates of ownership changes. Lastly, we use the PBJ data to obtain staffing information. The PBJ data contains the resident census and the number of hours worked by various types of NH staff on a daily basis.
 
 \subsection{Sample selection}
 
-We utilize two samples in our study, the first is our staffing panel which is constructed at the facility-year-month level and the second is our quality metric panel which is constructed at the facility-year-quarter level. We create both samples using the following criteria. First, we limit our samples to the 48 contiguous U.S. states from the period January 2017 to June 2024. Secondly, the NHC Archive data is matched to the HCRIS data on a unique nursing home provider number. Because HCRIS only contains information on freestanding nursing homes, our samples exclude hospital-based nursing homes. Hospital based nursing homes differ from freestanding facilities in their structure and financing. Because they are within hospitals, staffing policies and resource allocation may be jointly determined with hospital operations and respond to hospital shocks and regulations rather than nursing home specific incentives. We therefore exclude hospital based facilities to maintain a more homogeneous set of providers and to ensure ownership changes reflect changes in nursing home management rather than broader hospital system changes. Hospital based nursing homes make up about 12 percent of all nursing homes in the United States. 
+We utilize two samples in our study, the first is our staffing panel which is constructed at the facility-month level and the second is our quality metric panel which is constructed at the facility-quarter level. We construct both samples using the following criteria. First, we limit our samples to the 48 contiguous U.S. states from the period January 2017 to June 2024. Secondly, the NHC Archive data is matched to the HCRIS data on a unique nursing home provider number. Because HCRIS only contains information on freestanding nursing homes, our samples exclude hospital-based nursing homes. Hospital based nursing homes differ from freestanding facilities in their structure and financing. Because they are within hospitals, staffing policies and resource allocation may be jointly determined with hospital operations and respond to hospital shocks and regulations rather than nursing home specific incentives. We therefore exclude hospital based facilities to maintain a more homogeneous set of providers and to ensure ownership changes reflect changes in nursing home management rather than broader hospital system changes. Hospital based nursing homes make up about 12 percent of all nursing homes in the United States. 
 
 \subsection{Identifying Ownership Changes}
 
+\todo[color = pastelyellow]{Working on writing this so that it emphasizes this as more of a measurement contribution}
+
 No single data source provides a comprehensive record of ownership changes for U.S. nursing homes, so we combine information from HCRIS and the NHC Archive in a two-step identification and verification process to identify ownership changes.
 
-The first step was to use the HCRIS data which contains an indicator for an ownership change, and corresponding date, in each cost report after an ownership change. We use this as our flag for ownership changes during the study period. However, these indicators may capture administrative or legal changes that do not reflect meaningful transfers of control. Thus, to verify these changes, our second step was to validate each potential ownership change in the HRCIS data with the NHC Archive data. The NHC Archive data reports ownership shares for each owner associated with a facility on a monthly basis. One issue with the NHC Archive data is that it reports the direct owners and indirect owners of each nursing home. For example, a limited liability corporation may directly own the nursing home, but that limited liability corporation is owned by different individuals. Therefore, we identified ownership changes to occur among direct and indirect owners using the following criteria: 
+First, we use the HCRIS data which contains an indicator for an ownership change, and corresponding date, in each cost report after an ownership change. We use this as our flag for ownership changes during the study period. However, these indicators may capture administrative or legal changes that do not reflect meaningful transfers of control. Thus, to verify these changes, our second step was to validate each potential ownership change in the HCRIS data with the NHC Archive data. The NHC Archive data reports ownership shares for each owner associated with a facility on a monthly basis. One issue with the NHC Archive data is that it reports the direct owners and indirect owners of each nursing home. For example, a limited liability corporation may directly own the nursing home, but that limited liability corporation is owned by different individuals. Therefore, we identified ownership changes to occur among direct and indirect owners using the following criteria: 
 
 Using this information, we define a change in ownership when a majority of ownership shares turn over between month $t-1$ and month $t$. Intuitively, this captures transactions in which control of the facility changes hands, including cases where a new operator acquires most or all shares. Secondly, when ownership percentages are partially or completely missing, we approximate shares by normalizing any reported percentages and, where necessary, assigning equal weights across remaining owners. To reduce false positives from purely legal restructuring, we do not flag a change in ownership if at least 80 percent of the ownership stake remains within the same surname family (e.g., a change from “Smith Holdings LLC” to “Smith Family Partners LP”). 
 
-Using these verified ownership changes, the analytic sample included Nursing Homes that either (i) have no ownership change in either source or (ii) have exactly one ownership change in each source with the ownership change date within six months of one another. For these Nursing Homes, we define the change in ownership month as the first month in which HCRIS identifies a change. All dates are converted to calendar months, so changes occurring at the beginning or end of a month are treated identically. \question{Should I be more specific about what percentage these exclusions are of the original sample?}
+Using these verified ownership changes, the analytic sample included nursing homes that either (i) have no ownership change in either source or (ii) have exactly one ownership change in each source with the ownership change date within six months of one another. \todo[inline, color = pastelyellow]{I am trying to figure out a way to visualize this well, maybe multiple cross tabs or some sort of table that shows how we narrow down the sample each time} For these Nursing Homes, we define the change in ownership month as the first month in which HCRIS identifies a change. All dates are converted to calendar months, so changes occurring at the beginning or end of a month are treated identically. 
 
 \subsection{Nursing Staff Levels}
 
-The nursing staff types we use in our study are registered nurses (RNs), licensed practical nurses (LPNs), and certified nursing assistants (CNAs). RNs are the most highly trained nursing staff and are responsible for assessment, care planning, medication administration, and supervision of other nursing personnel. LPNs provide basic medical care under the supervision of RNs and physicians, including monitoring vital signs and administering certain treatments. CNAs provide the majority of direct daily care to residents, assisting with activities of daily living. Because these staff types differ in training, scope of practice, and compensation, changes in staffing composition may reflect different organizational responses to ownership changes. We therefore examine each staff category separately, as well as total staffing. 
+The nursing staff types we use in our study are registered nurses (RNs), licensed practical nurses (LPNs), and certified nursing assistants (CNAs). RNs are the most highly trained nursing staff and are responsible for assessment, care planning, medication administration, and supervision of other nursing personnel. LPNs provide basic medical care under the supervision of RNs and physicians, including monitoring vital signs and administering certain treatments. CNAs provide the majority of direct daily care to residents, assisting with activities of daily living. Because these staff types differ in training, scope of practice, and compensation, changes in staffing composition may reflect different organizational responses to ownership changes. We therefore examine each staff category separately, as well as total nurse staffing. 
 
 Nursing staff levels are calculated from PBJ data, which report daily staffing hours and resident census. For each facility \(i\), calendar month \(t\), and staff type, we aggregate daily hours and resident days to construct hours per resident day (HPRD):
 
@@ -165,35 +171,43 @@ Nursing staff levels are calculated from PBJ data, which report daily staffing h
        {\displaystyle\sum_{d \in t} R_{id}},
 \end{equation}
 
-where \(H_{id}\) is the number of hours worked by the staff type in facility \(i\) on day \(d\), and \(R_{id}\) is the number of resident days in facility \(i\) on day \(d\). We construct separate HPRD measures for RNs, LPNs, and CNAs, and define total HPRD as the sum of the three type specific measures. For quality specifications estimated at the facility-quarter level, we construct quarterly staffing measures analogously by summing hours and resident days over all days in the quarter before taking the ratio.
+where \(H_{id}\) is the number of hours worked by the staff type in facility \(i\) on day \(d\), and \(R_{id}\) is the number of resident days in facility \(i\) on day \(d\). We construct separate HPRD measures for RNs, LPNs, and CNAs, and define total HPRD as the sum of the three type-specific measures. For quality specifications estimated at the facility-quarter level, we construct quarterly staffing measures analogously by summing hours and resident days over all days in the quarter before taking the ratio.
 
 We also construct additional measures of data quality. First, we calculate a monthly PBJ coverage measure, defined as the share of days in the month with complete staffing records. This measure allows us to identify incomplete data in our sample and describe our data completeness. We use this measure for sample construction and descriptive purposes, excluding facilities and observations with low reporting coverage. Secondly, we track reporting gaps, defined as the number of months since a facility’s previous PBJ observation, and use this variable in robustness checks that restrict the sample to facilities with more continuous reporting.
 
 Finally, we exclude a small number of observations with implausible staffing levels: months in which RN and LPN HPRD are both zero, total HPRD is below 1.5 or above 12, or CNA HPRD exceeds 5.25. These observations are outliers that likely reflect reporting errors rather than genuine variation in staffing. These exclusion criteria align with the criteria outlined in the CMS NHC Technical Users Guide.
 
-\subsection{Quality Metrics}
+\subsection{Quality Metrics} 
 
-We study two categories of quality metrics, routine-sensitive process measure and resident outcome measures. The metrics we study that are process measures that may be responsive to routines and managerial practices are the percentage of long-stay residents with a catheter inserted and left in their bladder, percentage of long-stay residents who received an anti-anxiety or hypnotic medication, and percentage of long-stay residents who received an anti-psychotic medication. The metrics we study that are considered staffing-intensive resident outcomes are the percentage of high risk long-stay residents with pressure ulcers, percentage of long-stay residents experiencing one or more falls with major injury, percentage of long-stay residents who lose too much weight, percentage of long-stay residents whose ability to walk or move independently worsened, and percentage of long-stay residents with a urinary tract infection. 
+\todo[color = pastelyellow]{This entire section is new}
 
-[Include details about these variables, how they are measured, why we use them, etc...]
+We measure quality using selected CMS quality measures from the NHC Archive. These measures are reported at the facility-quarter level and are constructed from resident assessments submitted through the Minimum Data Set (MDS). We focus on measures that are plausibly responsive to ownership-related changes in staffing, care routines, medication management, monitoring, and documentation. For each measure used in the analysis, lower values indicate better measured quality.
+
+We group the selected measures into two categories. The first category consists of routine-sensitive process measures: catheter use, anti-psychotic medication use, and anti-anxiety or hypnotic medication use. Catheter use measures the percentage of long-stay residents with a catheter inserted and left in their bladder. Catheters may be clinically appropriate in some cases, such as urinary retention, selected wound-care situations, or end-of-life care, but unnecessary catheter use can increase infection risk and may reflect facility routines around toileting assistance and monitoring. Anti-psychotic medication use measures the percentage of long-stay residents who received an anti-psychotic medication and anti-anxiety or hypnotic medication use measures the percentage of long-stay residents who received an anti-anxiety or hypnotic medication. Both of these metrics capture medication-management practices among long-stay residents. These medications may be clinically appropriate for some residents, but their use can also reflect prescribing routines, behavioral-management practices, staff monitoring, and reliance on pharmacological approaches to resident care.
+
+The second category consists of resident outcome measures: pressure injuries, falls with major injury, weight loss, decline in physical functioning, and urinary tract infections. These measures are more directly related to resident health and functioning and may be affected by staffing-intensive care processes. Pressure injuries may reflect repositioning, skin checks, hygiene, nutrition, and monitoring. Falls with major injury capture serious resident safety events that may be affected by supervision, mobility assistance, medication management, and environmental safety. Weight loss captures clinically meaningful unintended weight loss \footnote{This does not include residents who are on a physician-prescribed weight-loss plan.} and may reflect nutrition, feeding assistance, monitoring, or changes in resident condition. Decline in physical functioning captures worsening dependence in mobility or activities of daily living. Urinary tract infections may reflect resident frailty and clinical need, but also catheter use, hydration, toileting assistance, hygiene, monitoring, and documentation practices.
 
 \subsection{Other Controls}
 
-To account for facility characteristics that may be correlated with staffing, quality, and ownership changes, we included a number of control variables that are consistent with other studies. The following variables come from NHC and HCRIS and are used as controls in all specifications: Ownership type (government, non-profit, and for-profit), chain affiliation, total number of beds, occupancy rate, payer mix (percent of revenue coming from Medicare, and percent of revenue coming from Medicaid), and acuity. Our measure of acuity is case-mix provided by CMS in the NHC archive data. During our study period CMS altered the methodology used to construct case-mix indices. As a result, raw case-mix values are not directly comparable over time. To address this issue, we measure acuity using relative rankings rather than levels. Specifically, we construct case-mix quartiles within each state and calendar month.
+To account for facility characteristics that may be correlated with staffing, quality, and ownership changes, we included a number of control variables that are consistent with other studies (cite here). The following variables come from NHC and HCRIS and are used as controls in all specifications: Ownership type (government, non-profit, and for-profit), chain affiliation, total number of beds, occupancy rate, payer mix (percent of revenue coming from Medicare, and percent of revenue coming from Medicaid), and acuity. Our measure of acuity is case-mix provided by CMS in the NHC archive data. During our study period CMS altered the methodology used to construct case-mix indices. As a result, raw case-mix values are not directly comparable over time. To address this issue, we measure acuity using relative rankings rather than levels. Specifically, we construct case-mix quartiles within each state and calendar month.
 
 \subsection{Analytic Approach}
 
-Ownership changes occur at different dates across facilities during the study period. Because these changes are not randomly assigned, our empirical strategy does not compare facilities that change ownership to facilities that do not in levels. Instead, we exploit the timing of verified control-changing ownership transitions to compare within-facility changes in staffing and quality before and after ownership change, relative to simultaneous changes among not-yet-treated and untreated facilities \citep{goodman_bacon_2021}. All specifications condition on facility fixed effects, time fixed effects, and observable time-varying facility characteristics.
+Ownership changes occur at different dates across facilities during the study period. Because these changes are not randomly assigned, our empirical strategy does not compare facilities that change ownership to facilities that do not in levels. Instead, we exploit the timing of verified control-changing ownership transitions to compare changes within a facility before and after ownership change, relative to contemporaneous changes among facilities that have not yet experienced a change or never experience one during the study period. All specifications include facility fixed effects, time fixed effects, and observable time-varying facility characteristics.
 
-This design is well suited to the institutional setting. Following an ownership change, the facility remains in the same location, operates under the same certification framework, and serves the same local market. As a result, any post-transition changes are likely to operate through internal production decisions, including staffing, routines, and management practices, rather than through a mechanical change in local market structure.
+This staggered timing raises a standard concern for two-way fixed effects designs. In staggered-adoption settings, conventional two-way fixed effects estimates can be sensitive to treatment-effect heterogeneity and comparisons involving already-treated units \citep{goodman_bacon_2021}. We therefore emphasize event-study estimates using alternative comparison groups. This design is well suited to the institutional setting. Following an ownership change, the facility remains in the same location, operates under the same certification framework, and serves the same local market. As a result, any post-transition changes are likely to operate through internal production decisions, including staffing, routines, and management practices, rather than through a mechanical change in local market structure.
 
-A complication in defining event time is that the recorded ownership-change date may not perfectly align with the start of operational adjustment. Transactions are negotiated before closing, and staffing or management changes may begin before the formal transfer is recorded. For staffing outcomes, our preferred event-study specification therefore excludes the three months immediately preceding the recorded ownership change, \(\tau \in \{-3,-2,-1\}\), and uses \(\tau=-4\) as the reference period. For quality outcomes, which are measured quarterly, we exclude the ownership-change quarter, \(\tau=0\), because it may combine pre- and post-transfer care, reporting, and documentation. The quality event studies use \(\tau=-1\) as the reference period. \jcomment{I added this brief description before I introduce the specifications}
+A complication in defining event time is that the recorded ownership change month may not coincide with the beginning of the transfer process. The ownership change date we observe in HCRIS is the effective date of the change, or the closing date. However, the sale process begins earlier, when the buyer and seller negotiate and sign a contract. Ideally, we would observe the contract signing date or the month in which transition planning begins. Because these dates are not observed, the months immediately preceding the recorded closing date may already reflect operational responses to the pending transfer. During this pre-transfer period, incumbent managers or prospective owners may adjust staffing policies, scheduling, hiring, agency use, or other operating routines. Because staffing can adjust relatively quickly, these months may not represent untreated facility behavior. For this reason, the preferred staffing event-study specification excludes \(\tau=-3,-2,-1\) and uses \(\tau=-4\) as the reference period. For quality outcomes, which are measured quarterly, the timing concern is different. The ownership-change quarter, \(\tau=0\), may contain care, assessment, and documentation from both before and after the transfer. We therefore exclude \(\tau=0\) and use \(\tau=-1\) as the reference period.
+
+\todo[color = pastelyellow]{I originally only introduced this after the specifications, but I moved it earlier this time}
+
+We estimate the following set of event-study regressions: 
 
 \begin{equation}
 \label{eq:event-study-staffing}
-Y_{im}
+S_{im}
 =
-\sum_{\substack{\tau=-24, \tau \neq -3,-2,-1}}^{24}
+\sum_{\substack{\tau=-24, \tau \neq -4,-3,-2,-1}}^{24}
 \beta_{\tau}\mathbf{1}(T_{im}=\tau)
 +
 X_{im}\gamma
@@ -205,13 +219,13 @@ X_{im}\gamma
 \varepsilon_{im}.
 \end{equation}
 
-For staffing outcomes, \(Y_{im}\) denotes RN, LPN, CNA, or total HPRD for facility \(i\) in month \(m\). The variables \(\mathbf{1}(T_{im}=\tau)\) are event-time indicators for whether facility \(i\) is \(\tau\) months from ownership change. The coefficients \(\beta_{\tau}\) trace monthly staffing dynamics relative to four months before the ownership change. The months \(\tau=-3,-2,-1\) are excluded to remove the period most likely to be contaminated by anticipation.
+For staffing outcomes, \(S_{im}\) denotes RN, LPN, CNA, or total HPRD for facility \(i\) in month \(m\). The variables \(\mathbf{1}(T_{im}=\tau)\) are event-time indicators for whether facility \(i\) is \(\tau\) months from ownership change. The coefficients \(\beta_{\tau}\) trace monthly staffing dynamics relative to four months before the ownership change. The months \(\tau=-3,-2,-1\) are excluded to remove the period most likely to be influenced by the pre-transfer adjustment window.
 
 \begin{equation}
 \label{eq:event-study-quality}
 Q_{iq}
 =
-\sum_{\substack{\tau=-8, \tau \neq 0}}^{8}
+\sum_{\substack{\tau=-8, \tau \neq -1, 0}}^{8}
 \theta_{\tau}\mathbf{1}(T_{iq}=\tau)
 +
 X_{iq}\pi
@@ -225,7 +239,9 @@ X_{iq}\pi
 
 For quality outcomes, \(Q_{iq}\) denotes a selected CMS quality measure for facility \(i\) in quarter \(q\). The variables \(\mathbf{1}(T_{iq}=\tau)\) are event-time indicators for whether facility \(i\) is \(\tau\) quarters from ownership change. The coefficients \(\theta_{\tau}\) trace quarterly quality dynamics relative to the quarter before ownership change. The ownership-change quarter, \(\tau=0\), is excluded because it may contain both pre- and post-transfer care, documentation, and reporting.
 
-In both equations, \(X\) includes time-varying facility characteristics: ownership type, chain affiliation, beds, occupancy rate, payer mix, and state-period case-mix quartile indicators. Facility fixed effects \(\mu_i\) absorb time-invariant differences across nursing homes, while month fixed effects \(\lambda_m\) and quarter fixed effects \(\lambda_q\) absorb common shocks over time.
+In both equations, \(X_{im}\) and \(X_{iq}\) denote vectors of facility controls including: ownership type, chain affiliation, beds, occupancy rate, payer mix, and state-period case-mix quartile indicators. Facility fixed effects \(\mu_i\) absorb time-invariant differences across nursing homes, while month fixed effects \(\lambda_m\) and quarter fixed effects \(\lambda_q\) absorb common shocks over time. Standard errors are two-way clustered by facility and calendar period. 
+
+For quality outcomes, we estimate specifications both with and without RN, LPN, and CNA HPRD controls. Because staffing is itself affected by ownership change, the staffing-controlled specifications are not interpreted as preferred estimates of the total effect of ownership change on quality. Instead, they are used descriptively to assess whether the estimated quality responses are attenuated after conditioning on measured staffing inputs.
 
 We also estimate average post-change specifications that replace the event-time indicators with a single post-ownership-change indicator:
 
@@ -244,22 +260,27 @@ X_{ip}\gamma
 \varepsilon_{ip}.
 \end{equation}
 
-In equation~\eqref{eq:twfe-post}, \(Z_{ip}\) denotes either a staffing outcome in facility-month \(im\) or a quality outcome in facility-quarter \(iq\). The indicator \(\textit{Post}_{ip}\) equals one after the ownership change and zero otherwise. The coefficient \(\delta\) summarizes the average post-ownership-change difference in the outcome, relative to the pre-change period, after accounting for facility fixed effects, time fixed effects, and time-varying controls.
+In equation~\eqref{eq:twfe-post} $p = m$  for staffing outcomes and $ p = q$ for quality outcomes. \(Z_{ip}\) denotes either a staffing outcome in facility-month \(im\) or a quality outcome in facility-quarter \(iq\). The indicator \(\textit{Post}_{ip}\) equals one after the ownership change and zero otherwise. The coefficient \(\delta\) summarizes the average post-ownership-change difference in the outcome, relative to the pre-change period, after accounting for facility fixed effects, time fixed effects, and time-varying controls. For staffing outcomes, the preferred post specifications are estimated after excluding the same immediate pre-transfer months used in the event-study specification. For quality outcomes, the preferred post specifications exclude the ownership-change quarter. These post specifications are used to summarize the average post-change difference and should be interpreted alongside the event-study estimates.
 
 For staffing outcomes, we estimate event study and conventional difference-in-differences in both levels and logs. Log specifications allow coefficients to be interpreted as approximate percentage changes and reduce sensitivity to differences in baseline staffing levels across facilities. Log specifications are omitted when staffing is zero.
 
 \subsubsection{Parallel Trends}
 
-The identifying assumption is that, absent an ownership change, treated facilities would have followed similar trends as not-yet-treated and untreated facilities. We assess this assumption using the pre-treatment coefficients in the event-study models and joint Wald tests of whether these coefficients are equal to zero.
+The identifying assumption of equations~\ref{eq:event-study-staffing} and \ref{eq:event-study-quality} is, absent an ownership change, treated facilities would have followed similar staffing and quality trends as not-yet-treated and untreated facilities. We assess this assumption using the pre-treatment coefficients in the event-study models and joint Wald tests of whether these coefficients are equal to zero.
 
-For staffing outcomes, we compare pre-trend tests from the full pre-window to those from the preferred donut specification. The full pre-window includes the months immediately preceding the recorded ownership change and uses \(\tau=-1\) as the reference period. The donut specification excludes \(\tau\in\{-3,-2,-1\}\) and uses \(\tau=-4\) as the reference period. The improvement in the pre-trend tests after removing the immediate pre-transition months supports the interpretation that those months are contaminated by anticipation.
+For staffing outcomes, we compare pre-trend tests from the full pre-window to those from the preferred donut specification. The full pre-window includes the months immediately preceding the recorded ownership change and uses \(\tau=-1\) as the reference period. The donut specification excludes \(\tau\in\{-3,-2,-1\}\) and uses \(\tau=-4\) as the reference period. Table~\ref{tab:wald-test-staffing} reports the results of these Wald tests. The improvement in the pre-trend tests after removing the immediate pre-transition months supports the interpretation that those months are influenced by the pre-transfer adjustment window.
 
-\input{C:/Repositories/white-bowblis-nhmc/outputs/tables/pretrend_wald_tests_fragment.tex}
+\input{C:/Repositories/white-bowblis-nhmc/outputs/tables/wald-test-staffing.tex}
 \FloatBarrier
 
-\subsubsection{Subgroup Analysis}
+For quality outcomes, we conduct analogous Wald tests using the quarterly event-study specification. The full pre-window tests whether the coefficients for quarters \(\tau=-8\) through \(\tau=-1\) are jointly equal to zero. Our preferred quality specification excludes the ownership-change quarter, \(\tau=0\), because this quarter may combine pre- and post-transfer care, assessment, and documentation. Table~\ref{tab:wald-test-quality} reports the results of these Wald tests.
 
-\jcomment{I know I need to rewrite this section, but I am not sure what direction we want to go. Are we including differing results by Covid-19? Am I }
+\input{C:/Repositories/white-bowblis-nhmc/outputs/tables/wald-test-quality.tex}
+\FloatBarrier
+
+\subsubsection{Additional Analyses}
+
+\newpage
 
 \section{Results}
 
@@ -335,8 +356,6 @@ All specifications include control variables and facility and month fixed effect
 \normalsize
 \doublespacing
 
-\question{Should I present results (here or in the appendix) for a wald test of the post treatment event-time coefficients?}
-
 To summarize these dynamic effects with a single average treatment estimate, Table~\ref{tab:twfe-post-full} reports two-way fixed effects estimates of the ownership change effect (i.e., Equation~\ref{eq:twfe-post}). Panel A reports results in levels, while Panel B reports logged results. Consistent with the event study results, ownership changes lead to meaningful reductions in staffing levels. RN staffing declines by approximately 0.03 hours per resident day (roughly 9 percent), CNA staffing falls by about 0.05 hours (approximately 3 percent), and total staffing decreases by 0.08 hours per resident day (roughly 3 percent). LPN staffing shows no statistically significant change. Estimates are nearly identical whether the observations for the three month period before the ownership change occurred is included or excluded from the model.
 
 \input{C:/Repositories/white-bowblis-nhmc/outputs/tables/twfe_post_full.tex}
@@ -356,6 +375,8 @@ Overall, ownership changes lead to sizable and persistent reductions in nursing 
 [Insert quality metric results here]
 [Do we want to present the event study results? Are we only presenting DiD results?]
 [Change \LaTeX\ table output to be an input and not standalone doc*]
+
+\newpage
 
 \subsection{Robustness}
 
