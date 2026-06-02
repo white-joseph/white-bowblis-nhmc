@@ -280,7 +280,7 @@ For quality outcomes, we conduct analogous Wald tests using the quarterly event-
 
 \subsubsection{Additional Analyses}
 
-\newpage
+\todo[color = pastelyellow]{I removed chain vs non-chain from this section}
 
 \section{Results}
 
@@ -291,16 +291,16 @@ Table~\ref{tab:sumstats} reports summary statistics for the monthly staffing sam
 \input{C:/Repositories/white-bowblis-nhmc/outputs/tables/summary_statistics_code.tex}
 \FloatBarrier
 
-Table~\ref{tab:quality_sumstats} reports summary statistics for the quarterly quality sample. The final sample consists of x unique skilled nursing facilities and x facility-quarter observations over the same period as the staffing sample. Of this sample, x go through an ownership change during the sample period.  
+Table~\ref{tab:quality_sumstats} reports summary statistics for the quarterly quality sample. The final sample consists of 7,768 unique skilled nursing facilities and 208,657 facility-quarter observations over the same period as the staffing sample. Of this sample, 1,588 go through an ownership change during the sample period.  
 
 \input{C:/Repositories/white-bowblis-nhmc/outputs/tables/quality_summary_statistics_code.tex}
 \FloatBarrier
 
-\subsection{Nurse Staffing Results}
+\subsection{Staffing Responses to Ownership Change}
 
 Figure~\ref{fig:event_study_main_landscape} presents event study estimates of the effect of ownership changes on nursing staffing outcomes (i.e., Equation~\ref{eq:event-study-staffing}). Following an ownership transition, staffing declines persist for many periods, with the largest and most precise effects occurring for registered nurses (RN), certified nursing assistants (CNA), and total nursing hours per resident day.
 
-RN staffing declines immediately following ownership changes and remains far below pre-transition levels throughout the post-treatment period. CNA staffing exhibits a similar but slightly smaller decline, while total nursing hours mirror the combined reductions across staff types. In contrast, LPN staffing shows limited and statistically insignificant changes over time. These dynamic patterns indicate that ownership transitions lead to sustained reductions in staffing rather than short run adjustments.
+RN staffing declines immediately following ownership changes and remains far below pre-transition levels throughout the post-treatment period. CNA staffing exhibits a similar but slightly smaller decline, while total nursing hours mirror the combined reductions across staff types. In contrast, LPN staffing shows limited and statistically insignificant changes over time. These dynamic patterns indicate that ownership changes are followed by sustained reductions in labor inputs, rather than short-run staffing adjustments that quickly reverse.
 
 \newgeometry{left=1.2cm,right=1.2cm,top=1.5cm,bottom=1.5cm}
 
@@ -356,33 +356,158 @@ All specifications include control variables and facility and month fixed effect
 \normalsize
 \doublespacing
 
-To summarize these dynamic effects with a single average treatment estimate, Table~\ref{tab:twfe-post-full} reports two-way fixed effects estimates of the ownership change effect (i.e., Equation~\ref{eq:twfe-post}). Panel A reports results in levels, while Panel B reports logged results. Consistent with the event study results, ownership changes lead to meaningful reductions in staffing levels. RN staffing declines by approximately 0.03 hours per resident day (roughly 9 percent), CNA staffing falls by about 0.05 hours (approximately 3 percent), and total staffing decreases by 0.08 hours per resident day (roughly 3 percent). LPN staffing shows no statistically significant change. Estimates are nearly identical whether the observations for the three month period before the ownership change occurred is included or excluded from the model.
+To summarize these dynamic effects with a single average treatment estimate, Table~\ref{tab:twfe-post-full} reports two-way fixed effects estimates of the ownership change effect (i.e., Equation~\ref{eq:twfe-post}). Panel A reports results in levels, while Panel B reports logged results. Consistent with the event-study evidence, the average post-transition estimates indicate sustained reductions in nursing labor inputs. RN staffing declines by approximately 0.03 hours per resident day (roughly 9 percent), CNA staffing falls by about 0.05 hours (approximately 3 percent), and total staffing decreases by 0.08 hours per resident day (roughly 3 percent). LPN staffing shows no statistically significant change.
 
 \input{C:/Repositories/white-bowblis-nhmc/outputs/tables/twfe_post_full.tex}
 \FloatBarrier
 
-\subsubsection{Effects Before and During Covid-19 Pandemic}
+\subsubsection{Heterogeneity Before and After the Onset of COVID-19}
 
-Table~\ref{tab:twfe-prepost} examines whether these effects differ before and after the COVID-19 pandemic. The magnitude of the decline is roughly halved in the post pandemic period for RN, CNA, and total HPRD, suggesting that pandemic induced shifts in labor markets and staffing substantially reduced the impact of ownership transitions.
+\todo[color = pastelyellow]{I think that Appendix table 8 is interesting since the difference is only statistically significant in LPNs}
+
+Table~\ref{tab:twfe-prepost} examines whether these effects differ before and after the COVID-19 pandemic. The estimated reductions are generally smaller during the pandemic period for CNA and total HPRD, while RN reductions remain negative and statistically significant. This pattern suggests that pandemic-era labor market constraints and heightened regulatory scrutiny may have limited some staffing adjustments after ownership change.
+
 
 \input{C:/Repositories/white-bowblis-nhmc/outputs/tables/twfe_prepost.tex}
 \FloatBarrier
 
-Overall, ownership changes lead to sizable and persistent reductions in nursing staffing, with effects concentrated among RN, CNA, and total hours per resident day. These reductions are larger prior to the COVID-19 pandemic and among facilities that were not part of a chain at baseline. Together, the event study and TWFE results indicate that ownership transitions systematically worsen staffing conditions in nursing homes rather than inducing temporary adjustments.
+Together, the staffing results show that ownership changes are followed by sustained reductions in measured nursing labor inputs. The declines are concentrated among registered nurses, certified nursing assistants, and total nursing hours per resident day, while licensed practical nurse staffing remains comparatively stable. These patterns suggest that ownership changes are not merely legal or administrative events, but events of operational restructuring in which new owners adjust the mix and intensity of labor used in care production.
 
-\subsection{Quality Measure Results}
+The welfare implications of these input reductions are ambiguous without examining quality outcomes. If staffing reductions primarily reflect harmful cost-cutting, one would expect worsening in resident outcomes, particularly measures that depend heavily on direct staff attention. If, instead, ownership changes disrupt old routines and move facilities closer to their feasible production frontier, reductions in labor inputs may occur alongside improvements in quality measures that are sensitive to managerial routines, monitoring, and care protocols.
 
-[Insert quality metric results here]
-[Do we want to present the event study results? Are we only presenting DiD results?]
-[Change \LaTeX\ table output to be an input and not standalone doc*]
+\subsection{Quality Responses to Ownership Change}
 
-\newpage
+Figure~\ref{fig:quality_routine_process_landscape} presents event-study estimates for routine-sensitive quality measures. These outcomes are intended to capture changes in care that may respond to changes in oversight, monitoring, documentation, and clinical routines. The estimates show whether ownership changes are followed by changes in quality measures that may be especially responsive to organizational re-optimization.
+
+\newgeometry{left=1.2cm,right=1.2cm,top=1.5cm,bottom=1.5cm}
+
+\begin{figure}[p]
+\centering
+\begin{adjustbox}{angle=-90,center}
+\begin{minipage}{0.9\textheight}
+\centering
+
+% Row 1
+\begin{subfigure}[t]{0.49\linewidth}
+  \centering
+  \includegraphics[width=\linewidth]{C:/Repositories/white-bowblis-nhmc/outputs/plots/twfe_es_quality_qm_406_drop_tau0.pdf}
+  \caption{Catheter Use}
+\end{subfigure}\hfill
+\begin{subfigure}[t]{0.49\linewidth}
+  \centering
+  \includegraphics[width=\linewidth]{C:/Repositories/white-bowblis-nhmc/outputs/plots/twfe_es_quality_qm_419_drop_tau0.pdf}
+  \caption{Anti-Psychotic Medication Use}
+\end{subfigure}
+
+\vspace{1em}
+
+% Row 2
+\begin{subfigure}[t]{0.49\linewidth}
+  \centering
+  \includegraphics[width=\linewidth]{C:/Repositories/white-bowblis-nhmc/outputs/plots/twfe_es_quality_qm_452_drop_tau0.pdf}
+  \caption{Anti-Anxiety or Hypnotic Medication Use}
+\end{subfigure}
+
+\caption{
+Dynamic Effects of Ownership Change on Routine-Sensitive Process Measures.
+Event-study estimates of the effect of a change in ownership on routine-sensitive process measures.
+Points show coefficient estimates relative to the reference period $\tau=-1$;
+vertical bars denote 95\% confidence intervals.
+The ownership-change quarter ($\tau=0$) is excluded from the estimation sample.
+All specifications include control variables and facility and quarter fixed effects.
+}
+
+\label{fig:quality_routine_process_landscape}
+
+\end{minipage}
+\end{adjustbox}
+\end{figure}
+
+\FloatBarrier
+\restoregeometry
+
+\normalsize
+\doublespacing
+
+The results shown in figure~\ref{fig:quality_routine_process_landscape} provide mixed but generally supportive evidence that ownership changes alter clinical and managerial routines. Catheter use declines following ownership change, and anti-anxiety or hypnotic medication use also falls relative to the reference period. Antipsychotic medication use declines minimally but is not statistically significant. Because lower values indicate better measured quality for all quality outcomes, these patterns suggest that ownership changes are not followed solely by reductions in measured inputs; some quality measures that capture labor saving mechanisms improve after control changes.
+
+Figure~\ref{fig:quality_resident_outcomes_landscape} presents event-study estimates for staffing-intensive resident outcomes. These outcomes are more directly tied to hands-on care intensity. If ownership changes primarily reduced inputs in ways that harmed residents, these measures would be the most likely to worsen.
+
+\newgeometry{left=1.2cm,right=1.2cm,top=1.5cm,bottom=1.5cm}
+
+\begin{figure}[p]
+\centering
+\begin{adjustbox}{angle=-90,center}
+\begin{minipage}{0.95\textheight}
+\centering
+
+% Row 1
+\begin{subfigure}[t]{0.32\linewidth}
+  \centering
+  \includegraphics[width=\linewidth]{C:/Repositories/white-bowblis-nhmc/outputs/plots/twfe_es_quality_qm_453_drop_tau0.pdf}
+  \caption{Pressure Injuries}
+\end{subfigure}\hfill
+\begin{subfigure}[t]{0.32\linewidth}
+  \centering
+  \includegraphics[width=\linewidth]{C:/Repositories/white-bowblis-nhmc/outputs/plots/twfe_es_quality_qm_410_drop_tau0.pdf}
+  \caption{Falls with Major Injury}
+\end{subfigure}\hfill
+\begin{subfigure}[t]{0.32\linewidth}
+  \centering
+  \includegraphics[width=\linewidth]{C:/Repositories/white-bowblis-nhmc/outputs/plots/twfe_es_quality_qm_404_drop_tau0.pdf}
+  \caption{Weight Loss}
+\end{subfigure}
+
+\vspace{1em}
+
+% Row 2
+\begin{subfigure}[t]{0.32\linewidth}
+  \centering
+  \includegraphics[width=\linewidth]{C:/Repositories/white-bowblis-nhmc/outputs/plots/twfe_es_quality_qm_401_drop_tau0.pdf}
+  \caption{Decline in Physical Functioning}
+\end{subfigure}\hspace{0.06\linewidth}
+\begin{subfigure}[t]{0.32\linewidth}
+  \centering
+  \includegraphics[width=\linewidth]{C:/Repositories/white-bowblis-nhmc/outputs/plots/twfe_es_quality_qm_407_drop_tau0.pdf}
+  \caption{Urinary Tract Infections}
+\end{subfigure}
+
+\caption{
+Dynamic Effects of Ownership Change on Resident Outcome Measures.
+Event-study estimates of the effect of a change in ownership on resident outcome measures.
+Points show coefficient estimates relative to the reference period $\tau=-1$;
+vertical bars denote 95\% confidence intervals.
+The ownership-change quarter ($\tau=0$) is excluded from the estimation sample.
+All specifications include control variables and facility and quarter fixed effects.
+}
+\label{fig:quality_resident_outcomes_landscape}
+
+\end{minipage}
+\end{adjustbox}
+\end{figure}
+
+\FloatBarrier
+\restoregeometry
+
+\normalsize
+\doublespacing
+
+The resident outcome measures show less evidence of broad worsening. Pressure injuries, falls with major injury, weight loss, and decline in physical functioning do not change in a statistically significant manner. Urinary tract infections do show modest declines. Taken together, these results provide little evidence that staffing reductions, through ownership changes, translate into widespread worsening of the selected resident outcome measures over the observed window.
+
+Table~\ref{tab:quality-twfe-post} summarizes the quality responses using average post-change TWFE specifications.
+
+\input{C:/Repositories/white-bowblis-nhmc/outputs/tables/quarterly_quality_twfe_post.tex}
+\FloatBarrier
+
+The estimates are similar with and without staffing controls. Because staffing is itself affected by ownership change, the staffing-controlled specifications are not interpreted as preferred total effects. Instead, their similarity to the baseline estimates suggests that the measured quality responses are not mechanically explained by contemporaneous changes in RN, LPN, and CNA hours per resident day.
 
 \subsection{Robustness}
 
-This section presents a series of robustness checks designed to assess the validity of our identifying assumptions and the sensitivity of our results to alternative model choices. Across all exercises, the estimated effects of ownership change on staffing remain stable in sign, magnitude, and statistical significance. Most of these will have tables/plots that will go in the appendix.
+This section reports robustness checks for our staffing results, which are the main input-side estimates in our paper. These checks are designed to assess the validity of our identifying assumptions and the sensitivity of our results to alternative model choices. Across all exercises, the estimated effects of ownership change on staffing remain stable in sign, magnitude, and statistical significance. The supporting tables and figures are reported in the appendix.
 
-\subsubsection{Assumptions}
+\todo[color = pastelyellow]{I polished this section up, but refrained from adding new robustness until we talked about it}
+
+\subsubsection{Alternative Comparison Groups}
 
 Our main event-study specification is estimated using two-way fixed effects (TWFE) with staggered treatment timing. In this setting, TWFE can implicitly use already-treated facilities as controls for cohorts treated later, which may distort event-study estimates when treatment effects are dynamic or heterogeneous across cohorts. To assess sensitivity to this issue, we re-estimate the event study using a stacked difference-in-differences design.
 
@@ -392,7 +517,7 @@ Appendix Figures~\ref{fig:stacked-es-rn} through \ref{fig:stacked-es-total} show
 
 \subsubsection{Event Window and ``Donut''}
 
-As we have previously discussed, because of changes to staffing in anticipation of a formal ownership change, the assumptions of parallel trends is violated. As a result of this, in our baseline specifications we ``donut'' equation~\ref{eq:es_twfe} and equation~\ref{eq:twfe-post} by removing $\tau\in\{-3,-2,-1\}$. To test the validity of removing this set of pre-treatment coefficients, we estimate equations~\ref{eq:es_twfe} and \ref{eq:twfe-post} with different ``donut'' sets and show that the estimated post-treatment effects remain largely unchanged. Row 6 of Table~\ref{tab:twfe-robustness-summary} reports estimates of equation~\ref{eq:twfe-post} with a wider anticipatory period excluded from the sample. The results from row 6 show no differences in values or statistical significance. Similarly, row 7 reports estimates under a smaller anticipatory window that is excluded from the data, and we see no differences in the results.
+As we have previously discussed, because of changes to staffing in anticipation of a formal ownership change, the assumptions of parallel trends is violated. As a result of this, in our baseline specifications we ``donut'' equation~\ref{eq:event-study-staffing} and equation~\ref{eq:twfe-post} by removing $\tau\in\{-3,-2,-1\}$. To test the validity of removing this set of pre-treatment coefficients, we estimate equations~\ref{eq:event-study-staffing} and \ref{eq:twfe-post} with different ``donut'' sets and show that the estimated post-treatment effects remain largely unchanged. Row 6 of Table~\ref{tab:twfe-robustness-summary} reports estimates of equation~\ref{eq:twfe-post} with a wider anticipatory period excluded from the sample. The results from row 6 show no differences in values or statistical significance. Similarly, row 7 reports estimates under a smaller anticipatory window that is excluded from the data, and estimates remain similar in magnitude and statistical significance.
 
 \subsubsection{Gap Size}
 
@@ -400,7 +525,13 @@ Because staffing data is occasionally missing or reported with gaps, we examine 
 
 \section{Discussion}\label{sec:discussion}
 
-We find that ownership changes are followed by persistent reductions in nurse staffing, particularly in RN hours, CNA hours, and total nursing hours per resident day. In a regulated sector with limited short-run pricing flexibility, staffing is one of the most immediately adjustable margins, so changes in staffing provide a useful window into how new owners reshape internal production decisions. Our event study estimates, together with the results across alternative specifications, suggest that these are not short-lived reductions around the recorded ownership change month, but sustained adjustments following a change in control.
+This paper studies ownership changes in nursing homes as moments of organizational disruptions in care production. Our results show that ownership transitions are followed by sustained reductions in measured nursing labor inputs, especially RN hours, CNA hours, and total nursing hours per resident day. At the same time, we find that some selected quality measures improve: catheter use and anti-anxiety or hypnotic medication use decline, and urinary tract infections also fall. Other resident outcome measures, including pressure injuries, falls with major injury, weight loss, and decline in average daily living, show little evidence of broad worsening. Taken together, these patterns suggest that ownership changes do more than alter the legal identity of the owner. They appear to change how facilities organize production.
+
+The combination of lower staffing inputs and selected quality improvements is consistent with the idea that some facilities operate inside their feasible production frontier before ownership change. New owners do not necessarily possess a superior care technology, instead, the ownership transition may disrupt old routines, alter managerial oversight, change medication-management practices, or reduce organizational slack. If facilities, under previous ownership, relied on inefficient routines, then new owners could reduce some inputs while maintaining or improving selected measured quality outcomes. This is consistent with ownership change as a way for new ownership to re-optimize rather than contain costs.
+
+\subsection{Interpreting Staffing Reductions}
+
+The results of our staffing specifications indicate that both the level and mix of nurse staffing adjust following a change in ownership. 
 
 \subsection{No declines in LPN hours}
 
@@ -408,25 +539,25 @@ One notable result is that LPN staffing shows little to no decline following own
 
 This makes LPNs a plausible way to adjust when new owners seek to reduce labor costs without generating large immediate changes in service provision. CNAs generally cannot substitute for RNs on licensed or supervisory tasks, and RNs are not typically used to replace CNA-level direct-care work because of wage differences and the organization of production. LPNs, by contrast, can absorb some routine clinical work that might otherwise require RN time, while also supporting continuity of care when CNA hours are reduced. In that sense, the relative stability of LPN staffing is consistent with compositional adjustment rather than uniform staffing cuts.
 
-\subsection{Are the staffing reductions economically meaningful?}
+%\subsection{Are the staffing reductions economically meaningful?}
 
-An important question is whether the estimated staffing reductions are large in economic terms. Benchmarking the estimates against baseline staffing levels helps provide context. In our sample, mean staffing levels are 0.427 RN HPRD, 0.796 LPN HPRD, 2.100 CNA HPRD, and 3.324 total HPRD. In the baseline TWFE specification, an ownership change reduces RN staffing by 0.032 HPRD, CNA staffing by 0.054 HPRD, and total staffing by 0.086 HPRD, while LPN staffing does not change significantly.
+%An important question is whether the estimated staffing reductions are large in economic terms. Benchmarking the estimates against baseline staffing levels helps provide context. In our sample, mean staffing levels are 0.427 RN HPRD, 0.796 LPN HPRD, 2.100 CNA HPRD, and 3.324 total HPRD. In the baseline TWFE specification, an ownership change reduces RN staffing by 0.032 HPRD, CNA staffing by 0.054 HPRD, and total staffing by 0.086 HPRD, while LPN staffing does not change significantly.
 
-These effects correspond to declines of roughly 7.5\% for RN staffing, 2.6\% for CNA staffing, and 2.6\% for total staffing. Expressed in more intuitive terms, 0.032 RN HPRD is about 1.9 fewer RN minutes per resident-day, 0.054 CNA HPRD is about 3.2 fewer CNA minutes per resident-day, and 0.086 total HPRD is about 5.2 fewer total nursing minutes per resident-day.
+%These effects correspond to declines of roughly 7.5\% for RN staffing, 2.6\% for CNA staffing, and 2.6\% for total staffing. Expressed in more intuitive terms, 0.032 RN HPRD is about 1.9 fewer RN minutes per resident-day, 0.054 CNA HPRD is about 3.2 fewer CNA minutes per resident-day, and 0.086 total HPRD is about 5.2 fewer total nursing minutes per resident-day.
 
-Our estimates should not be interpreted as implying large welfare effects simply because they are statistically significant. At the same time, staffing is a core input into care production, so even modest staffing changes could still matter, especially in facilities operating close to staffing constraints. In larger facilities, some reductions may be diffused across many residents and workers; in smaller facilities, comparable average reductions may be more likely to bind and produce noticeable changes in quality. Thus, the economic significance of these estimates for resident care is ultimately ambiguous in our paper. What we can show is that ownership changes affect staffing inputs; whether those input changes translate into meaningful changes in deficiencies, hospitalizations, mortality, or other outcomes remains an open empirical question.
+%Our estimates should not be interpreted as implying large welfare effects simply because they are statistically significant. At the same time, staffing is a core input into care production, so even modest staffing changes could still matter, especially in facilities operating close to staffing constraints. In larger facilities, some reductions may be diffused across many residents and workers; in smaller facilities, comparable average reductions may be more likely to bind and produce noticeable changes in quality. Thus, the economic significance of these estimates for resident care is ultimately ambiguous in our paper. What we can show is that ownership changes affect staffing inputs; whether those input changes translate into meaningful changes in deficiencies, hospitalizations, mortality, or other outcomes remains an open empirical question.
 
-\subsection{Heterogeneity}
+%\subsection{Heterogeneity}
 
 Two heterogeneity patterns provide additional insight into mechanisms. First, staffing declines are larger for non-chain facilities than for chain-affiliated facilities. This pattern is consistent with organizational buffers and internal labor market capacity in chains: chain facilities may have greater ability to stabilize staffing, share managerial practices, and respond to financial or operational shocks without reducing measured staffing as sharply. In contrast, independent facilities may face tighter constraints and fewer margin-stabilizing tools, making staffing a more immediate adjustment channel. Second, estimated staffing reductions are smaller during the COVID-19 period than in the pre-pandemic period. A natural interpretation is that pandemic-era labor market tightness limited owners' ability to implement further staffing reductions, while heightened scrutiny and operational disruptions may have constrained the feasible set of staffing adjustments.
 
-\subsection{Implications}
+%\subsection{Implications}
 
 A key contribution of this paper is to establish staffing as an adjustment margin following ownership changes, even in a setting where prices are largely fixed and production decisions are heavily regulated. However, staffing is an intermediate input, and whether these ownership-induced staffing reductions reflect efficiency gains (e.g., reduced slack, improved task allocation) or quality-reducing cost containment is ultimately an empirical question about outcomes. A natural extension is to link ownership transitions to resident-centered measures (e.g., deficiencies, rehospitalizations, mortality, or other quality indicators) and test whether the staffing reductions documented here coincide with changes in measured quality. Such analysis could also help with the interpretation of the LPN substitution mechanism: if RN and CNA hours fall while quality is unchanged, this would be more consistent with task reallocation and efficiency; if quality deteriorates, it would indicate that staffing reductions likely reflect quality-reducing cost containment. The results here motivate a broader evaluation of ownership changes that jointly considers staffing composition and resident outcomes.
 
-\subsection{Limitations}
+%\subsection{Limitations}
 
-First, despite the two-step approach to identifying ownership transitions and the use of a donut window to address anticipatory adjustments, the timing of ownership change may still be measured with error, and some operational changes may precede the recorded transition date. Second, while the event-study design with fixed effects and pre-trend diagnostics helps address confounding, ownership changes may coincide with unobserved shocks (e.g., financial distress) that independently affect staffing trajectories. Third, PBJ-based staffing measures may be affected by reporting completeness; although robustness checks suggest the findings are not driven by reporting gaps, measurement error remains possible. Finally, because the analysis focuses on staffing inputs, the paper does not directly estimate effects on resident outcomes; interpreting welfare implications therefore requires either stronger assumptions about the staffing--quality relationship or additional outcome analyses.
+%First, despite the two-step approach to identifying ownership transitions and the use of a donut window to address anticipatory adjustments, the timing of ownership change may still be measured with error, and some operational changes may precede the recorded transition date. Second, while the event-study design with fixed effects and pre-trend diagnostics helps address confounding, ownership changes may coincide with unobserved shocks (e.g., financial distress) that independently affect staffing trajectories. Third, PBJ-based staffing measures may be affected by reporting completeness; although robustness checks suggest the findings are not driven by reporting gaps, measurement error remains possible. Finally, because the analysis focuses on staffing inputs, the paper does not directly estimate effects on resident outcomes; interpreting welfare implications therefore requires either stronger assumptions about the staffing--quality relationship or additional outcome analyses.
 
 \section{Conclusion} \label{sec:conclusion}
 
@@ -449,8 +580,8 @@ This paper contributes to the literature by shifting away from ownership changes
 \section*{Tables} \label{sec:tab}
 \addcontentsline{toc}{section}{Tables}
 
-\input{C:/Repositories/white-bowblis-nhmc/outputs/tables/twfe_post_chain_diff.tex}
-\FloatBarrier
+%\input{C:/Repositories/white-bowblis-nhmc/outputs/tables/twfe_post_chain_diff.tex}
+%\FloatBarrier
 
 \input{C:/Repositories/white-bowblis-nhmc/outputs/tables/twfe_post_pandemic_diff.tex}
 \FloatBarrier
@@ -458,59 +589,70 @@ This paper contributes to the literature by shifting away from ownership changes
 \input{C:/Repositories/white-bowblis-nhmc/outputs/tables/stacked_twfe_post_full.tex}
 \FloatBarrier
 
-\input{C:/Repositories/white-bowblis-nhmc/outputs/tables/twfe_post_full_date_mcr.tex}
-\FloatBarrier
-
 \input{C:/Repositories/white-bowblis-nhmc/outputs/tables/twfe_robustness_summary_code.tex}
 \FloatBarrier
 
-\input{C:/Repositories/white-bowblis-nhmc/outputs/tables/pretrend_wald_tests_stacked_levels_fragment.tex}
+%\input{C:/Repositories/white-bowblis-nhmc/outputs/tables/pretrend_wald_tests_stacked_levels_fragment.tex}
 
 \clearpage
 
 \section*{Figures} \label{sec:fig}
 \addcontentsline{toc}{section}{Figures}
 
-\begin{figure}[!htbp]
+\newgeometry{left=1.2cm,right=1.2cm,top=1.5cm,bottom=1.5cm}
+
+\begin{figure}[p]
 \centering
-\includegraphics[width=0.95\textwidth]{C:/Repositories/white-bowblis-nhmc/outputs/plots/es_chain_vs_nonchain_rn_hppd_noant.pdf}
+\begin{adjustbox}{angle=-90,center}
+\begin{minipage}{0.9\textheight}
+\centering
 
-\vspace{0.6em}
-
-\includegraphics[width=0.95\textwidth]{C:/Repositories/white-bowblis-nhmc/outputs/plots/es_chain_vs_nonchain_lpn_hppd_noant.pdf}
-
-\label{fig:event_study_1}
-\end{figure}
-
-
-\begin{figure}[!ht]
+% Row 1
+\begin{subfigure}[t]{0.49\linewidth}
   \centering
-  \includegraphics[width=0.9\textwidth]{C:/Repositories/white-bowblis-nhmc/outputs/plots/stacked_es_rn_baseline.pdf}
-  \caption{Stacked event-study estimates (RN staffing, levels). The stacked design compares each treated cohort only to never-treated and not-yet-treated facilities within the event window, preventing already-treated facilities from serving as controls. The donut excludes $\tau\in\{-3,-2,-1\}$; reference period is $\tau=-4$.}
+  \includegraphics[width=\linewidth]{C:/Repositories/white-bowblis-nhmc/outputs/plots/stacked_es_rn_baseline.pdf}
+  \caption{Registered Nurses (RN)}
   \label{fig:stacked-es-rn}
-\end{figure}
-
-\begin{figure}[!ht]
+\end{subfigure}\hfill
+\begin{subfigure}[t]{0.49\linewidth}
   \centering
-
-  \includegraphics[width=0.9\textwidth]{C:/Repositories/white-bowblis-nhmc/outputs/plots/stacked_es_lpn_baseline.pdf}
-  \caption{Stacked event-study estimates (LPN staffing, levels). The stacked design compares each treated cohort only to never-treated and not-yet-treated facilities within the event window, preventing already-treated facilities from serving as controls. The donut excludes $\tau\in\{-3,-2,-1\}$; reference period is $\tau=-4$.}
+  \includegraphics[width=\linewidth]{C:/Repositories/white-bowblis-nhmc/outputs/plots/stacked_es_lpn_baseline.pdf}
+  \caption{Licensed Practical Nurses (LPN)}
   \label{fig:stacked-es-lpn}
-\end{figure}
+\end{subfigure}
 
-\begin{figure}[!ht]
+\vspace{1em}
+
+% Row 2
+\begin{subfigure}[t]{0.49\linewidth}
   \centering
-  \includegraphics[width=0.9\textwidth]{C:/Repositories/white-bowblis-nhmc/outputs/plots/stacked_es_cna_baseline.pdf}
-  \caption{Stacked event-study estimates (CNA staffing, levels). The stacked design compares each treated cohort only to never-treated and not-yet-treated facilities within the event window, preventing already-treated facilities from serving as controls. The donut excludes $\tau\in\{-3,-2,-1\}$; reference period is $\tau=-4$.}
+  \includegraphics[width=\linewidth]{C:/Repositories/white-bowblis-nhmc/outputs/plots/stacked_es_cna_baseline.pdf}
+  \caption{Certified Nursing Assistants (CNA)}
   \label{fig:stacked-es-cna}
+\end{subfigure}\hfill
+\begin{subfigure}[t]{0.49\linewidth}
+  \centering
+  \includegraphics[width=\linewidth]{C:/Repositories/white-bowblis-nhmc/outputs/plots/stacked_es_total_baseline.pdf}
+  \caption{Total Nursing Hours}
+  \label{fig:stacked-es-total}
+\end{subfigure}
+
+\caption{
+Stacked Event-Study Estimates of Ownership Change on Nursing Staffing.
+The stacked design compares each treated cohort only to never-treated and not-yet-treated facilities within the event window, preventing already-treated facilities from serving as controls.
+The donut excludes $\tau\in\{-3,-2,-1\}$; the reference period is $\tau=-4$.
+}
+\label{fig:stacked-es-staffing}
+
+\end{minipage}
+\end{adjustbox}
 \end{figure}
 
-\begin{figure}[!ht]
-  \centering
-  \includegraphics[width=0.9\textwidth]{C:/Repositories/white-bowblis-nhmc/outputs/plots/stacked_es_total_baseline.pdf}
-  \caption{Stacked event-study estimates (Total staffing, levels). The stacked design compares each treated cohort only to never-treated and not-yet-treated facilities within the event window, preventing already-treated facilities from serving as controls. The donut excludes $\tau\in\{-3,-2,-1\}$; reference period is $\tau=-4$.}
-  \label{fig:stacked-es-total}
-\end{figure}
+\FloatBarrier
+\restoregeometry
+
+\normalsize
+\doublespacing
 
 %\begin{figure}[hp]
 %  \centering
@@ -522,9 +664,9 @@ This paper contributes to the literature by shifting away from ownership changes
 
 
 
-\clearpage
+%\clearpage
 
-\section*{Appendix A. Placeholder} \label{sec:appendixa}
-\addcontentsline{toc}{section}{Appendix A}
+%\section*{Appendix A. Placeholder} \label{sec:appendixa}
+%\addcontentsline{toc}{section}{Appendix A}
 
 \end{document}
