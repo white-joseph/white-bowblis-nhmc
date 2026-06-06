@@ -314,9 +314,9 @@ vc <- ~ cms_certification_number + year_quarter
 outcome_map <- tibble::tribble(
   ~section,                                  ~label,                                      ~var,      ~start_y, ~start_q, ~end_y, ~end_q,
   
-  "Routine-Sensitive Process Measures",      "Catheter Use",                              "qm_406",  2017L,   1L,       2024L,  2L,
-  "Routine-Sensitive Process Measures",      "Antipsychotic Medication Use",              "qm_419",  2017L,   1L,       2024L,  2L,
-  "Routine-Sensitive Process Measures",      "Anti-Anxiety or Hypnotic Medication Use",   "qm_452",  2017L,   1L,       2024L,  2L,
+  "Labor Saving Mechanisms",      "Catheter Use",                              "qm_406",  2017L,   1L,       2024L,  2L,
+  "Labor Saving Mechanisms",      "Antipsychotic Medication Use",              "qm_419",  2017L,   1L,       2024L,  2L,
+  "Labor Saving Mechanisms",      "Anti-Anxiety or Hypnotic Medication Use",   "qm_452",  2017L,   1L,       2024L,  2L,
   
   "Resident Outcome Measures",               "Pressure Injuries",                         "qm_453",  2018L,   1L,       2023L,  3L,
   "Resident Outcome Measures",               "Falls with Major Injury",                   "qm_410",  2017L,   1L,       2024L,  2L,
