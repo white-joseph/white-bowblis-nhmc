@@ -165,15 +165,17 @@ We utilize two samples in our study, the first is our staffing panel which is co
 
 \subsection{Identifying Ownership Changes}
 
-\todo[color = pastelyellow]{Working on writing this so that it emphasizes this as more of a measurement contribution}
+No single source provides a complete record of substantive ownership changes in U.S. nursing homes. We therefore construct a facility-level dataset of ownership changes intended to capture transfers of substantive economic control, rather than purely legal or administrative changes. Existing studies of nursing home ownership changes and mergers generally rely on two primary sources: HCRIS and the NHC Archive. Each source contains useful information, but each is incomplete when used alone. We therefore use a two-step identification and verification process that combines reported ownership-changes in HCRIS with monthly ownership records in the NHC Archive.
 
-No single data source provides a comprehensive record of ownership changes for U.S. nursing homes, so we combine information from HCRIS and the NHC Archive in a two-step identification and verification process to identify ownership changes.
+HCRIS provides a useful starting point because it records whether a facility reported a change in ownership during the reporting period and, when applicable, the reported date of the change. These records identify ownership changes that facilities report through the cost-reporting process. However, HCRIS does not by itself establish whether a reported change reflects a substantive transfer of economic control. Some HCRIS-reported changes may capture legal restructuring, administrative reorganization, or changes in ownership where decision-making authority remains within the same ownership group. As a result, relying on HCRIS alone may overstate the number of ownership changes that are economically meaningful for the production of nursing care. Appendix Table \ref{tab} provides examples of HCRIS-reported ownership changes that are not classified as substantive transfers, and therefore why HCRIS-reported changes need verification.
 
-First, we use the HCRIS data which contains an indicator for an ownership change, and corresponding date, in each cost report after an ownership change. We use this as our flag for ownership changes during the study period. However, these indicators may capture administrative or legal changes that do not reflect meaningful transfers of control. Thus, to verify these changes, our second step was to validate each potential ownership change in the HCRIS data with the NHC Archive data. The NHC Archive data reports ownership shares for each owner associated with a facility on a monthly basis. One issue with the NHC Archive data is that it reports the direct owners and indirect owners of each nursing home. For example, a limited liability corporation may directly own the nursing home, but that limited liability corporation is owned by different individuals. Therefore, we identified ownership changes to occur among direct and indirect owners using the following criteria: 
+The NHC Archive provides more granular ownership information. It reports monthly owner roles, owner types, owner names, and ownership percentages for each facility. This allows us to examine whether the individuals or entities controlling a facility change over time. However, the detail in the NHC Archive also introduces measurement challenges. Nursing home ownership structures are often complex and layered. For example, a limited liability company may directly own a nursing home, while the company itself is owned by other individuals, corporations, trusts, or partnership entities. Changes in listed owners, ownership layers, or reporting conventions can therefore appear as ownership changes even when economic control has not clearly changed. Programming comparisons of monthly NHC ownership records can consequently generate false positives if used without additional validation. Appendix Table \ref{tab} also provides examples in which NHC ownership records indicate large changes in listed owners or ownership shares but no corresponding HCRIS ownership-change flag is observed.
 
-Using this information, we define a change in ownership when a majority of ownership shares turn over between month $t-1$ and month $t$. Intuitively, this captures transactions in which control of the facility changes hands, including cases where a new operator acquires most or all shares. Secondly, when ownership percentages are partially or completely missing, we approximate shares by normalizing any reported percentages and, where necessary, assigning equal weights across remaining owners. To reduce false positives from purely legal restructuring, we do not flag a change in ownership if at least 80 percent of the ownership stake remains within the same surname family (e.g., a change from “Smith Holdings LLC” to “Smith Family Partners LP”). 
+We combine the two sources to address these limitations. HCRIS provides reported ownership changes and dates, while the NHC Archive allows us to verify whether those events correspond to changes in the underlying ownership structure. In constructing the NHC Archive ownership-change measure, we identify ownership changes at the highest ownership level observed for a facility. Specifically, when multiple ownership layers are present, we prioritize indirect owners, then direct owners, then partnership-interest owners. This is intended to capture changes in economic control at the highest available ownership layer rather than changes in lower-level legal entities that may not correspond to a change in decision-making authority.
 
-Using these verified ownership changes, the analytic sample included nursing homes that either (i) have no ownership change in either source or (ii) have exactly one ownership change in each source with the ownership change date within six months of one another. \todo[inline, color = pastelyellow]{I am trying to figure out a way to visualize this well, maybe multiple cross tabs or some sort of table that shows how we narrow down the sample each time} For these Nursing Homes, we define the change in ownership month as the first month in which HCRIS identifies a change. All dates are converted to calendar months, so changes occurring at the beginning or end of a month are treated identically. 
+We define a substantive ownership change as a case in which a majority (i.e. greater than 50\%) of ownership shares turns over between month $t-1$ and month $t$. This characterization is intended to capture transitions in which control of the facility changes hands, including cases where a new owner acquires most or all ownership shares. When ownership percentages are partially or completely missing, we normalize any reported percentages and, where necessary, assign equal weights across remaining owners. To reduce false positives from legal restructuring within the same family ownership group, we do not flag a change when at least 80 percent of the ownership stake remains within the same surname family.
+
+Using these verified ownership changes, the final analytic sample includes nursing homes that either have no ownership change in either source or have exactly one ownership change in both sources, with the HCRIS and NHC ownership-change dates occurring within six months of one another. For treated facilities, we define the ownership-change month as the month in which HCRIS identifies the change. All dates are converted to calendar months, so changes occurring at the beginning or end of a month are treated identically. Appendix Table \ref{tab} summarizes the ownership-change classification process and the construction of the analytic ownership-change sample.
 
 \subsection{Nursing Staff Levels}
 
@@ -611,6 +613,134 @@ This paper contributes to the literature by shifting the focus from ownership ch
 
 %\input{C:/Repositories/white-bowblis-nhmc/outputs/tables/twfe_post_chain_diff.tex}
 %\FloatBarrier
+
+\begin{table}[!htbp]
+\centering
+\caption{Examples of Discordant Ownership Records Across HCRIS and NHC}
+\label{tab:ownership-discordant-panel-examples}
+
+\begin{threeparttable}
+\scriptsize
+\begin{tabularx}{\textwidth}{l l l X}
+\toprule
+Example & Classification & Period & NHC owner names and shares \\
+\midrule
+
+\multicolumn{4}{l}{\textit{Panel A: HCRIS-reported ownership changes not verified as substantive transfers in NHC records}} \\
+\midrule
+
+A & HCRIS only & $t=1$ 
+& Karen Gail Miller Irrev. Tr. FBO Zane Miller (50\%); The Gail Miller GST (50\%) \\
+A & HCRIS only & $t=2$ 
+& Karen Gail Miller Irrev. Tr. FBO Zane Miller (20\%); The Gail Miller GST (20\%); Karen Miller-related trust entities (60\%) \\
+
+B & HCRIS only & $t=1$ 
+& Vetter Eldora (50\%); Vetter Jack (50\%) \\
+B & HCRIS only & $t=2$ 
+& Vetter Senior Living (100\%) \\
+
+C & HCRIS only & $t=1$ 
+& Abri Health Services (50\%); The Senior Care Liquidation Co., Alan Halperin Trustee (50\%) \\
+C & HCRIS only & $t=2$ 
+& Abri Care (100\%) \\
+
+D & HCRIS only & $t=1$ 
+& Concordia Lutheran Ministries of Pittsburgh (100\%) \\
+D & HCRIS only & $t=2$ 
+& Concordia Care Network (100\%) \\
+
+\midrule
+\multicolumn{4}{l}{\textit{Panel B: NHC-identified ownership changes not reported as ownership changes in HCRIS}} \\
+\midrule
+
+E & NHC only & $t=1$ 
+& Destefane Richard (100\%) \\
+E & NHC only & $t=2$ 
+& Richard J. Destefane Revocable Living Trust (100\%) \\
+
+F & NHC only & $t=1$ 
+& D'Angelo Cara (25\%); Durham Deborah (25\%); Horace D'Angelo Jr. Operating Entities Dated 01/01/2012 (25\%); Tackett Kimberly (25\%) \\
+F & NHC only & $t=2$ 
+& Benoit (9.1\%); Calumet South (9.1\%); Drake Louis Enterprise (9.1\%); Fairhome Tr. UAD 12312012 (9.1\%); Fairhome UAD 12312012 (9.1\%); GZLT (9.1\%); Hartman David (9.1\%); Hartman Mark (9.1\%); Krupp Ari (9.1\%); Senderowicz Yossi (9.1\%); Willow Delta (9.1\%) \\
+
+G & NHC only & $t=1$ 
+& CMC II Investors (33.3\%); Conte Joseph (33.3\%); FC LV Holdco (33.3\%) \\
+G & NHC only & $t=2$ 
+& Qazi Mohammad (100\%) \\
+
+H & NHC only & $t=1$ 
+& Berkshire Healthcare Systems (67\%); Integritus Healthcare (25\%); Berkshire Healthcare System (3\%) \\
+H & NHC only & $t=2$ 
+& Integritus Healthcare Management Services (100\%) \\
+
+I & NHC only & $t=1$ 
+& DES C 2009 GRAT (100\%) \\
+I & NHC only & $t=2$ 
+& DES 2009 Family (100\%) \\
+
+\bottomrule
+\end{tabularx}
+
+\begin{tablenotes}
+\footnotesize
+\item Notes: This table presents examples of discordant ownership-change classifications across HCRIS and the NHC Archive in a panel-style format. Panel A reports cases in which HCRIS reports an ownership change, but the NHC ownership records do not show a clear transfer to a new unrelated controlling owner. Panel B reports cases in which NHC ownership records show large changes in listed owners or ownership shares, but no corresponding HCRIS ownership-change flag is observed. Owner names and shares are taken from the NHC Archive. The labels $t=1$ and $t=2$ refer to the ownership records immediately before and after the relevant ownership-record change.
+\end{tablenotes}
+\end{threeparttable}
+\end{table}
+
+\begin{table}[p]
+\centering
+\caption{Ownership-Change Classification and Sample Construction}
+\label{tab:ownership-classification-sample}
+
+\begin{threeparttable}
+\small
+
+\textit{Panel A. Cross-classification of ownership-change indicators} \\[0.5em]
+
+\begin{tabularx}{\textwidth}{lccc}
+\toprule
+& \multicolumn{3}{c}{NHC ownership records} \\
+\cmidrule(lr){2-4}
+HCRIS ownership-change status 
+& 0 
+& 1 
+& 2+ \\
+\midrule
+0        & XXX & XXX & XXX \\
+1       & XXX & XXX & XXX \\
+2+ changes & XXX & XXX & XXX \\
+\bottomrule
+\end{tabularx}
+
+\vspace{1.5em}
+
+\textit{Panel B. Construction of analytic ownership-change sample} \\[0.5em]
+
+\begin{tabularx}{\textwidth}{Xr}
+\toprule
+Sample restriction / classification step & Facilities \\
+\midrule
+Matched NHC--HCRIS facilities after initial ownership-record cleaning & XXX \\
+Exclude hospital-based nursing homes & XXX \\
+Exclude facilities outside the 48 contiguous U.S. states & XXX \\
+Exclude facilities with unresolved or missing provider identifiers & XXX \\
+Exclude facilities with multiple ownership changes in either source & XXX \\
+Keep facilities with no ownership change in either source & XXX \\
+Keep facilities with exactly one ownership change in both sources & XXX \\
+Restrict matched ownership-change dates to within six months of one another & XXX \\
+\midrule
+Final analytic ownership-change sample & XXX \\
+\bottomrule
+\end{tabularx}
+
+\begin{tablenotes}
+\footnotesize
+\item Notes: Panel A reports the cross-classification of facility-level ownership-change indicators across HCRIS and the NHC Archive after common ownership-record cleaning and pruning. NHC ownership changes are classified using monthly ownership records and are intended to capture substantive transfers of economic control. Panel B reports the stepwise construction of the analytic ownership-change sample. The final sample includes facilities with no ownership change in either source and facilities with exactly one ownership change in both sources, where the HCRIS and NHC ownership-change dates occur within six months of one another. Counts are at the facility level.
+\end{tablenotes}
+
+\end{threeparttable}
+\end{table}
 
 \input{C:/Repositories/white-bowblis-nhmc/outputs/tables/twfe_post_pandemic_diff.tex}
 \FloatBarrier
