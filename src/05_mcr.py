@@ -31,7 +31,7 @@ INTERIM_DIR = cfg.ensure_dir(cfg.INTERIM_DIR)
 OUT_FP = INTERIM_DIR / "mcr.csv"
 OUT_FP_QUARTERLY = INTERIM_DIR / "mcr_quarterly.csv"
 
-RUN_BUILD_MONTHLY = False
+RUN_BUILD_MONTHLY = True
 RUN_BUILD_QUARTERLY = True
 
 print(f"[paths] MCR_DIR={MCR_DIR}")
@@ -195,16 +195,21 @@ TARGET_SETS = dict(
     FY_BGN_DT=["FY_BGN_DT", "fy_bgn_dt", "Cost Report Fiscal Year beginning date"],
     FY_END_DT=["FY_END_DT", "fy_end_dt", "Cost Report Fiscal Year ending date"],
     MRC_OWNERSHIP=["MRC_OWNERSHIP"],
+
     PAT_DAYS_TOT=["S3_1_patdays_total", "S3_1_PATDAYS_TOTAL"],
     PAT_DAYS_MCR=["S3_1_patdays_medicare", "S3_1_PATDAYS_MEDICARE"],
     PAT_DAYS_MCD=["S3_1_patdays_medicaid", "S3_1_PATDAYS_MEDICAID"],
+
+    AVG_LOS_TOT=["S3_1_avg_los_total", "S3_1_AVG_LOS_TOTAL"],
+    AVG_LOS_MCR=["S3_1_avg_los_medicare", "S3_1_AVG_LOS_MEDICARE"],
+    AVG_LOS_MCD=["S3_1_avg_los_medicaid", "S3_1_AVG_LOS_MEDICAID"],
+
     BEDDAYS_AVAIL=["S3_1_beddays_aval", "S3_1_BEDDAYS_AVAL"],
     TOT_BEDS=["S3_1_beds", "S3_1_BEDS"],
     STATE=["MCR_STATE"],
     URBAN=["MCR_URBAN"],
     MCR_homeoffice=["MCR_homeoffice"],
 )
-
 
 def read_one_file(fp: Path) -> pd.DataFrame:
     if fp.suffix.lower() in {".sas7bdat", ".xpt"} and use_sas:
@@ -319,7 +324,16 @@ def build_monthly_from_raw():
     raw["FY_BGN_DT"] = pd.to_datetime(raw["FY_BGN_DT"], errors="coerce")
     raw["FY_END_DT"] = pd.to_datetime(raw["FY_END_DT"], errors="coerce")
 
-    for c in ["PAT_DAYS_TOT", "PAT_DAYS_MCR", "PAT_DAYS_MCD", "BEDDAYS_AVAIL", "TOT_BEDS"]:
+    for c in [
+        "PAT_DAYS_TOT",
+        "PAT_DAYS_MCR",
+        "PAT_DAYS_MCD",
+        "AVG_LOS_TOT",
+        "AVG_LOS_MCR",
+        "AVG_LOS_MCD",
+        "BEDDAYS_AVAIL",
+        "TOT_BEDS",
+    ]:
         raw[c] = pd.to_numeric(raw[c], errors="coerce")
 
     raw["ownership_type"] = raw["MRC_OWNERSHIP"].map(map_ownership_bucket)
@@ -384,7 +398,15 @@ def build_monthly_from_raw():
     # Shares
     raw["pct_medicare"] = _share(raw["PAT_DAYS_MCR"], raw["PAT_DAYS_TOT"]).clip(0, 100)
     raw["pct_medicaid"] = _share(raw["PAT_DAYS_MCD"], raw["PAT_DAYS_TOT"]).clip(0, 100)
+    # Average length of stay
+    raw["avg_los_total"] = pd.to_numeric(raw["AVG_LOS_TOT"], errors="coerce")
+    raw["avg_los_medicare"] = pd.to_numeric(raw["AVG_LOS_MCR"], errors="coerce")
+    raw["avg_los_medicaid"] = pd.to_numeric(raw["AVG_LOS_MCD"], errors="coerce")
 
+    # Optional sanity bounds. Keep broad bounds so we do not over-clean.
+    for c in ["avg_los_total", "avg_los_medicare", "avg_los_medicaid"]:
+        raw[c] = raw[c].where(raw[c].between(0, 5000))
+    
     CORR_DERIVED = []
     updated_derived = apply_value_corrections(raw, CORR_DERIVED)
     if updated_derived:
@@ -408,6 +430,9 @@ def build_monthly_from_raw():
         block["occupancy_rate"] = getattr(r, "occupancy_rate", np.nan)
         block["pct_medicare"] = getattr(r, "pct_medicare", np.nan)
         block["pct_medicaid"] = getattr(r, "pct_medicaid", np.nan)
+        block["avg_los_total"] = getattr(r, "avg_los_total", np.nan)
+        block["avg_los_medicare"] = getattr(r, "avg_los_medicare", np.nan)
+        block["avg_los_medicaid"] = getattr(r, "avg_los_medicaid", np.nan)
         block["ownership_type"] = getattr(r, "ownership_type", None)
         rows.append(block)
 
@@ -425,6 +450,9 @@ def build_monthly_from_raw():
                 "occupancy_rate",
                 "pct_medicare",
                 "pct_medicaid",
+                "avg_los_total",
+                "avg_los_medicare",
+                "avg_los_medicaid",
                 "ownership_type",
             ]
         )
@@ -443,6 +471,9 @@ def build_monthly_from_raw():
                 "occupancy_rate": "mean",
                 "pct_medicare": "mean",
                 "pct_medicaid": "mean",
+                "avg_los_total": "mean",
+                "avg_los_medicare": "mean",
+                "avg_los_medicaid": "mean",
                 "ownership_type": lambda s: s.dropna().iloc[0] if s.dropna().size else pd.NA,
             }
         )
@@ -466,7 +497,11 @@ def build_monthly_from_raw():
     # Coerce numeric ranges/types
     for c in ["pct_medicare", "pct_medicaid", "occupancy_rate"]:
         monthly[c] = pd.to_numeric(monthly[c], errors="coerce").clip(0, 100)
-    monthly["num_beds"] = pd.to_numeric(monthly["num_beds"], errors="coerce")
+    
+    for c in ["avg_los_total", "avg_los_medicare", "avg_los_medicaid"]:
+        monthly[c] = pd.to_numeric(monthly[c], errors="coerce")
+
+        monthly["num_beds"] = pd.to_numeric(monthly["num_beds"], errors="coerce")
 
     # Reorder
     keep = [
@@ -475,6 +510,9 @@ def build_monthly_from_raw():
         "year_month",
         "pct_medicare",
         "pct_medicaid",
+        "avg_los_total",
+        "avg_los_medicare",
+        "avg_los_medicaid",
         "num_beds",
         "occupancy_rate",
         "urban",
@@ -522,7 +560,15 @@ def build_quarterly_from_monthly():
     monthly["quarter"] = "Q" + monthly["quarter_num"].astype(str)
 
     # enforce numeric types
-    for col in ["pct_medicare", "pct_medicaid", "num_beds", "occupancy_rate"]:
+    for col in [
+        "pct_medicare",
+        "pct_medicaid",
+        "avg_los_total",
+        "avg_los_medicare",
+        "avg_los_medicaid",
+        "num_beds",
+        "occupancy_rate",
+    ]:
         if col in monthly.columns:
             monthly[col] = pd.to_numeric(monthly[col], errors="coerce")
 
@@ -545,6 +591,9 @@ def build_quarterly_from_monthly():
         .agg(
             pct_medicare=("pct_medicare", lambda s: mode_with_last_tiebreak(s, round_digits=4)),
             pct_medicaid=("pct_medicaid", lambda s: mode_with_last_tiebreak(s, round_digits=4)),
+            avg_los_total=("avg_los_total", lambda s: mode_with_last_tiebreak(s, round_digits=4)),
+            avg_los_medicare=("avg_los_medicare", lambda s: mode_with_last_tiebreak(s, round_digits=4)),
+            avg_los_medicaid=("avg_los_medicaid", lambda s: mode_with_last_tiebreak(s, round_digits=4)),
             num_beds=("num_beds", lambda s: mode_with_last_tiebreak(s, round_digits=0)),
             occupancy_rate=("occupancy_rate", lambda s: mode_with_last_tiebreak(s, round_digits=4)),
             urban=("urban", mode_with_last_tiebreak),
@@ -558,6 +607,9 @@ def build_quarterly_from_monthly():
 
             pct_medicare_mode_share=("pct_medicare", lambda s: mode_share(s, round_digits=4)),
             pct_medicaid_mode_share=("pct_medicaid", lambda s: mode_share(s, round_digits=4)),
+            avg_los_total_mode_share=("avg_los_total", lambda s: mode_share(s, round_digits=4)),
+            avg_los_medicare_mode_share=("avg_los_medicare", lambda s: mode_share(s, round_digits=4)),
+            avg_los_medicaid_mode_share=("avg_los_medicaid", lambda s: mode_share(s, round_digits=4)),
             num_beds_mode_share=("num_beds", lambda s: mode_share(s, round_digits=0)),
             occupancy_rate_mode_share=("occupancy_rate", lambda s: mode_share(s, round_digits=4)),
             urban_mode_share=("urban", mode_share),
@@ -568,6 +620,9 @@ def build_quarterly_from_monthly():
 
             pct_medicare_disagreement=("pct_medicare", lambda s: disagreement_flag(s, round_digits=4)),
             pct_medicaid_disagreement=("pct_medicaid", lambda s: disagreement_flag(s, round_digits=4)),
+            avg_los_total_disagreement=("avg_los_total", lambda s: disagreement_flag(s, round_digits=4)),
+            avg_los_medicare_disagreement=("avg_los_medicare", lambda s: disagreement_flag(s, round_digits=4)),
+            avg_los_medicaid_disagreement=("avg_los_medicaid", lambda s: disagreement_flag(s, round_digits=4)),
             num_beds_disagreement=("num_beds", lambda s: disagreement_flag(s, round_digits=0)),
             occupancy_rate_disagreement=("occupancy_rate", lambda s: disagreement_flag(s, round_digits=4)),
             urban_disagreement=("urban", disagreement_flag),
