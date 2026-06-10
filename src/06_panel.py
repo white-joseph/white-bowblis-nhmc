@@ -237,7 +237,7 @@ def finalize_regression_panel(df: pd.DataFrame) -> pd.DataFrame:
             panel[col] = panel[col].fillna(0).astype("Int8")
 
     # ---------- make key continuous vars numeric ----------
-    for col in ["occupancy_rate", "pct_medicare", "pct_medicaid"]:
+    for col in ["occupancy_rate", "pct_medicare", "pct_medicaid", "case_mix_total"]:
         if col in panel.columns:
             panel[col] = pd.to_numeric(panel[col], errors="coerce")
 
@@ -335,7 +335,7 @@ def finalize_regression_panel(df: pd.DataFrame) -> pd.DataFrame:
             panel.loc[too_high, "pct_medicaid"] *= scale
 
     # ---------- final typing ----------
-    for c in ["occupancy_rate", "pct_medicare", "pct_medicaid"]:
+    for c in ["occupancy_rate", "pct_medicare", "pct_medicaid", "case_mix_total"]:
         if c in panel.columns:
             panel[c] = pd.to_numeric(panel[c], errors="coerce")
 
@@ -496,6 +496,7 @@ want_cols = [
     "occupancy_rate",
     "pct_medicare",
     "pct_medicaid",
+    "case_mix_total",
     "state",
     "urban",
 ]
@@ -540,6 +541,7 @@ numeric_quarter_fill = [
     "occupancy_rate",
     "pct_medicare",
     "pct_medicaid",
+    "case_mix_total",
 ]
 
 _fill_cols = [c for c in (binary_quarter_fill + numeric_quarter_fill) if c in panel.columns]
@@ -561,7 +563,18 @@ if _fill_cols:
             pass
 
 # ============================== Bridge-fill between equal endpoints ===========
-bridge_numeric = [c for c in ["num_beds", "beds_prov", "occupancy_rate", "pct_medicare", "pct_medicaid"] if c in panel.columns]
+bridge_numeric = [
+    c for c in [
+        "num_beds",
+        "beds_prov",
+        "occupancy_rate",
+        "pct_medicare",
+        "pct_medicaid",
+        "case_mix_total",
+    ]
+    if c in panel.columns
+]
+
 panel = bridge_fill_equal(panel, bridge_numeric, group_key="cms_certification_number", numeric=True)
 
 bridge_binary = [c for c in binary_quarter_fill if c in panel.columns]
@@ -604,7 +617,7 @@ else:
     panel["gap"] = pd.Series([pd.NA] * len(panel), dtype="Int8")
 
 # ============================== Final types before analytical filter ==========
-for c in ["num_beds", "beds_prov", "beds", "occupancy_rate", "pct_medicare", "pct_medicaid"]:
+for c in ["num_beds", "beds_prov", "beds", "occupancy_rate", "pct_medicare", "pct_medicaid", "case_mix_total"]:
     if c in panel.columns:
         panel[c] = pd.to_numeric(panel[c], errors="coerce")
 
