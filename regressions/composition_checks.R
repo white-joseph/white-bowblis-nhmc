@@ -1,16 +1,22 @@
 # =============================================================================
-# composition_checks.R
+# composition_checks_monthly_standalone.R
 #
 # Purpose:
-#   Run composition checks and create a standalone LaTeX document.
+#   Run composition checks using the monthly facility panel.
 #
 # Outcomes:
-#   1. Occupancy rate: monthly panel
-#   2. Medicare payer mix: annual panel
-#   3. Medicaid payer mix: annual panel
+#   1. Occupancy rate
+#   2. Medicare payer mix
+#   3. Medicaid payer mix
+#   4. Case mix total, descriptive only through 2023Q2
+#
+# Notes:
+#   Occupancy is measured monthly.
+#   Payer-mix variables are cost-report-period measures merged to the monthly panel.
+#   Case mix is included descriptively and restricted through 2023Q2.
 #
 # Output:
-#   outputs/tables/composition_checks_standalone.tex
+#   outputs/tables/composition_checks_monthly_standalone.tex
 # =============================================================================
 
 source("C:/Repositories/white-bowblis-nhmc/regressions/_setup.R")
@@ -30,7 +36,7 @@ options(scipen = 999, digits = 4)
 out_dir <- out_tables_dir
 dir.create(out_dir, recursive = TRUE, showWarnings = FALSE)
 
-tex_out_fp <- file.path(out_dir, "composition_checks_standalone.tex")
+tex_out_fp <- file.path(out_dir, "composition_checks_monthly_standalone.tex")
 
 # -----------------------------------------------------------------------------
 # Load monthly staffing panel
@@ -42,6 +48,25 @@ if (!("year" %in% names(df))) {
   df <- df %>%
     mutate(year = as.integer(str_sub(as.character(year_month), 1, 4)))
 }
+
+# Create a true monthly date for sample restrictions
+df <- df %>%
+  mutate(
+    ym_date = as.Date(
+      paste0(str_replace(as.character(year_month), "/", "-"), "-01")
+    )
+  )
+
+# Use same pre-closing adjustment window exclusion as the main staffing models
+df_monthly <- drop_anticipation_window(df)
+
+# Case-mix descriptive sample:
+# Restrict through 2023Q2, i.e. through June 2023.
+df_casemix <- df_monthly %>%
+  filter(
+    ym_date >= as.Date("2018-04-01"),
+    ym_date <= as.Date("2023-06-01")
+  )
 
 # -----------------------------------------------------------------------------
 # Helper functions
@@ -100,34 +125,56 @@ fmt_n <- function(mod) {
 }
 
 # -----------------------------------------------------------------------------
-# 1. Monthly occupancy model
+# Regression specifications
 # -----------------------------------------------------------------------------
-# Occupancy is measured monthly. We use the same anticipation-window exclusion
-# used in the main staffing specifications.
-
-df_monthly <- drop_anticipation_window(df)
 
 vc_month <- ~ cms_certification_number + year_month
 
-m_occ_rf <- feols(
+# No-controls specification:
+# Facility fixed effects + calendar-month fixed effects.
+m_occ_nocontrols <- feols(
   occupancy_rate ~ post | cms_certification_number + year_month,
   data = df_monthly,
   vcov = vc_month,
   lean = FALSE
 )
 
-monthly_basic_controls <- intersect(
-  c("government", "non_profit", "chain", "beds"),
+m_mcare_nocontrols <- feols(
+  pct_medicare ~ post | cms_certification_number + year_month,
+  data = df_monthly,
+  vcov = vc_month,
+  lean = FALSE
+)
+
+m_mcaid_nocontrols <- feols(
+  pct_medicaid ~ post | cms_certification_number + year_month,
+  data = df_monthly,
+  vcov = vc_month,
+  lean = FALSE
+)
+
+m_casemix_nocontrols <- feols(
+  case_mix_total ~ post | cms_certification_number + year_month,
+  data = df_casemix,
+  vcov = vc_month,
+  lean = FALSE
+)
+
+# Controls specification:
+# Do NOT include staffing controls here.
+# Staffing is a main outcome of interest and may itself respond to ownership change.
+controls <- intersect(
+  c("beds", "government", "non_profit", "chain"),
   names(df_monthly)
 )
 
-rhs_occ_basic <- paste(c("post", monthly_basic_controls), collapse = " + ")
+rhs_controls <- paste(c("post", controls), collapse = " + ")
 
-m_occ_basic <- feols(
+m_occ_controls <- feols(
   as.formula(
     paste0(
       "occupancy_rate ~ ",
-      rhs_occ_basic,
+      rhs_controls,
       " | cms_certification_number + year_month"
     )
   ),
@@ -136,90 +183,42 @@ m_occ_basic <- feols(
   lean = FALSE
 )
 
-# -----------------------------------------------------------------------------
-# 2. Annual payer-mix models
-# -----------------------------------------------------------------------------
-# Payer mix should be measured annually. We collapse the monthly panel to a
-# facility-year panel and exclude the ownership-change year.
-
-event_years <- df %>%
-  filter(!is.na(event_time), event_time == 0) %>%
-  group_by(cms_certification_number) %>%
-  summarise(
-    event_year = min(year, na.rm = TRUE),
-    .groups = "drop"
-  )
-
-df_annual <- df %>%
-  group_by(cms_certification_number, year) %>%
-  summarise(
-    pct_medicare = mean(pct_medicare, na.rm = TRUE),
-    pct_medicaid = mean(pct_medicaid, na.rm = TRUE),
-    government = mean(government, na.rm = TRUE),
-    non_profit = mean(non_profit, na.rm = TRUE),
-    chain = mean(chain, na.rm = TRUE),
-    beds = mean(beds, na.rm = TRUE),
-    .groups = "drop"
-  ) %>%
-  left_join(event_years, by = "cms_certification_number") %>%
-  mutate(
-    treated_annual = !is.na(event_year),
-    transition_year = treated_annual & year == event_year,
-    post = case_when(
-      !treated_annual ~ 0,
-      year > event_year ~ 1,
-      year < event_year ~ 0,
-      TRUE ~ NA_real_
-    )
-  ) %>%
-  filter(!transition_year)
-
-vc_year <- ~ cms_certification_number + year
-
-m_mcare_rf <- feols(
-  pct_medicare ~ post | cms_certification_number + year,
-  data = df_annual,
-  vcov = vc_year,
-  lean = FALSE
-)
-
-m_mcaid_rf <- feols(
-  pct_medicaid ~ post | cms_certification_number + year,
-  data = df_annual,
-  vcov = vc_year,
-  lean = FALSE
-)
-
-annual_basic_controls <- intersect(
-  c("government", "non_profit", "chain", "beds"),
-  names(df_annual)
-)
-
-rhs_annual_basic <- paste(c("post", annual_basic_controls), collapse = " + ")
-
-m_mcare_basic <- feols(
+m_mcare_controls <- feols(
   as.formula(
     paste0(
       "pct_medicare ~ ",
-      rhs_annual_basic,
-      " | cms_certification_number + year"
+      rhs_controls,
+      " | cms_certification_number + year_month"
     )
   ),
-  data = df_annual,
-  vcov = vc_year,
+  data = df_monthly,
+  vcov = vc_month,
   lean = FALSE
 )
 
-m_mcaid_basic <- feols(
+m_mcaid_controls <- feols(
   as.formula(
     paste0(
       "pct_medicaid ~ ",
-      rhs_annual_basic,
-      " | cms_certification_number + year"
+      rhs_controls,
+      " | cms_certification_number + year_month"
     )
   ),
-  data = df_annual,
-  vcov = vc_year,
+  data = df_monthly,
+  vcov = vc_month,
+  lean = FALSE
+)
+
+m_casemix_controls <- feols(
+  as.formula(
+    paste0(
+      "case_mix_total ~ ",
+      rhs_controls,
+      " | cms_certification_number + year_month"
+    )
+  ),
+  data = df_casemix,
+  vcov = vc_month,
   lean = FALSE
 )
 
@@ -229,28 +228,33 @@ m_mcaid_basic <- feols(
 
 row_occ <- paste(
   "Occupancy rate",
-  "Monthly",
-  fmt_est(m_occ_rf),
-  fmt_est(m_occ_basic),
-  fmt_n(m_occ_rf),
+  fmt_est(m_occ_nocontrols),
+  fmt_est(m_occ_controls),
+  fmt_n(m_occ_nocontrols),
   sep = " & "
 )
 
 row_mcare <- paste(
   "Medicare share",
-  "Annual",
-  fmt_est(m_mcare_rf),
-  fmt_est(m_mcare_basic),
-  fmt_n(m_mcare_rf),
+  fmt_est(m_mcare_nocontrols),
+  fmt_est(m_mcare_controls),
+  fmt_n(m_mcare_nocontrols),
   sep = " & "
 )
 
 row_mcaid <- paste(
   "Medicaid share",
-  "Annual",
-  fmt_est(m_mcaid_rf),
-  fmt_est(m_mcaid_basic),
-  fmt_n(m_mcaid_rf),
+  fmt_est(m_mcaid_nocontrols),
+  fmt_est(m_mcaid_controls),
+  fmt_n(m_mcaid_nocontrols),
+  sep = " & "
+)
+
+row_casemix <- paste(
+  "Case mix total",
+  fmt_est(m_casemix_nocontrols),
+  fmt_est(m_casemix_controls),
+  fmt_n(m_casemix_nocontrols),
   sep = " & "
 )
 
@@ -264,6 +268,7 @@ tex_lines <- c(
   "\\usepackage{makecell}",
   "\\usepackage{array}",
   "\\usepackage{caption}",
+  "\\usepackage{setspace}",
   "",
   "\\newcolumntype{Y}{>{\\centering\\arraybackslash}X}",
   "",
@@ -272,25 +277,26 @@ tex_lines <- c(
   "\\begin{table}[!ht]",
   "\\centering",
   "\\begin{threeparttable}",
-  "\\caption{Effects of Ownership Change on Occupancy and Payer Mix}",
-  "\\label{tab:composition-checks}",
+  "\\caption{Effects of Ownership Change on Occupancy, Payer Mix, and Case Mix}",
+  "\\label{tab:composition-checks-monthly}",
   "\\small",
   "\\setlength{\\tabcolsep}{6pt}",
-  "\\begin{tabularx}{\\textwidth}{@{} l c Y Y r @{}}",
+  "\\begin{tabularx}{\\textwidth}{@{} l Y Y r @{}}",
   "\\toprule",
-  "Outcome & Frequency & Reduced form & Basic controls & Observations \\\\",
+  "Outcome & No controls & Controls & Observations \\\\",
   "\\midrule",
   paste0(row_occ, " \\\\"),
   paste0(row_mcare, " \\\\"),
   paste0(row_mcaid, " \\\\"),
+  paste0(row_casemix, " \\\\"),
   "\\bottomrule",
   "\\end{tabularx}",
   "",
   "\\begin{tablenotes}[flushleft]",
   "\\footnotesize",
-  "\\item \\textit{Notes:} Each cell reports the coefficient on \\textit{post}, with standard errors in parentheses. Occupancy rate is measured at the facility-month level using the monthly staffing panel. The monthly occupancy specification excludes the three months immediately preceding the ownership-change month. Medicare and Medicaid payer mix are measured at the facility-year level. The ownership-change year is excluded from the annual payer-mix specifications because annual payer-mix measures may combine pre- and post-change periods.",
-  "\\item Reduced-form models include facility and time fixed effects only. Basic-controls models additionally include ownership type, chain affiliation, and beds when available. Standard errors are clustered two ways by facility and calendar period.",
-  "\\item Statistical significance: $^{***}p<0.01$, $^{**}p<0.05$, $^{*}p<0.10$.",
+  "\\item \\textit{Notes:} Each cell reports the coefficient on \\textit{post}, with standard errors in parentheses. All models include facility and calendar-month fixed effects. The controls column adds beds, government ownership, nonprofit ownership, and chain affiliation.",
+  "\\item Case-mix is restricted to observations from Q2 of 2018 through Q2 of 2023.",
+  "\\item Standard errors are clustered two ways by facility and calendar month. Statistical significance: $^{***}p<0.01$, $^{**}p<0.05$, $^{*}p<0.10$.",
   "\\end{tablenotes}",
   "\\end{threeparttable}",
   "\\end{table}",

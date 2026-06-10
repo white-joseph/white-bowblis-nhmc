@@ -1,0 +1,43 @@
+\documentclass[12pt]{article}
+
+\usepackage[margin=1in]{geometry}
+\usepackage{booktabs}
+\usepackage{tabularx}
+\usepackage{threeparttable}
+\usepackage{makecell}
+\usepackage{array}
+\usepackage{caption}
+\usepackage{setspace}
+
+\newcolumntype{Y}{>{\centering\arraybackslash}X}
+
+\begin{document}
+
+\begin{table}[!ht]
+\centering
+\begin{threeparttable}
+\caption{Effects of Ownership Change on Occupancy, Payer Mix, and Case Mix}
+\label{tab:composition-checks-monthly}
+\small
+\setlength{\tabcolsep}{6pt}
+\begin{tabularx}{\textwidth}{@{} l Y Y r @{}}
+\toprule
+Outcome & No controls & Controls & Observations \\
+\midrule
+Occupancy rate & \makecell[c]{$\phantom{-}2.649^{***}$ \\ $(0.336)$} & \makecell[c]{$\phantom{-}2.784^{***}$ \\ $(0.343)$} & 626,307 \\
+Medicare share & \makecell[c]{$\phantom{-}1.358^{***}$ \\ $(0.205)$} & \makecell[c]{$\phantom{-}1.223^{***}$ \\ $(0.216)$} & 626,307 \\
+Medicaid share & \makecell[c]{$-0.900$ \\ $(0.557)$} & \makecell[c]{$-1.715^{***}$ \\ $(0.575)$} & 626,307 \\
+Case mix total & \makecell[c]{$\phantom{-}0.044^{***}$ \\ $(0.006)$} & \makecell[c]{$\phantom{-}0.041^{***}$ \\ $(0.006)$} & 438,331 \\
+\bottomrule
+\end{tabularx}
+
+\begin{tablenotes}[flushleft]
+\footnotesize
+\item \textit{Notes:} Each cell reports the coefficient on \textit{post}, with standard errors in parentheses. All models include facility and calendar-month fixed effects. The controls column adds beds, government ownership, nonprofit ownership, and chain affiliation.
+\item Case-mix is restricted to observations from Q2 of 2018 through Q2 of 2023.
+\item Standard errors are clustered two ways by facility and calendar month. Statistical significance: $^{***}p<0.01$, $^{**}p<0.05$, $^{*}p<0.10$.
+\end{tablenotes}
+\end{threeparttable}
+\end{table}
+
+\end{document}
