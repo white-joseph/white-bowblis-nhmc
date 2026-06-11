@@ -40,8 +40,25 @@ DRY_RUN = False
 NAME_STYLE = "yyyy_mm"
 
 TARGET_CODES = {
-    "401", "404", "405", "406", "407", "410",
-    "419", "434", "451", "452", "453", "471"
+    # Long-stay / existing outcomes
+    "401",  # Long-stay ADL decline
+    "404",  # Long-stay weight loss
+    "405",
+    "406",  # Long-stay catheter
+    "407",  # Long-stay UTI
+    "410",  # Long-stay falls with major injury
+    "419",  # Long-stay antipsychotic
+    "451",
+    "452",  # Long-stay hypnotic
+    "453",  # Long-stay pressure injuries
+
+    # Short-stay outcomes / process measures
+    "424",  # Short-stay moderate/severe pain
+    "425",  # Short-stay new/worsened pressure ulcers
+    "430",  # Short-stay pneumococcal vaccine
+    "434",  # Short-stay newly receiving antipsychotic
+    "471",  # Short-stay improved function
+    "472",  # Short-stay influenza vaccine
 }
 
 START_YEAR, START_QUARTER = 2017, 1
