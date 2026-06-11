@@ -13,6 +13,10 @@
 
 \begin{document}
 
+% ---------------------------------------------------------------------------
+% Table 1: Monthly mechanism checks
+% ---------------------------------------------------------------------------
+
 \begin{table}[!ht]
 \centering
 \begin{threeparttable}
@@ -37,6 +41,41 @@ Average length of stay & \makecell[c]{$-11.436^{***}$ \\ $(4.071)$} & \makecell[
 \item \textit{Notes:} Each cell reports the coefficient on \textit{post}, with standard errors in parentheses. All models include facility and calendar-month fixed effects. The controls column adds beds, government ownership, nonprofit ownership, and chain affiliation.
 \item Case mix is restricted to observations from 2018Q2 through 2023Q2.
 \item Standard errors are clustered two ways by facility and calendar month. Statistical significance: $^{***}p<0.01$, $^{**}p<0.05$, $^{*}p<0.10$.
+\end{tablenotes}
+\end{threeparttable}
+\end{table}
+
+\clearpage
+
+% ---------------------------------------------------------------------------
+% Table 2: Short-stay quality checks
+% ---------------------------------------------------------------------------
+
+\begin{table}[!ht]
+\centering
+\begin{threeparttable}
+\caption{Effects of Ownership Change on Short-Stay Quality Measures}
+\label{tab:short-stay-quality-checks}
+\small
+\setlength{\tabcolsep}{6pt}
+\begin{tabularx}{\textwidth}{@{} l Y Y r @{}}
+\toprule
+Outcome & No controls & Controls & Observations \\
+\midrule
+Moderate/severe pain & \makecell[c]{$-1.446^{**}$ \\ $(0.574)$} & \makecell[c]{$-1.624^{**}$ \\ $(0.545)$} & 48,990 \\
+New/worsened pressure ulcers & \makecell[c]{$\phantom{-}0.065$ \\ $(0.087)$} & \makecell[c]{$\phantom{-}0.082$ \\ $(0.092)$} & 41,982 \\
+Pneumococcal vaccine & \makecell[c]{$-3.719^{***}$ \\ $(0.627)$} & \makecell[c]{$-4.636^{***}$ \\ $(0.677)$} & 180,687 \\
+New antipsychotic medication & \makecell[c]{$-0.008$ \\ $(0.043)$} & \makecell[c]{$-0.012$ \\ $(0.048)$} & 149,556 \\
+Improved function & \makecell[c]{$\phantom{-}0.312$ \\ $(0.500)$} & \makecell[c]{$-0.279$ \\ $(0.590)$} & 110,447 \\
+Influenza vaccine & \makecell[c]{$-3.386^{***}$ \\ $(0.609)$} & \makecell[c]{$-3.913^{***}$ \\ $(0.664)$} & 144,903 \\
+\bottomrule
+\end{tabularx}
+
+\begin{tablenotes}[flushleft]
+\footnotesize
+\item \textit{Notes:} Each cell reports the coefficient on \textit{post}, with standard errors in parentheses. All models include facility and calendar-quarter fixed effects. The controls column adds beds, government ownership, nonprofit ownership, chain affiliation, occupancy rate, Medicare share, and Medicaid share when available.
+\item The ownership-change quarter is excluded from the short-stay quality regressions.
+\item Standard errors are clustered two ways by facility and calendar quarter. Statistical significance: $^{***}p<0.01$, $^{**}p<0.05$, $^{*}p<0.10$.
 \end{tablenotes}
 \end{threeparttable}
 \end{table}

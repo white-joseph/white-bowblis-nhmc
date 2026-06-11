@@ -2,14 +2,23 @@
 # composition_checks_monthly_standalone.R
 #
 # Purpose:
-#   Run mechanism/composition checks using the monthly facility panel.
+#   Run mechanism/composition checks using the monthly staffing panel and
+#   short-stay quality checks using the quarterly quality panel.
 #
-# Outcomes:
+# Monthly mechanism outcomes:
 #   1. Occupancy rate
 #   2. Medicare payer mix
 #   3. Medicaid payer mix
 #   4. Case mix total, descriptive only from 2018Q2 through 2023Q2
 #   5. Average length of stay
+#
+# Short-stay quality outcomes:
+#   1. qm_424: Short-stay moderate/severe pain
+#   2. qm_425: Short-stay new/worsened pressure ulcers
+#   3. qm_430: Short-stay pneumococcal vaccine
+#   4. qm_434: Short-stay newly receiving antipsychotic medication
+#   5. qm_471: Short-stay improved function
+#   6. qm_472: Short-stay influenza vaccine
 #
 # Output:
 #   outputs/tables/composition_checks_monthly_standalone.tex
@@ -21,6 +30,7 @@ suppressPackageStartupMessages({
   library(dplyr)
   library(fixest)
   library(stringr)
+  library(readr)
 })
 
 options(scipen = 999, digits = 4)
@@ -45,8 +55,6 @@ if (!("year" %in% names(df))) {
     mutate(year = as.integer(str_sub(as.character(year_month), 1, 4)))
 }
 
-# Create a true monthly date for sample restrictions.
-# The panel writes year_month as YYYY/MM, so replace "/" with "-".
 df <- df %>%
   mutate(
     ym_date = as.Date(
@@ -64,6 +72,28 @@ df_casemix <- df_monthly %>%
     ym_date >= as.Date("2018-04-01"),
     ym_date <= as.Date("2023-06-01")
   )
+
+# -----------------------------------------------------------------------------
+# Load quarterly quality panel
+# -----------------------------------------------------------------------------
+
+quality_fp <- "C:/Repositories/white-bowblis-nhmc/data/clean/quality_panel.csv"
+
+df_quality <- read_csv(quality_fp, show_col_types = FALSE)
+
+df_quality <- df_quality %>%
+  mutate(
+    cms_certification_number = as.character(cms_certification_number),
+    quarter = as.character(quarter),
+    year = as.integer(year),
+    year_quarter = paste0(year, quarter),
+    quarter_index = (year - 2017L) * 4L + as.integer(str_extract(quarter, "[1-4]"))
+  )
+
+# Drop event quarter for the post specification.
+# This is analogous to excluding the transition quarter in your quality models.
+df_quality_post <- df_quality %>%
+  filter(is.na(event_time) | event_time != 0)
 
 # -----------------------------------------------------------------------------
 # Helper functions
@@ -121,8 +151,18 @@ fmt_n <- function(mod) {
   format(nobs(mod), big.mark = ",")
 }
 
+make_row <- function(label, mod_nocontrols, mod_controls) {
+  paste(
+    label,
+    fmt_est(mod_nocontrols),
+    fmt_est(mod_controls),
+    fmt_n(mod_nocontrols),
+    sep = " & "
+  )
+}
+
 # -----------------------------------------------------------------------------
-# Regression specifications
+# Monthly mechanism regressions
 # -----------------------------------------------------------------------------
 
 vc_month <- ~ cms_certification_number + year_month
@@ -167,18 +207,18 @@ m_los_nocontrols <- feols(
 # Controls specification:
 # Do NOT include staffing controls here.
 # Staffing is a main outcome of interest and may itself respond to ownership change.
-controls <- intersect(
+controls_month <- intersect(
   c("beds", "government", "non_profit", "chain"),
   names(df_monthly)
 )
 
-rhs_controls <- paste(c("post", controls), collapse = " + ")
+rhs_controls_month <- paste(c("post", controls_month), collapse = " + ")
 
 m_occ_controls <- feols(
   as.formula(
     paste0(
       "occupancy_rate ~ ",
-      rhs_controls,
+      rhs_controls_month,
       " | cms_certification_number + year_month"
     )
   ),
@@ -191,7 +231,7 @@ m_mcare_controls <- feols(
   as.formula(
     paste0(
       "pct_medicare ~ ",
-      rhs_controls,
+      rhs_controls_month,
       " | cms_certification_number + year_month"
     )
   ),
@@ -204,7 +244,7 @@ m_mcaid_controls <- feols(
   as.formula(
     paste0(
       "pct_medicaid ~ ",
-      rhs_controls,
+      rhs_controls_month,
       " | cms_certification_number + year_month"
     )
   ),
@@ -217,7 +257,7 @@ m_casemix_controls <- feols(
   as.formula(
     paste0(
       "case_mix_total ~ ",
-      rhs_controls,
+      rhs_controls_month,
       " | cms_certification_number + year_month"
     )
   ),
@@ -230,7 +270,7 @@ m_los_controls <- feols(
   as.formula(
     paste0(
       "avg_los_total ~ ",
-      rhs_controls,
+      rhs_controls_month,
       " | cms_certification_number + year_month"
     )
   ),
@@ -242,8 +282,6 @@ m_los_controls <- feols(
 # -----------------------------------------------------------------------------
 # Economic significance for case mix
 # -----------------------------------------------------------------------------
-# This is not printed to the table, but is useful to have in the environment.
-# You can inspect these after running the script.
 
 case_mix_mean <- mean(df_casemix$case_mix_total, na.rm = TRUE)
 
@@ -254,48 +292,123 @@ case_mix_pct_change_nocontrols <- 100 * case_mix_coef_nocontrols / case_mix_mean
 case_mix_pct_change_controls   <- 100 * case_mix_coef_controls / case_mix_mean
 
 # -----------------------------------------------------------------------------
-# Build standalone LaTeX document
+# Short-stay quality regressions
 # -----------------------------------------------------------------------------
 
-row_occ <- paste(
+vc_quarter <- ~ cms_certification_number + year_quarter
+
+controls_quality <- intersect(
+  c(
+    "beds",
+    "government",
+    "non_profit",
+    "chain",
+    "occupancy_rate",
+    "pct_medicare",
+    "pct_medicaid"
+  ),
+  names(df_quality_post)
+)
+
+rhs_controls_quality <- paste(c("post", controls_quality), collapse = " + ")
+
+run_quality_nocontrols <- function(outcome) {
+  feols(
+    as.formula(
+      paste0(
+        outcome,
+        " ~ post | cms_certification_number + year_quarter"
+      )
+    ),
+    data = df_quality_post,
+    vcov = vc_quarter,
+    lean = FALSE
+  )
+}
+
+run_quality_controls <- function(outcome) {
+  feols(
+    as.formula(
+      paste0(
+        outcome,
+        " ~ ",
+        rhs_controls_quality,
+        " | cms_certification_number + year_quarter"
+      )
+    ),
+    data = df_quality_post,
+    vcov = vc_quarter,
+    lean = FALSE
+  )
+}
+
+short_stay_specs <- tibble::tribble(
+  ~outcome, ~label, ~direction,
+  "qm_424", "Moderate/severe pain", "Lower is better",
+  "qm_425", "New/worsened pressure ulcers", "Lower is better",
+  "qm_430", "Pneumococcal vaccine", "Higher is better",
+  "qm_434", "New antipsychotic medication", "Lower is better",
+  "qm_471", "Improved function", "Higher is better",
+  "qm_472", "Influenza vaccine", "Higher is better"
+) %>%
+  filter(outcome %in% names(df_quality_post))
+
+short_stay_models <- short_stay_specs %>%
+  rowwise() %>%
+  mutate(
+    mod_nocontrols = list(run_quality_nocontrols(outcome)),
+    mod_controls = list(run_quality_controls(outcome)),
+    row = make_row(label, mod_nocontrols, mod_controls)
+  ) %>%
+  ungroup()
+
+# -----------------------------------------------------------------------------
+# Build table rows
+# -----------------------------------------------------------------------------
+
+row_occ <- make_row(
   "Occupancy rate",
-  fmt_est(m_occ_nocontrols),
-  fmt_est(m_occ_controls),
-  fmt_n(m_occ_nocontrols),
-  sep = " & "
+  m_occ_nocontrols,
+  m_occ_controls
 )
 
-row_mcare <- paste(
+row_mcare <- make_row(
   "Medicare share",
-  fmt_est(m_mcare_nocontrols),
-  fmt_est(m_mcare_controls),
-  fmt_n(m_mcare_nocontrols),
-  sep = " & "
+  m_mcare_nocontrols,
+  m_mcare_controls
 )
 
-row_mcaid <- paste(
+row_mcaid <- make_row(
   "Medicaid share",
-  fmt_est(m_mcaid_nocontrols),
-  fmt_est(m_mcaid_controls),
-  fmt_n(m_mcaid_nocontrols),
-  sep = " & "
+  m_mcaid_nocontrols,
+  m_mcaid_controls
 )
 
-row_casemix <- paste(
+row_casemix <- make_row(
   "Case mix total",
-  fmt_est(m_casemix_nocontrols),
-  fmt_est(m_casemix_controls),
-  fmt_n(m_casemix_nocontrols),
-  sep = " & "
+  m_casemix_nocontrols,
+  m_casemix_controls
 )
 
-row_los <- paste(
+row_los <- make_row(
   "Average length of stay",
-  fmt_est(m_los_nocontrols),
-  fmt_est(m_los_controls),
-  fmt_n(m_los_nocontrols),
-  sep = " & "
+  m_los_nocontrols,
+  m_los_controls
 )
+
+short_stay_table_rows <- paste0(short_stay_models$row, " \\\\")
+
+short_stay_direction_lines <- paste0(
+  "\\item ",
+  short_stay_models$label,
+  ": ",
+  short_stay_models$direction,
+  "."
+)
+
+# -----------------------------------------------------------------------------
+# Build standalone LaTeX document
+# -----------------------------------------------------------------------------
 
 tex_lines <- c(
   "\\documentclass[12pt]{article}",
@@ -312,6 +425,10 @@ tex_lines <- c(
   "\\newcolumntype{Y}{>{\\centering\\arraybackslash}X}",
   "",
   "\\begin{document}",
+  "",
+  "% ---------------------------------------------------------------------------",
+  "% Table 1: Monthly mechanism checks",
+  "% ---------------------------------------------------------------------------",
   "",
   "\\begin{table}[!ht]",
   "\\centering",
@@ -341,7 +458,48 @@ tex_lines <- c(
   "\\end{threeparttable}",
   "\\end{table}",
   "",
+  "\\clearpage",
+  "",
+  "% ---------------------------------------------------------------------------",
+  "% Table 2: Short-stay quality checks",
+  "% ---------------------------------------------------------------------------",
+  "",
+  "\\begin{table}[!ht]",
+  "\\centering",
+  "\\begin{threeparttable}",
+  "\\caption{Effects of Ownership Change on Short-Stay Quality Measures}",
+  "\\label{tab:short-stay-quality-checks}",
+  "\\small",
+  "\\setlength{\\tabcolsep}{6pt}",
+  "\\begin{tabularx}{\\textwidth}{@{} l Y Y r @{}}",
+  "\\toprule",
+  "Outcome & No controls & Controls & Observations \\\\",
+  "\\midrule",
+  short_stay_table_rows,
+  "\\bottomrule",
+  "\\end{tabularx}",
+  "",
+  "\\begin{tablenotes}[flushleft]",
+  "\\footnotesize",
+  "\\item \\textit{Notes:} Each cell reports the coefficient on \\textit{post}, with standard errors in parentheses. All models include facility and calendar-quarter fixed effects. The controls column adds beds, government ownership, nonprofit ownership, chain affiliation, occupancy rate, Medicare share, and Medicaid share when available.",
+  "\\item The ownership-change quarter is excluded from the short-stay quality regressions.",
+  "\\item Standard errors are clustered two ways by facility and calendar quarter. Statistical significance: $^{***}p<0.01$, $^{**}p<0.05$, $^{*}p<0.10$.",
+  "\\end{tablenotes}",
+  "\\end{threeparttable}",
+  "\\end{table}",
+  "",
   "\\end{document}"
 )
 
 writeLines(tex_lines, tex_out_fp)
+
+# -----------------------------------------------------------------------------
+# Console summary
+# -----------------------------------------------------------------------------
+
+cat("\\nSaved table to:\\n")
+cat(tex_out_fp, "\\n\\n")
+
+cat("Case-mix mean:", round(case_mix_mean, 3), "\\n")
+cat("Case-mix percent change, no controls:", round(case_mix_pct_change_nocontrols, 3), "\\n")
+cat("Case-mix percent change, controls:", round(case_mix_pct_change_controls, 3), "\\n")
