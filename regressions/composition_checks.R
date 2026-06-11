@@ -2,18 +2,14 @@
 # composition_checks_monthly_standalone.R
 #
 # Purpose:
-#   Run composition checks using the monthly facility panel.
+#   Run mechanism/composition checks using the monthly facility panel.
 #
 # Outcomes:
 #   1. Occupancy rate
 #   2. Medicare payer mix
 #   3. Medicaid payer mix
-#   4. Case mix total, descriptive only through 2023Q2
-#
-# Notes:
-#   Occupancy is measured monthly.
-#   Payer-mix variables are cost-report-period measures merged to the monthly panel.
-#   Case mix is included descriptively and restricted through 2023Q2.
+#   4. Case mix total, descriptive only from 2018Q2 through 2023Q2
+#   5. Average length of stay
 #
 # Output:
 #   outputs/tables/composition_checks_monthly_standalone.tex
@@ -49,7 +45,8 @@ if (!("year" %in% names(df))) {
     mutate(year = as.integer(str_sub(as.character(year_month), 1, 4)))
 }
 
-# Create a true monthly date for sample restrictions
+# Create a true monthly date for sample restrictions.
+# The panel writes year_month as YYYY/MM, so replace "/" with "-".
 df <- df %>%
   mutate(
     ym_date = as.Date(
@@ -57,11 +54,11 @@ df <- df %>%
     )
   )
 
-# Use same pre-closing adjustment window exclusion as the main staffing models
+# Use same pre-closing adjustment window exclusion as the main staffing models.
 df_monthly <- drop_anticipation_window(df)
 
 # Case-mix descriptive sample:
-# Restrict through 2023Q2, i.e. through June 2023.
+# Restrict to 2018Q2 through 2023Q2.
 df_casemix <- df_monthly %>%
   filter(
     ym_date >= as.Date("2018-04-01"),
@@ -160,6 +157,13 @@ m_casemix_nocontrols <- feols(
   lean = FALSE
 )
 
+m_los_nocontrols <- feols(
+  avg_los_total ~ post | cms_certification_number + year_month,
+  data = df_monthly,
+  vcov = vc_month,
+  lean = FALSE
+)
+
 # Controls specification:
 # Do NOT include staffing controls here.
 # Staffing is a main outcome of interest and may itself respond to ownership change.
@@ -222,6 +226,33 @@ m_casemix_controls <- feols(
   lean = FALSE
 )
 
+m_los_controls <- feols(
+  as.formula(
+    paste0(
+      "avg_los_total ~ ",
+      rhs_controls,
+      " | cms_certification_number + year_month"
+    )
+  ),
+  data = df_monthly,
+  vcov = vc_month,
+  lean = FALSE
+)
+
+# -----------------------------------------------------------------------------
+# Economic significance for case mix
+# -----------------------------------------------------------------------------
+# This is not printed to the table, but is useful to have in the environment.
+# You can inspect these after running the script.
+
+case_mix_mean <- mean(df_casemix$case_mix_total, na.rm = TRUE)
+
+case_mix_coef_nocontrols <- coef(m_casemix_nocontrols)["post"]
+case_mix_coef_controls   <- coef(m_casemix_controls)["post"]
+
+case_mix_pct_change_nocontrols <- 100 * case_mix_coef_nocontrols / case_mix_mean
+case_mix_pct_change_controls   <- 100 * case_mix_coef_controls / case_mix_mean
+
 # -----------------------------------------------------------------------------
 # Build standalone LaTeX document
 # -----------------------------------------------------------------------------
@@ -258,6 +289,14 @@ row_casemix <- paste(
   sep = " & "
 )
 
+row_los <- paste(
+  "Average length of stay",
+  fmt_est(m_los_nocontrols),
+  fmt_est(m_los_controls),
+  fmt_n(m_los_nocontrols),
+  sep = " & "
+)
+
 tex_lines <- c(
   "\\documentclass[12pt]{article}",
   "",
@@ -277,7 +316,7 @@ tex_lines <- c(
   "\\begin{table}[!ht]",
   "\\centering",
   "\\begin{threeparttable}",
-  "\\caption{Effects of Ownership Change on Occupancy, Payer Mix, and Case Mix}",
+  "\\caption{Effects of Ownership Change on Occupancy, Payer Mix, Case Mix, and Length of Stay}",
   "\\label{tab:composition-checks-monthly}",
   "\\small",
   "\\setlength{\\tabcolsep}{6pt}",
@@ -289,13 +328,14 @@ tex_lines <- c(
   paste0(row_mcare, " \\\\"),
   paste0(row_mcaid, " \\\\"),
   paste0(row_casemix, " \\\\"),
+  paste0(row_los, " \\\\"),
   "\\bottomrule",
   "\\end{tabularx}",
   "",
   "\\begin{tablenotes}[flushleft]",
   "\\footnotesize",
   "\\item \\textit{Notes:} Each cell reports the coefficient on \\textit{post}, with standard errors in parentheses. All models include facility and calendar-month fixed effects. The controls column adds beds, government ownership, nonprofit ownership, and chain affiliation.",
-  "\\item Case-mix is restricted to observations from Q2 of 2018 through Q2 of 2023.",
+  "\\item Case mix is restricted to observations from 2018Q2 through 2023Q2.",
   "\\item Standard errors are clustered two ways by facility and calendar month. Statistical significance: $^{***}p<0.01$, $^{**}p<0.05$, $^{*}p<0.10$.",
   "\\end{tablenotes}",
   "\\end{threeparttable}",
