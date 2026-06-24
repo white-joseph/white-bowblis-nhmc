@@ -17,7 +17,7 @@ suppressPackageStartupMessages({
 
 # ------------------------------ Plot font (Times / newtx-like) ------------------------------
 set_plot_font <- function() {
-  fam <- "Times New Roman"
+  fam <- "Helvetica"
   par(family = fam)
 }
 set_plot_font()
