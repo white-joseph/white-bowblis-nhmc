@@ -1,0 +1,35 @@
+\documentclass[11pt]{article}
+\usepackage[margin=1in]{geometry}
+\usepackage{booktabs}
+\usepackage{tabularx}
+\usepackage{threeparttable}
+\usepackage{makecell}
+\usepackage{array}
+\usepackage{caption}
+\newcolumntype{Y}{>{\centering\arraybackslash}X}
+\begin{document}
+\begin{table}[!ht]
+\centering
+\begin{threeparttable}
+\caption{Spare Capacity and Occupancy Response to Ownership Change: Near-Capacity vs. Slack-Capacity Acquisitions}
+\label{tab:spare-capacity-near-vs-slack-static}
+\small
+\setlength{\tabcolsep}{6pt}
+\begin{tabularx}{\textwidth}{@{} l Y Y Y r @{}}
+\toprule
+Outcome & Slack-capacity: post & Difference (Near $-$ Slack) & Near-capacity effect & Observations \\
+\midrule
+Spare capacity & \makecell[c]{$-0.0423^{***}$ \\ $(0.0057)$} & \makecell[c]{$\phantom{-}0.0238^{***}$ \\ $(0.0066)$} & \makecell[c]{$-0.0185^{***}$ \\ $(0.0048)$} & 117,863 \\
+Occupancy rate & \makecell[c]{$\phantom{-}4.1610^{***}$ \\ $(0.5692)$} & \makecell[c]{$-2.3312^{***}$ \\ $(0.6562)$} & \makecell[c]{$\phantom{-}1.8298^{***}$ \\ $(0.4793)$} & 117,863 \\
+\bottomrule
+\end{tabularx}
+\begin{tablenotes}[flushleft]
+\footnotesize
+\item \textit{Notes:} Sample restricted to ever-treated (CHOW) facilities, split at the median pre-acquisition spare capacity (average spare capacity over event\_time $\in [-12,-4]$, prior to the anticipation window).
+\item Near-capacity $=$ baseline spare capacity $\leq$ 0.261 (median); Slack-capacity $=$ above. $N = 1443$ treated facilities with a usable baseline (722 near-capacity, 721 slack-capacity).
+\item Controls exclude occupancy rate and spare capacity from each other's control set (they are near-collinear). All models include facility and calendar-month fixed effects; anticipation window excluded.
+\item Standard errors are clustered two ways by facility and calendar month. Statistical significance: $^{***}p<0.01$, $^{**}p<0.05$, $^{*}p<0.10$.
+\end{tablenotes}
+\end{threeparttable}
+\end{table}
+\end{document}

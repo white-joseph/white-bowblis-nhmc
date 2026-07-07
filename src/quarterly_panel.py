@@ -347,6 +347,7 @@ want_cols = [
     "chain",
     "num_beds",
     "occupancy_rate",
+    "spare_capacity",
     "pct_medicare",
     "pct_medicaid",
     "state",
@@ -377,7 +378,7 @@ if "state" in panel.columns:
 
 for c in [
     "rn_hprd", "lpn_hprd", "cna_hprd", "total_hprd",
-    "coverage_ratio", "occupancy_rate", "pct_medicare", "pct_medicaid",
+    "coverage_ratio", "occupancy_rate", "spare_capacity", "pct_medicare", "pct_medicaid",
     "num_beds", "beds_prov", "beds"
 ]:
     if c in panel.columns:
@@ -423,6 +424,9 @@ if "provider_resides_in_hospital" in panel.columns:
 for c in ["pct_medicare", "pct_medicaid", "occupancy_rate"]:
     if c in panel.columns:
         panel[c] = pd.to_numeric(panel[c], errors="coerce").clip(0, 100)
+
+if "spare_capacity" in panel.columns:
+    panel["spare_capacity"] = pd.to_numeric(panel["spare_capacity"], errors="coerce").clip(0, 1)
 
 if "coverage_ratio" in panel.columns:
     panel["coverage_ratio"] = pd.to_numeric(panel["coverage_ratio"], errors="coerce").clip(0, 1)

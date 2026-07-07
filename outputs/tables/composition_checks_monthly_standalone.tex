@@ -8,10 +8,52 @@
 \usepackage{array}
 \usepackage{caption}
 \usepackage{setspace}
+\usepackage{graphicx}
 
 \newcolumntype{Y}{>{\centering\arraybackslash}X}
 
 \begin{document}
+
+% ---------------------------------------------------------------------------
+% Distribution of spare capacity
+% ---------------------------------------------------------------------------
+
+\begin{figure}[!ht]
+\centering
+\includegraphics[width=0.8\textwidth]{C:/Repositories/white-bowblis-nhmc/outputs/plots/spare_capacity_hist_mechanism.png}
+\caption{Distribution of Spare Capacity (Facility-Months)}
+\label{fig:spare-capacity-hist}
+\end{figure}
+
+\begin{table}[!ht]
+\centering
+\begin{threeparttable}
+\caption{Summary Statistics: Spare Capacity}
+\label{tab:spare-capacity-summary}
+\small
+\begin{tabular}{l r}
+\toprule
+Statistic & Value \\
+\midrule
+N (facility-months) & 626,311 \\
+Mean & 0.236 \\
+SD & 0.155 \\
+P10 & 0.066 \\
+P25 & 0.111 \\
+Median & 0.203 \\
+P75 & 0.329 \\
+P90 & 0.457 \\
+Max & 0.999 \\
+\bottomrule
+\end{tabular}
+\begin{tablenotes}[flushleft]
+\footnotesize
+\item \textit{Notes:} Spare capacity is defined as (certified beds $-$ average daily census) / certified beds, computed from Medicare Cost Report data. Sample excludes the anticipation window used in the main staffing models.
+\end{tablenotes}
+\end{threeparttable}
+\end{table}
+
+\clearpage
 
 % ---------------------------------------------------------------------------
 % Table 1: Monthly mechanism checks
@@ -20,7 +62,7 @@
 \begin{table}[!ht]
 \centering
 \begin{threeparttable}
-\caption{Effects of Ownership Change on Occupancy, Payer Mix, Case Mix, and Length of Stay}
+\caption{Effects of Ownership Change on Occupancy, Payer Mix, Spare Capacity, and Length of Stay}
 \label{tab:composition-checks-monthly}
 \small
 \setlength{\tabcolsep}{6pt}
@@ -31,7 +73,7 @@ Outcome & No controls & Controls & Observations \\
 Occupancy rate & \makecell[c]{$\phantom{-}2.649^{***}$ \\ $(0.336)$} & \makecell[c]{$\phantom{-}2.784^{***}$ \\ $(0.343)$} & 626,307 \\
 Medicare share & \makecell[c]{$\phantom{-}1.358^{***}$ \\ $(0.205)$} & \makecell[c]{$\phantom{-}1.223^{***}$ \\ $(0.216)$} & 626,307 \\
 Medicaid share & \makecell[c]{$-0.900$ \\ $(0.557)$} & \makecell[c]{$-1.715^{***}$ \\ $(0.575)$} & 626,307 \\
-Case mix total & \makecell[c]{$\phantom{-}0.044^{***}$ \\ $(0.006)$} & \makecell[c]{$\phantom{-}0.041^{***}$ \\ $(0.006)$} & 438,331 \\
+Spare capacity & \makecell[c]{$-0.026^{***}$ \\ $(0.003)$} & \makecell[c]{$-0.028^{***}$ \\ $(0.003)$} & 626,307 \\
 Average length of stay & \makecell[c]{$-11.436^{***}$ \\ $(4.071)$} & \makecell[c]{$-13.559^{***}$ \\ $(4.513)$} & 614,480 \\
 \bottomrule
 \end{tabularx}
@@ -39,7 +81,7 @@ Average length of stay & \makecell[c]{$-11.436^{***}$ \\ $(4.071)$} & \makecell[
 \begin{tablenotes}[flushleft]
 \footnotesize
 \item \textit{Notes:} Each cell reports the coefficient on \textit{post}, with standard errors in parentheses. All models include facility and calendar-month fixed effects. The controls column adds beds, government ownership, nonprofit ownership, and chain affiliation.
-\item Case mix is restricted to observations from 2018Q2 through 2023Q2.
+\item Spare capacity mean is 0.236; the no-controls coefficient implies a -11.1\% change relative to the mean, and the controls specification implies a -11.7\% change.
 \item Standard errors are clustered two ways by facility and calendar month. Statistical significance: $^{***}p<0.01$, $^{**}p<0.05$, $^{*}p<0.10$.
 \end{tablenotes}
 \end{threeparttable}

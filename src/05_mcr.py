@@ -395,6 +395,29 @@ def build_monthly_from_raw():
         errors="coerce",
     ).clip(0, 100)
 
+    # ---------------- Spare capacity ----------------
+    # (certified beds - residents) / certified beds, using TOTAL CERTIFIED BEDS
+    # (S3_1_beds / num_beds) as the denominator -- NOT beddays_available.
+    # "Residents" = average daily census implied by the cost report
+    # (patient days / calendar days in the fiscal year), since MCR does not
+    # report a daily census directly. This differs from occupancy_rate
+    # whenever BEDDAYS_AVAIL != num_beds * fy_days (e.g. beds added/removed
+    # mid-year), which is why it is NOT simply 1 - occupancy_rate/100.
+    avg_daily_census_fy = np.where(
+        raw["PAT_DAYS_TOT"].notna() & fy_days.notna() & (fy_days > 0),
+        raw["PAT_DAYS_TOT"] / fy_days,
+        np.nan,
+    )
+
+    raw["spare_capacity"] = pd.to_numeric(
+        np.where(
+            raw["num_beds"].notna() & (raw["num_beds"] > 0) & ~np.isnan(avg_daily_census_fy),
+            (raw["num_beds"] - avg_daily_census_fy) / raw["num_beds"],
+            np.nan,
+        ),
+        errors="coerce",
+    ).clip(0, 1)
+
     # Shares
     raw["pct_medicare"] = _share(raw["PAT_DAYS_MCR"], raw["PAT_DAYS_TOT"]).clip(0, 100)
     raw["pct_medicaid"] = _share(raw["PAT_DAYS_MCD"], raw["PAT_DAYS_TOT"]).clip(0, 100)
@@ -428,6 +451,7 @@ def build_monthly_from_raw():
         block["chain"] = getattr(r, "chain", pd.NA)
         block["num_beds"] = getattr(r, "num_beds", np.nan)
         block["occupancy_rate"] = getattr(r, "occupancy_rate", np.nan)
+        block["spare_capacity"] = getattr(r, "spare_capacity", np.nan)
         block["pct_medicare"] = getattr(r, "pct_medicare", np.nan)
         block["pct_medicaid"] = getattr(r, "pct_medicaid", np.nan)
         block["avg_los_total"] = getattr(r, "avg_los_total", np.nan)
@@ -448,6 +472,7 @@ def build_monthly_from_raw():
                 "chain",
                 "num_beds",
                 "occupancy_rate",
+                "spare_capacity",
                 "pct_medicare",
                 "pct_medicaid",
                 "avg_los_total",
@@ -469,6 +494,7 @@ def build_monthly_from_raw():
                 "chain": "max",
                 "num_beds": "mean",
                 "occupancy_rate": "mean",
+                "spare_capacity": "mean",
                 "pct_medicare": "mean",
                 "pct_medicaid": "mean",
                 "avg_los_total": "mean",
@@ -497,6 +523,9 @@ def build_monthly_from_raw():
     # Coerce numeric ranges/types
     for c in ["pct_medicare", "pct_medicaid", "occupancy_rate"]:
         monthly[c] = pd.to_numeric(monthly[c], errors="coerce").clip(0, 100)
+
+    if "spare_capacity" in monthly.columns:
+        monthly["spare_capacity"] = pd.to_numeric(monthly["spare_capacity"], errors="coerce").clip(0, 1)
     
     for c in ["avg_los_total", "avg_los_medicare", "avg_los_medicaid"]:
         monthly[c] = pd.to_numeric(monthly[c], errors="coerce")
@@ -515,6 +544,7 @@ def build_monthly_from_raw():
         "avg_los_medicaid",
         "num_beds",
         "occupancy_rate",
+        "spare_capacity",
         "urban",
         "chain",
         "state",
@@ -568,6 +598,7 @@ def build_quarterly_from_monthly():
         "avg_los_medicaid",
         "num_beds",
         "occupancy_rate",
+        "spare_capacity",
     ]:
         if col in monthly.columns:
             monthly[col] = pd.to_numeric(monthly[col], errors="coerce")
@@ -596,6 +627,7 @@ def build_quarterly_from_monthly():
             avg_los_medicaid=("avg_los_medicaid", lambda s: mode_with_last_tiebreak(s, round_digits=4)),
             num_beds=("num_beds", lambda s: mode_with_last_tiebreak(s, round_digits=0)),
             occupancy_rate=("occupancy_rate", lambda s: mode_with_last_tiebreak(s, round_digits=4)),
+            spare_capacity=("spare_capacity", lambda s: mode_with_last_tiebreak(s, round_digits=4)),
             urban=("urban", mode_with_last_tiebreak),
             chain=("chain", mode_with_last_tiebreak),
             state=("state", mode_with_last_tiebreak),
@@ -612,6 +644,7 @@ def build_quarterly_from_monthly():
             avg_los_medicaid_mode_share=("avg_los_medicaid", lambda s: mode_share(s, round_digits=4)),
             num_beds_mode_share=("num_beds", lambda s: mode_share(s, round_digits=0)),
             occupancy_rate_mode_share=("occupancy_rate", lambda s: mode_share(s, round_digits=4)),
+            spare_capacity_mode_share=("spare_capacity", lambda s: mode_share(s, round_digits=4)),
             urban_mode_share=("urban", mode_share),
             chain_mode_share=("chain", mode_share),
             state_mode_share=("state", mode_share),
@@ -625,6 +658,7 @@ def build_quarterly_from_monthly():
             avg_los_medicaid_disagreement=("avg_los_medicaid", lambda s: disagreement_flag(s, round_digits=4)),
             num_beds_disagreement=("num_beds", lambda s: disagreement_flag(s, round_digits=0)),
             occupancy_rate_disagreement=("occupancy_rate", lambda s: disagreement_flag(s, round_digits=4)),
+            spare_capacity_disagreement=("spare_capacity", lambda s: disagreement_flag(s, round_digits=4)),
             urban_disagreement=("urban", disagreement_flag),
             chain_disagreement=("chain", disagreement_flag),
             state_disagreement=("state", disagreement_flag),
@@ -638,6 +672,9 @@ def build_quarterly_from_monthly():
     for col in ["pct_medicare", "pct_medicaid", "num_beds", "occupancy_rate"]:
         if col in qtr.columns:
             qtr[col] = pd.to_numeric(qtr[col], errors="coerce")
+
+    if "spare_capacity" in qtr.columns:
+        qtr["spare_capacity"] = pd.to_numeric(qtr["spare_capacity"], errors="coerce").clip(0, 1)
 
     for col in ["urban", "chain", "non_profit", "government"]:
         if col in qtr.columns:
@@ -655,6 +692,7 @@ def build_quarterly_from_monthly():
         "pct_medicaid_mode_share",
         "num_beds_mode_share",
         "occupancy_rate_mode_share",
+        "spare_capacity_mode_share",
         "urban_mode_share",
         "chain_mode_share",
         "state_mode_share",
@@ -669,6 +707,7 @@ def build_quarterly_from_monthly():
         "pct_medicaid_disagreement",
         "num_beds_disagreement",
         "occupancy_rate_disagreement",
+        "spare_capacity_disagreement",
         "urban_disagreement",
         "chain_disagreement",
         "state_disagreement",
@@ -694,7 +733,8 @@ def build_quarterly_from_monthly():
         "[qa-quarterly] unique_ccn="
         f"{qtr['cms_certification_number'].nunique(dropna=True):,}, "
         f"missing_num_beds={int(qtr['num_beds'].isna().sum()) if 'num_beds' in qtr.columns else 0:,}, "
-        f"missing_occupancy_rate={int(qtr['occupancy_rate'].isna().sum()) if 'occupancy_rate' in qtr.columns else 0:,}"
+        f"missing_occupancy_rate={int(qtr['occupancy_rate'].isna().sum()) if 'occupancy_rate' in qtr.columns else 0:,}, "
+        f"missing_spare_capacity={int(qtr['spare_capacity'].isna().sum()) if 'spare_capacity' in qtr.columns else 0:,}"
     )
 
 

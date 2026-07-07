@@ -239,6 +239,7 @@ def finalize_regression_panel(df: pd.DataFrame) -> pd.DataFrame:
     # ---------- make key continuous vars numeric ----------
     for col in [
         "occupancy_rate",
+        "spare_capacity",
         "pct_medicare",
         "pct_medicaid",
         "avg_los_total",
@@ -253,6 +254,10 @@ def finalize_regression_panel(df: pd.DataFrame) -> pd.DataFrame:
     if "occupancy_rate" in panel.columns:
         panel["occupancy_rate"] = g["occupancy_rate"].transform(interp_within_fac)
 
+    # ---------- spare capacity: within-facility interpolation ----------
+    if "spare_capacity" in panel.columns:
+        panel["spare_capacity"] = g["spare_capacity"].transform(interp_within_fac)
+
     # ---------- shares: within-facility interpolation ----------
     for col in ["pct_medicare", "pct_medicaid"]:
         if col in panel.columns:
@@ -263,13 +268,14 @@ def finalize_regression_panel(df: pd.DataFrame) -> pd.DataFrame:
     if have_state:
         sm = (
             panel.groupby(["state", "year_month"], dropna=False)[
-                ["occupancy_rate", "pct_medicare", "pct_medicaid"]
+                ["occupancy_rate", "spare_capacity", "pct_medicare", "pct_medicaid"]
             ]
             .median()
             .reset_index()
             .rename(
                 columns={
                     "occupancy_rate": "occupancy_rate_sm",
+                    "spare_capacity": "spare_capacity_sm",
                     "pct_medicare": "pct_medicare_sm",
                     "pct_medicaid": "pct_medicaid_sm",
                 }
@@ -278,11 +284,13 @@ def finalize_regression_panel(df: pd.DataFrame) -> pd.DataFrame:
         panel = panel.merge(sm, on=["state", "year_month"], how="left")
     else:
         panel["occupancy_rate_sm"] = np.nan
+        panel["spare_capacity_sm"] = np.nan
         panel["pct_medicare_sm"] = np.nan
         panel["pct_medicaid_sm"] = np.nan
 
     # ---------- national medians ----------
     nat_occ = pd.to_numeric(panel.get("occupancy_rate"), errors="coerce").median(skipna=True)
+    nat_spare = pd.to_numeric(panel.get("spare_capacity"), errors="coerce").median(skipna=True)
     nat_mcr = pd.to_numeric(panel.get("pct_medicare"), errors="coerce").median(skipna=True)
     nat_mcd = pd.to_numeric(panel.get("pct_medicaid"), errors="coerce").median(skipna=True)
 
@@ -295,6 +303,16 @@ def finalize_regression_panel(df: pd.DataFrame) -> pd.DataFrame:
         if m.any():
             panel.loc[m, "occupancy_rate"] = nat_occ
         panel["occupancy_rate"] = pd.to_numeric(panel["occupancy_rate"], errors="coerce").clip(0, 100)
+
+    # ---------- apply spare capacity fallbacks ----------
+    if "spare_capacity" in panel.columns:
+        m = panel["spare_capacity"].isna()
+        if m.any():
+            panel.loc[m, "spare_capacity"] = panel.loc[m, "spare_capacity_sm"]
+        m = panel["spare_capacity"].isna()
+        if m.any():
+            panel.loc[m, "spare_capacity"] = nat_spare
+        panel["spare_capacity"] = pd.to_numeric(panel["spare_capacity"], errors="coerce").clip(0, 1)
 
     # ---------- fallback to state×month, then national ----------
     if "pct_medicare" in panel.columns:
@@ -345,6 +363,7 @@ def finalize_regression_panel(df: pd.DataFrame) -> pd.DataFrame:
     # ---------- final typing ----------
     for c in [
         "occupancy_rate",
+        "spare_capacity",
         "pct_medicare",
         "pct_medicaid",
         "avg_los_total",
@@ -356,7 +375,7 @@ def finalize_regression_panel(df: pd.DataFrame) -> pd.DataFrame:
             panel[c] = pd.to_numeric(panel[c], errors="coerce")
 
     panel = panel.drop(
-        columns=["_ord", "occupancy_rate_sm", "pct_medicare_sm", "pct_medicaid_sm"],
+        columns=["_ord", "occupancy_rate_sm", "spare_capacity_sm", "pct_medicare_sm", "pct_medicaid_sm"],
         errors="ignore",
     )
     panel = panel.sort_values(
@@ -510,6 +529,7 @@ want_cols = [
     "ccrc_facility",
     "sff_facility",
     "occupancy_rate",
+    "spare_capacity",
     "pct_medicare",
     "pct_medicaid",
     "avg_los_total",
@@ -558,6 +578,7 @@ numeric_quarter_fill = [
     "num_beds",
     "beds_prov",
     "occupancy_rate",
+    "spare_capacity",
     "pct_medicare",
     "pct_medicaid",
     "avg_los_total",
@@ -590,6 +611,7 @@ bridge_numeric = [
         "num_beds",
         "beds_prov",
         "occupancy_rate",
+        "spare_capacity",
         "pct_medicare",
         "pct_medicaid",
         "avg_los_total",
@@ -647,6 +669,7 @@ for c in [
     "beds_prov",
     "beds",
     "occupancy_rate",
+    "spare_capacity",
     "pct_medicare",
     "pct_medicaid",
     "avg_los_total",
