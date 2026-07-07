@@ -3,7 +3,6 @@
 \usepackage{amsmath,amssymb,amsfonts}
 \usepackage{eurosym}
 \usepackage[margin=1in,top=1in,bottom=1in]{geometry}
-
 \usepackage{booktabs}
 \usepackage{tabularx}
 \usepackage{threeparttable}
@@ -127,13 +126,9 @@ Distinguishing among these possibilities requires examining both inputs and outc
 
 Ownership changes are not random events, which creates an important empirical challenge. Facilities that change owners may differ from those that do not, and the conditions leading to a sale may also shape subsequent staffing and quality. Our analysis therefore focuses on within-facility changes around transfers of control rather than cross-sectional differences between facilities with different owners. In a staggered difference-in-differences event-study design, facilities are compared to themselves before and after ownership change, relative to contemporaneous changes among facilities that have not yet changed ownership or do not change ownership during the sample period. This design does not eliminate all concerns about endogenous timing, but it allows us to ask a more specific question: how do staffing and quality evolve when control of an existing facility changes hands?
 
-\todo[color = pastelyellow]{this paragraph feels a little awkward, but I know I have to address this}
-
 This paper contributes to a growing literature on ownership, consolidation, and quality in health care. Prior work emphasizes that mergers and ownership changes can affect provider behavior through several channels, including market power, economies of scale, financial incentives, organizational restructuring, and changes in workforce composition. Much of the existing evidence focuses on hospital mergers, physician-practice consolidation, private equity acquisitions, or differences across ownership forms. These studies show that the effects of ownership and consolidation on quality are often mixed and context-dependent. Some mergers appear to reduce capacity without improving productivity or quality; others improve management or quality measures while worsening patient experience or leaving broader clinical outcomes unchanged. This evidence suggests that ownership changes should not be understood only as changes in market structure. They may also operate through internal production decisions.
 
 Nursing homes are a particularly useful setting for studying these internal production channels. The sector is labor intensive, heavily regulated, and financed largely through public reimbursement. Because prices are constrained, staffing and care routines are natural margins of adjustment. Nursing home ownership has also been a persistent policy concern. Prior work finds that ownership form, chain affiliation, private equity ownership, and public reporting can affect staffing, quality, and resident outcomes. However, less is known about what happens when control of an existing nursing home changes hands while the facility itself remains in the same market. This distinction matters. A transfer of control does not necessarily alter the local set of providers, but it may change the decision-maker responsible for staffing levels, staffing mix, monitoring systems, medication management, documentation, and other care routines.
-
-\todo[inline, color=pastelyellow]{Possibly a paragraph on how we contribute to the measurement of ownership changes}
 
 Nursing labor is the core input in nursing home care production, and staffing is one of the
 most consequential operation choices facilities make. We distinguish among registered nurses
@@ -141,8 +136,6 @@ most consequential operation choices facilities make. We distinguish among regis
 registered nurses and directors of nursing and play central supervisory and clinical roles,
 including assessing residents’ conditions, developing and coordinating care plans, overseeing medication-related processes, and supervising other staff. LPNs provide routine clinical services and medication management tasks such as monitoring vital signs, while CNAs deliver the majority of hands-on daily care, assisting with bathing, dressing, toileting, feeding, and mobility. Because these staff types differ in training, scope of practice, and cost, ownership changes may affect not only total staffing hours but also the skill mix of care delivered. For example, an owner seeking quick cost containment may reduce total hours or substitute away from higher-cost licensed nurses, while an owner focused on compliance or
 clinical quality may increase RN oversight or adjust supervision structures.
-
-\todo[inline, color = pastelyellow]{Still working on a paragraph about the quality metrics. I also include some background on them in my data section}
 
 Our results show that ownership changes are followed by sustained reductions in nursing labor inputs. RN hours and CNA hours decline, and total nursing hours fall. LPN hours remain largely unchanged. These staffing responses suggest that ownership transitions alter both the level and composition of labor used in care production. Our quality results complicate a simple cost-cutting interpretation. Labor saving mechanism measures, including catheter use and anti-anxiety or hypnotic medication use, improve after ownership change. Urinary tract infections also decline. By contrast, resident outcome measures such as pressure injuries, falls with major injury, weight loss, and decline in physical functioning show little evidence of broad worsening.
 
@@ -220,7 +213,7 @@ We estimate the following set of event-study regressions:
 S_{im}
 =
 \sum_{\substack{\tau=-24, \tau \neq -4,-3,-2,-1}}^{24}
-\beta_{\tau}\mathbf{1}(T_{im}=\tau)
+\beta_{\tau}\mathbf{1}[T_{im}=\tau]
 +
 X_{im}\gamma
 +
@@ -238,7 +231,7 @@ For staffing outcomes, \(S_{im}\) denotes RN, LPN, CNA, or total HPRD for facili
 Q_{iq}
 =
 \sum_{\substack{\tau=-8, \tau \neq -1, 0}}^{8}
-\theta_{\tau}\mathbf{1}(T_{iq}=\tau)
+\theta_{\tau}\mathbf{1}[T_{iq}=\tau]
 +
 X_{iq}\pi
 +
@@ -295,8 +288,6 @@ For quality outcomes, we conduct analogous Wald tests using the quarterly event-
 We further examine heterogeneity in the effects of ownership change by estimating separate models of staffing before and during the COVID-19 pandemic. Specifically, we estimate models for the pre-pandemic period, January 2017 through December 2019, and the pandemic period, April 2020 through June 2024. Labor market conditions for nursing staff changed substantially during the COVID-19 pandemic, including heightened turnover, changes in wages, and staffing shortages. Estimating models separately by period allows us to assess whether ownership changes had differential effects on staffing before and during this structural shift in the nursing labor market.
 
 In this subgroup analysis, we estimate the same specifications as in equations~\ref{eq:event-study-staffing} and~\ref{eq:twfe-post}, maintaining consistent controls, fixed effects, and clustering. This analysis sheds light on whether the staffing consequences of ownership changes differ across pre-pandemic and pandemic-era labor market conditions.
-
-\todo[color = pastelyellow]{I removed chain vs non-chain from this section}
 
 \section{Results} \label{sec:results}
 
@@ -521,8 +512,6 @@ The estimates are similar with and without staffing controls. Because staffing i
 
 This section reports robustness checks for our staffing results, which are the main input-side estimates in our paper. These checks are designed to assess the validity of our identifying assumptions and the sensitivity of our results to alternative model choices. Across all exercises, the estimated effects of ownership change on staffing remain stable in sign, magnitude, and statistical significance. The supporting tables and figures are reported in the appendix.
 
-\todo[color = pastelyellow]{I polished this section up, but refrained from adding new robustness until we talked about it}
-
 \subsubsection{Alternative Comparison Groups}
 
 Our main event-study specification is estimated using two-way fixed effects (TWFE) with staggered treatment timing. In this setting, TWFE can implicitly use already-treated facilities as controls for cohorts treated later, which may distort event-study estimates when treatment effects are dynamic or heterogeneous across cohorts. To assess sensitivity to this issue, we re-estimate the event study using a stacked difference-in-differences design.
@@ -567,7 +556,7 @@ This pattern is consistent with incumbent nursing home owners operating their fa
 
 The heterogeneity results of our additional analyses provide insight into the constraints facing new owners. Staffing reductions are smaller during the COVID-19 period for several outcomes, suggesting that pandemic-era labor market tightness, heightened scrutiny, and operational disruption may have limited owners' ability to adjust staffing. When labor markets are tight or regulatory attention is elevated, the feasible set of staffing reductions may narrow.
 
-Differences by organizational structure may also matter. Chain-affiliated facilities may have access to internal labor markets, standardized management practices, and administrative support that allow them to absorb ownership changes with smaller staffing disruptions. Independent facilities may face tighter financial or managerial constraints, making staffing a more immediate adjustment margin. These patterns are consistent with the broader interpretation that ownership changes operate through internal production decisions and that the scope for adjustment depends on capacity and constraints. \todo[color = pastelyellow]{Keep?}
+Differences by organizational structure may also matter. Chain-affiliated facilities may have access to internal labor markets, standardized management practices, and administrative support that allow them to absorb ownership changes with smaller staffing disruptions. Independent facilities may face tighter financial or managerial constraints, making staffing a more immediate adjustment margin. These patterns are consistent with the broader interpretation that ownership changes operate through internal production decisions and that the scope for adjustment depends on capacity and constraints. 
 
 \subsection{Limitations}
 
