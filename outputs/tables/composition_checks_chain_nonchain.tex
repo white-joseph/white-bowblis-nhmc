@@ -1,0 +1,49 @@
+\documentclass[12pt]{article}
+
+\usepackage[margin=1in]{geometry}
+\usepackage{booktabs}
+\usepackage{tabularx}
+\usepackage{threeparttable}
+\usepackage{makecell}
+\usepackage{array}
+\usepackage{caption}
+\usepackage{float}
+
+\newcolumntype{Y}{>{\centering\arraybackslash}X}
+
+\begin{document}
+
+\begin{table}[H]
+\centering
+\begin{threeparttable}
+\caption{Effects of Ownership Change: Chain vs. Non-chain Facilities}
+\label{tab:composition-checks-chain-nonchain}
+\small
+\setlength{\tabcolsep}{6pt}
+\begin{tabularx}{\textwidth}{@{} l Y Y r @{}}
+\toprule
+Outcome & No controls & Controls & Observations \\
+\midrule
+\multicolumn{4}{@{}l}{\textbf{Panel A: Chain, N = 3792 facilities}} \\[2pt]
+Occupancy rate & \makecell[c]{$\phantom{-}1.936^{***}$ \\ $(0.413)$} & \makecell[c]{$\phantom{-}1.748^{***}$ \\ $(0.408)$} & 318,461 \\
+Medicare share & \makecell[c]{$\phantom{-}1.568^{***}$ \\ $(0.220)$} & \makecell[c]{$\phantom{-}1.560^{***}$ \\ $(0.211)$} & 318,461 \\
+Medicaid share & \makecell[c]{$\phantom{-}0.658$ \\ $(0.692)$} & \makecell[c]{$\phantom{-}0.635$ \\ $(0.704)$} & 318,461 \\
+Average length of stay & \makecell[c]{$-6.702$ \\ $(5.067)$} & \makecell[c]{$-3.657$ \\ $(5.241)$} & 316,191 \\
+\addlinespace[6pt]
+\multicolumn{4}{@{}l}{\textbf{Panel B: Non-chain, N = 2933 facilities}} \\[2pt]
+Occupancy rate & \makecell[c]{$\phantom{-}3.502^{***}$ \\ $(0.629)$} & \makecell[c]{$\phantom{-}3.577^{***}$ \\ $(0.619)$} & 239,779 \\
+Medicare share & \makecell[c]{$\phantom{-}1.223^{***}$ \\ $(0.450)$} & \makecell[c]{$\phantom{-}1.097^{**}$ \\ $(0.447)$} & 239,779 \\
+Medicaid share & \makecell[c]{$-3.552^{***}$ \\ $(1.039)$} & \makecell[c]{$-3.504^{***}$ \\ $(1.046)$} & 239,779 \\
+Average length of stay & \makecell[c]{$-13.485^{*}$ \\ $(7.084)$} & \makecell[c]{$-13.659^{*}$ \\ $(7.023)$} & 232,465 \\
+\bottomrule
+\end{tabularx}
+
+\begin{tablenotes}[flushleft]
+\footnotesize
+\item \textit{Notes:} Each cell reports the coefficient on \textit{post}, with standard errors in parentheses. The controls column adds beds, government ownership, and nonprofit ownership.
+\item Standard errors are clustered two ways by facility and calendar month. Statistical significance: $^{***}p<0.01$, $^{**}p<0.05$, $^{*}p<0.10$.
+\end{tablenotes}
+\end{threeparttable}
+\end{table}
+
+\end{document}

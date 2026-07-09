@@ -1,0 +1,51 @@
+\documentclass[12pt]{article}
+
+\usepackage[margin=1in]{geometry}
+\usepackage{booktabs}
+\usepackage{tabularx}
+\usepackage{threeparttable}
+\usepackage{makecell}
+\usepackage{array}
+\usepackage{caption}
+\usepackage{float}
+
+\newcolumntype{Y}{>{\centering\arraybackslash}X}
+
+\begin{document}
+
+\begin{table}[H]
+\centering
+\begin{threeparttable}
+\caption{Near-Capacity vs. Slack-Capacity: Treated-Only vs. Including Never-Treated Controls}
+\label{tab:spare-capacity-comparison}
+\small
+\setlength{\tabcolsep}{6pt}
+\begin{tabularx}{\textwidth}{@{} l Y Y @{}}
+\toprule
+ & \textbf{Spare capacity} & \textbf{Occupancy rate} \\
+\midrule
+\multicolumn{3}{@{}l}{\textbf{Panel A: Treated-only (baseline specification)}} \\[2pt]
+Slack-capacity: \textit{post} & \makecell[c]{$-0.0387^{***}$ \\ $(0.0048)$} & \makecell[c]{$\phantom{-}3.8165^{***}$ \\ $(0.4794)$} \\
+Difference (Near $-$ Slack) & \makecell[c]{$\phantom{-}0.0292^{***}$ \\ $(0.0061)$} & \makecell[c]{$-2.8940^{***}$ \\ $(0.6107)$} \\
+Near-capacity effect & \makecell[c]{$-0.0095^{*}$ \\ $(0.0053)$} & \makecell[c]{$\phantom{-}0.9224^{*}$ \\ $(0.5294)$} \\
+Observations & \multicolumn{2}{c}{117,863} \\
+\addlinespace[6pt]
+\multicolumn{3}{@{}l}{\textbf{Panel B: Including never-treated facilities as controls}} \\[2pt]
+Slack-capacity: \textit{post} & \makecell[c]{$-0.0397^{***}$ \\ $(0.0043)$} & \makecell[c]{$\phantom{-}3.9573^{***}$ \\ $(0.4369)$} \\
+Difference (Near $-$ Slack) & \makecell[c]{$\phantom{-}0.0279^{***}$ \\ $(0.0062)$} & \makecell[c]{$-2.7637^{***}$ \\ $(0.6170)$} \\
+Near-capacity effect & \makecell[c]{$-0.0117^{**}$ \\ $(0.0046)$} & \makecell[c]{$\phantom{-}1.1935^{***}$ \\ $(0.4530)$} \\
+Observations & \multicolumn{2}{c}{564,605} \\
+\bottomrule
+\end{tabularx}
+\begin{tablenotes}[flushleft]
+\footnotesize
+\item \textit{Notes:} Combined median spare capacity used for the near/slack split: 0.167. Near-capacity $=$ baseline spare capacity $\leq$ median; Slack-capacity $=$ above.
+\item \textbf{Panel A} restricts the sample to ever-treated (CHOW) facilities, classified by their own pre-acquisition average spare capacity (event\_time $\in [-12,-4]$). This is the specification already sent to advisors.
+\item \textbf{Panel B} adds never-treated facilities to the estimation sample as controls. Because never-treated facilities have no acquisition event, they cannot be classified on a pre-acquisition window -- they are instead classified using a FIXED CALENDAR baseline (2017 Q1 average spare capacity), the same convention used elsewhere in this project for time-invariant baseline traits (e.g. chain status). \textit{post} is always 0 for never-treated facilities, so they do not mechanically enter the post or interaction coefficients directly; including them changes what the calendar fixed effects (and therefore \textit{post}) are estimated relative to.
+\item All specifications include facility and calendar-month fixed effects and the standard control set (excluding occupancy rate/spare capacity from each other's controls). Anticipation window excluded. Standard errors clustered two ways by facility and calendar month.
+\item Statistical significance: $^{***}p<0.01$, $^{**}p<0.05$, $^{*}p<0.10$.
+\end{tablenotes}
+\end{threeparttable}
+\end{table}
+
+\end{document}

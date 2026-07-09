@@ -9,11 +9,13 @@
 #   1. Occupancy rate
 #   2. Medicare payer mix
 #   3. Medicaid payer mix
-#   4. Spare capacity ((certified beds - avg. daily census) / certified beds)
-#   5. Average length of stay
+#   4. Average length of stay
 #
 #   NOTE: Case mix has been DROPPED from this set of mechanism checks
-#   (previously outcome #4; removed per project decision).
+#   (previously an outcome; removed per project decision).
+#   NOTE: Spare capacity has been MOVED OUT of this script -- see
+#   spare_capacity_report.R for its distribution, summary stats, and
+#   regression table.
 #
 # Short-stay quality outcomes:
 #   1. qm_424: Short-stay moderate/severe pain
@@ -25,7 +27,6 @@
 #
 # Output:
 #   outputs/tables/composition_checks_monthly_standalone.tex
-#   outputs/plots/spare_capacity_hist_mechanism.png
 # =============================================================================
 
 source("C:/Repositories/white-bowblis-nhmc/regressions/_setup.R")
@@ -35,7 +36,6 @@ suppressPackageStartupMessages({
   library(fixest)
   library(stringr)
   library(readr)
-  library(ggplot2)
 })
 
 options(scipen = 999, digits = 4)
@@ -46,10 +46,8 @@ options(scipen = 999, digits = 4)
 
 out_dir <- out_tables_dir
 dir.create(out_dir, recursive = TRUE, showWarnings = FALSE)
-dir.create(out_plots_dir, recursive = TRUE, showWarnings = FALSE)
 
 tex_out_fp <- file.path(out_dir, "composition_checks_monthly_standalone.tex")
-sc_hist_fp <- file.path(out_plots_dir, "spare_capacity_hist_mechanism.png")
 
 # -----------------------------------------------------------------------------
 # Load monthly staffing panel
@@ -68,8 +66,6 @@ df <- df %>%
       paste0(str_replace(as.character(year_month), "/", "-"), "-01")
     )
   )
-
-stopifnot("spare_capacity" %in% names(df))
 
 # Use same pre-closing adjustment window exclusion as the main staffing models.
 df_monthly <- drop_anticipation_window(df)
@@ -191,13 +187,6 @@ m_mcaid_nocontrols <- feols(
   lean = FALSE
 )
 
-m_sc_nocontrols <- feols(
-  spare_capacity ~ post | cms_certification_number + year_month,
-  data = df_monthly,
-  vcov = vc_month,
-  lean = FALSE
-)
-
 m_los_nocontrols <- feols(
   avg_los_total ~ post | cms_certification_number + year_month,
   data = df_monthly,
@@ -254,19 +243,6 @@ m_mcaid_controls <- feols(
   lean = FALSE
 )
 
-m_sc_controls <- feols(
-  as.formula(
-    paste0(
-      "spare_capacity ~ ",
-      rhs_controls_month,
-      " | cms_certification_number + year_month"
-    )
-  ),
-  data = df_monthly,
-  vcov = vc_month,
-  lean = FALSE
-)
-
 m_los_controls <- feols(
   as.formula(
     paste0(
@@ -279,67 +255,6 @@ m_los_controls <- feols(
   vcov = vc_month,
   lean = FALSE
 )
-
-# -----------------------------------------------------------------------------
-# Economic significance for spare capacity
-# -----------------------------------------------------------------------------
-
-spare_capacity_mean <- mean(df_monthly$spare_capacity, na.rm = TRUE)
-
-spare_capacity_coef_nocontrols <- coef(m_sc_nocontrols)["post"]
-spare_capacity_coef_controls   <- coef(m_sc_controls)["post"]
-
-spare_capacity_pct_change_nocontrols <- 100 * spare_capacity_coef_nocontrols / spare_capacity_mean
-spare_capacity_pct_change_controls   <- 100 * spare_capacity_coef_controls / spare_capacity_mean
-
-# -----------------------------------------------------------------------------
-# Distribution of spare capacity (reported alongside the mechanism table)
-# -----------------------------------------------------------------------------
-
-sc_vals <- df_monthly$spare_capacity[is.finite(df_monthly$spare_capacity)]
-
-sc_dist <- tibble::tibble(
-  n      = length(sc_vals),
-  mean   = mean(sc_vals),
-  sd     = sd(sc_vals),
-  p10    = quantile(sc_vals, 0.10),
-  p25    = quantile(sc_vals, 0.25),
-  median = median(sc_vals),
-  p75    = quantile(sc_vals, 0.75),
-  p90    = quantile(sc_vals, 0.90),
-  max    = max(sc_vals)
-)
-
-fmt3 <- function(x) sprintf("%.3f", x)
-
-sc_dist_table_rows <- c(
-  paste0("N (facility-months) & ", format(sc_dist$n, big.mark = ","), " \\\\"),
-  paste0("Mean & ", fmt3(sc_dist$mean), " \\\\"),
-  paste0("SD & ", fmt3(sc_dist$sd), " \\\\"),
-  paste0("P10 & ", fmt3(sc_dist$p10), " \\\\"),
-  paste0("P25 & ", fmt3(sc_dist$p25), " \\\\"),
-  paste0("Median & ", fmt3(sc_dist$median), " \\\\"),
-  paste0("P75 & ", fmt3(sc_dist$p75), " \\\\"),
-  paste0("P90 & ", fmt3(sc_dist$p90), " \\\\"),
-  paste0("Max & ", fmt3(sc_dist$max), " \\\\")
-)
-
-# Histogram for the report
-p_sc_hist <- ggplot(
-  df_monthly %>% filter(is.finite(spare_capacity)),
-  aes(x = spare_capacity)
-) +
-  geom_histogram(bins = 60, fill = "steelblue", color = "white", boundary = 0) +
-  labs(
-    title = NULL,
-    x = "Spare capacity",
-    y = "Count (facility-months)"
-  ) +
-  theme_minimal(base_size = 12)
-
-ggsave(sc_hist_fp, plot = p_sc_hist, width = 6.5, height = 4, dpi = 300)
-
-sc_hist_fp_tex <- gsub("\\\\", "/", sc_hist_fp)
 
 # -----------------------------------------------------------------------------
 # Short-stay quality regressions
@@ -434,12 +349,6 @@ row_mcaid <- make_row(
   m_mcaid_controls
 )
 
-row_sc <- make_row(
-  "Spare capacity",
-  m_sc_nocontrols,
-  m_sc_controls
-)
-
 row_los <- make_row(
   "Average length of stay",
   m_los_nocontrols,
@@ -459,13 +368,8 @@ short_stay_direction_lines <- paste0(
 # -----------------------------------------------------------------------------
 # Build standalone LaTeX document
 # -----------------------------------------------------------------------------
-
-sc_notes_line <- paste0(
-  "\\item Spare capacity mean is ", sprintf("%.3f", spare_capacity_mean),
-  "; the no-controls coefficient implies a ", sprintf("%.1f", spare_capacity_pct_change_nocontrols),
-  "\\% change relative to the mean, and the controls specification implies a ",
-  sprintf("%.1f", spare_capacity_pct_change_controls), "\\% change."
-)
+# Both tables are forced to hold their position (float package, [H] specifier)
+# with no \clearpage between them, so they land on the same page.
 
 tex_lines <- c(
   "\\documentclass[12pt]{article}",
@@ -478,53 +382,20 @@ tex_lines <- c(
   "\\usepackage{array}",
   "\\usepackage{caption}",
   "\\usepackage{setspace}",
-  "\\usepackage{graphicx}",
+  "\\usepackage{float}",
   "",
   "\\newcolumntype{Y}{>{\\centering\\arraybackslash}X}",
   "",
   "\\begin{document}",
   "",
   "% ---------------------------------------------------------------------------",
-  "% Distribution of spare capacity",
-  "% ---------------------------------------------------------------------------",
-  "",
-  "\\begin{figure}[!ht]",
-  "\\centering",
-  paste0("\\includegraphics[width=0.8\\textwidth]{", sc_hist_fp_tex, "}"),
-  "\\caption{Distribution of Spare Capacity (Facility-Months)}",
-  "\\label{fig:spare-capacity-hist}",
-  "\\end{figure}",
-  "",
-  "\\begin{table}[!ht]",
-  "\\centering",
-  "\\begin{threeparttable}",
-  "\\caption{Summary Statistics: Spare Capacity}",
-  "\\label{tab:spare-capacity-summary}",
-  "\\small",
-  "\\begin{tabular}{l r}",
-  "\\toprule",
-  "Statistic & Value \\\\",
-  "\\midrule",
-  sc_dist_table_rows,
-  "\\bottomrule",
-  "\\end{tabular}",
-  "\\begin{tablenotes}[flushleft]",
-  "\\footnotesize",
-  "\\item \\textit{Notes:} Spare capacity is defined as (certified beds $-$ average daily census) / certified beds, computed from Medicare Cost Report data. Sample excludes the anticipation window used in the main staffing models.",
-  "\\end{tablenotes}",
-  "\\end{threeparttable}",
-  "\\end{table}",
-  "",
-  "\\clearpage",
-  "",
-  "% ---------------------------------------------------------------------------",
   "% Table 1: Monthly mechanism checks",
   "% ---------------------------------------------------------------------------",
   "",
-  "\\begin{table}[!ht]",
+  "\\begin{table}[H]",
   "\\centering",
   "\\begin{threeparttable}",
-  "\\caption{Effects of Ownership Change on Occupancy, Payer Mix, Spare Capacity, and Length of Stay}",
+  "\\caption{Effects of Ownership Change on Occupancy, Payer Mix, and Length of Stay}",
   "\\label{tab:composition-checks-monthly}",
   "\\small",
   "\\setlength{\\tabcolsep}{6pt}",
@@ -535,7 +406,6 @@ tex_lines <- c(
   paste0(row_occ, " \\\\"),
   paste0(row_mcare, " \\\\"),
   paste0(row_mcaid, " \\\\"),
-  paste0(row_sc, " \\\\"),
   paste0(row_los, " \\\\"),
   "\\bottomrule",
   "\\end{tabularx}",
@@ -543,19 +413,18 @@ tex_lines <- c(
   "\\begin{tablenotes}[flushleft]",
   "\\footnotesize",
   "\\item \\textit{Notes:} Each cell reports the coefficient on \\textit{post}, with standard errors in parentheses. All models include facility and calendar-month fixed effects. The controls column adds beds, government ownership, nonprofit ownership, and chain affiliation.",
-  sc_notes_line,
   "\\item Standard errors are clustered two ways by facility and calendar month. Statistical significance: $^{***}p<0.01$, $^{**}p<0.05$, $^{*}p<0.10$.",
   "\\end{tablenotes}",
   "\\end{threeparttable}",
   "\\end{table}",
   "",
-  "\\clearpage",
+  "\\vspace{1em}",
   "",
   "% ---------------------------------------------------------------------------",
   "% Table 2: Short-stay quality checks",
   "% ---------------------------------------------------------------------------",
   "",
-  "\\begin{table}[!ht]",
+  "\\begin{table}[H]",
   "\\centering",
   "\\begin{threeparttable}",
   "\\caption{Effects of Ownership Change on Short-Stay Quality Measures}",
@@ -589,10 +458,4 @@ writeLines(tex_lines, tex_out_fp)
 # -----------------------------------------------------------------------------
 
 cat("\nSaved table to:\n")
-cat(tex_out_fp, "\n\n")
-cat("Saved histogram to:\n")
-cat(sc_hist_fp, "\n\n")
-
-cat("Spare capacity mean:", round(spare_capacity_mean, 3), "\n")
-cat("Spare capacity percent change, no controls:", round(spare_capacity_pct_change_nocontrols, 3), "\n")
-cat("Spare capacity percent change, controls:", round(spare_capacity_pct_change_controls, 3), "\n")
+cat(tex_out_fp, "\n")

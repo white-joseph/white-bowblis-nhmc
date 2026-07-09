@@ -26,17 +26,12 @@
 #   Restricted to EVER-TREATED (CHOW) facilities only -- this compares
 #   treated-near-capacity vs. treated-slack-capacity to EACH OTHER.
 #
-# Two complementary analyses:
-#   (A) Static post-effect: spare_capacity / occupancy_rate ~ post +
-#       post:near_capacity + controls | facility FE + month FE
-#   (B) Event-study: separate event-time coefficient paths for the two
-#       groups, so you can see the before/after trajectory directly
-#       (the "moving toward the frontier" pattern, if present, should show
-#       up as the slack-capacity path trending down after event_time = 0
-#       while the near-capacity path stays flatter).
+# NOTE: The static post-effect regression table for this split now lives in
+# spare_capacity_report.R (combined with the distribution and summary
+# stats). This script covers the EVENT-STUDY / dynamic piece only -- the
+# before/after trajectory of spare_capacity for the two groups.
 #
 # Output:
-#   outputs/tables/spare_capacity_near_vs_slack_static.tex
 #   outputs/tables/spare_capacity_near_vs_slack_group_summary.csv
 #   outputs/plots/spare_capacity_near_vs_slack_density.png
 #   outputs/plots/spare_capacity_near_vs_slack_event_study.png
@@ -103,13 +98,10 @@ df_treated <- df %>%
     by = "cms_certification_number"
   )
 
-# For the STATIC model, use the same anticipation-window exclusion as the
-# main staffing models. (The event study below needs the anticipation months
-# LEFT IN so you can actually see them on the plot -- handled separately.)
 df_treated_static <- drop_anticipation_window(df_treated)
 
 cat(sprintf(
-  "[sample] facility-months (static model, anticipation excluded): %s (%d facilities)\n",
+  "[sample] facility-months (anticipation excluded): %s (%d facilities)\n",
   format(nrow(df_treated_static), big.mark = ","),
   n_distinct(df_treated_static$cms_certification_number)
 ))
@@ -154,9 +146,9 @@ p_density <- df_treated_static %>%
 density_plot_fp <- file.path(out_plots_dir, "spare_capacity_near_vs_slack_density.png")
 ggsave(density_plot_fp, plot = p_density, width = 7, height = 5, dpi = 300)
 
-# =============================================================================
-# (A) Static post-effect model
-# =============================================================================
+# -----------------------------------------------------------------------------
+# Shared regression setup (used by the event study below)
+# -----------------------------------------------------------------------------
 
 vc <- as.formula(paste0("~ ", fe_unit, " + ", fe_time))
 fe_part <- paste0("| ", fe_unit, " + ", fe_time)
@@ -175,117 +167,8 @@ controls_rhs_for <- function(dat, outcome) {
   paste(ctrls, collapse = " + ")
 }
 
-make_static_fml <- function(dat, lhs) {
-  ctrls <- controls_rhs_for(dat, lhs)
-  rhs_ctrl_part <- if (ctrls == "1") "" else paste0(" + ", ctrls)
-  as.formula(sprintf("%s ~ post + post:near_capacity%s %s", lhs, rhs_ctrl_part, fe_part))
-}
-
-m_sc <- feols(
-  make_static_fml(df_treated_static, "spare_capacity"),
-  data = df_treated_static, vcov = vc, lean = TRUE
-)
-
-m_occ <- feols(
-  make_static_fml(df_treated_static, "occupancy_rate"),
-  data = df_treated_static, vcov = vc, lean = TRUE
-)
-
-# ---- helpers: coefficients, linear combinations, formatting ----
-coef_se_star <- function(mod, term) {
-  ct <- summary(mod)$coeftable
-  if (!(term %in% rownames(ct))) return(list(coef = NA, se = NA, stars = ""))
-  b  <- unname(ct[term, "Estimate"])
-  se <- unname(ct[term, "Std. Error"])
-  p  <- unname(ct[term, "Pr(>|t|)"])
-  stars <- if (is.na(p)) "" else if (p < 0.01) "***" else if (p < 0.05) "**" else if (p < 0.10) "*" else ""
-  list(coef = b, se = se, stars = stars)
-}
-
-lincom <- function(mod, weights_named) {
-  b <- coef(mod); V <- vcov(mod)
-  terms <- names(weights_named)
-  if (!all(terms %in% names(b))) return(list(est = NA, se = NA, stars = ""))
-  w <- weights_named[terms]
-  est <- sum(w * b[terms])
-  VV <- V[terms, terms, drop = FALSE]
-  se <- sqrt(as.numeric(t(w) %*% VV %*% w))
-  p <- 2 * (1 - pnorm(abs(est / se)))
-  stars <- if (is.na(p)) "" else if (p < 0.01) "***" else if (p < 0.05) "**" else if (p < 0.10) "*" else ""
-  list(est = est, se = se, stars = stars)
-}
-
-fmt_cell <- function(b, se, stars) {
-  if (is.na(b) || is.na(se)) return("\\makecell[c]{-- \\\\ (--)}")
-  bstr <- sprintf("%.4f", b); if (b > 0) bstr <- paste0("\\phantom{-}", bstr)
-  sestr <- sprintf("%.4f", se)
-  paste0("\\makecell[c]{$", bstr, "^{", stars, "}$ \\\\ $(", sestr, ")$}")
-}
-
-build_static_row <- function(label, mod) {
-  s_slack <- coef_se_star(mod, "post")
-  s_diff  <- coef_se_star(mod, "post:near_capacity")
-  s_near  <- lincom(mod, c(post = 1, "post:near_capacity" = 1))
-  paste(
-    label,
-    fmt_cell(s_slack$coef, s_slack$se, s_slack$stars),
-    fmt_cell(s_diff$coef, s_diff$se, s_diff$stars),
-    fmt_cell(s_near$est, s_near$se, s_near$stars),
-    format(nobs(mod), big.mark = ","),
-    sep = " & "
-  )
-}
-
-row_sc  <- build_static_row("Spare capacity", m_sc)
-row_occ <- build_static_row("Occupancy rate", m_occ)
-
-static_tex <- c(
-  "\\documentclass[11pt]{article}",
-  "\\usepackage[margin=1in]{geometry}",
-  "\\usepackage{booktabs}",
-  "\\usepackage{tabularx}",
-  "\\usepackage{threeparttable}",
-  "\\usepackage{makecell}",
-  "\\usepackage{array}",
-  "\\usepackage{caption}",
-  "\\newcolumntype{Y}{>{\\centering\\arraybackslash}X}",
-  "\\begin{document}",
-  "\\begin{table}[!ht]",
-  "\\centering",
-  "\\begin{threeparttable}",
-  "\\caption{Spare Capacity and Occupancy Response to Ownership Change: Near-Capacity vs. Slack-Capacity Acquisitions}",
-  "\\label{tab:spare-capacity-near-vs-slack-static}",
-  "\\small",
-  "\\setlength{\\tabcolsep}{6pt}",
-  "\\begin{tabularx}{\\textwidth}{@{} l Y Y Y r @{}}",
-  "\\toprule",
-  "Outcome & Slack-capacity: post & Difference (Near $-$ Slack) & Near-capacity effect & Observations \\\\",
-  "\\midrule",
-  paste0(row_sc, " \\\\"),
-  paste0(row_occ, " \\\\"),
-  "\\bottomrule",
-  "\\end{tabularx}",
-  "\\begin{tablenotes}[flushleft]",
-  "\\footnotesize",
-  "\\item \\textit{Notes:} Sample restricted to ever-treated (CHOW) facilities, split at the median pre-acquisition spare capacity (average spare capacity over event\\_time $\\in [-12,-4]$, prior to the anticipation window).",
-  sprintf(
-    "\\item Near-capacity $=$ baseline spare capacity $\\leq$ %.3f (median); Slack-capacity $=$ above. $N = %d$ treated facilities with a usable baseline (%d near-capacity, %d slack-capacity).",
-    baseline_median, nrow(baseline_window),
-    sum(baseline_window$near_capacity == 1), sum(baseline_window$near_capacity == 0)
-  ),
-  "\\item Controls exclude occupancy rate and spare capacity from each other's control set (they are near-collinear). All models include facility and calendar-month fixed effects; anticipation window excluded.",
-  "\\item Standard errors are clustered two ways by facility and calendar month. Statistical significance: $^{***}p<0.01$, $^{**}p<0.05$, $^{*}p<0.10$.",
-  "\\end{tablenotes}",
-  "\\end{threeparttable}",
-  "\\end{table}",
-  "\\end{document}"
-)
-
-static_tex_fp <- file.path(out_tables_dir, "spare_capacity_near_vs_slack_static.tex")
-writeLines(static_tex, static_tex_fp, useBytes = TRUE)
-
 # =============================================================================
-# (B) Event-study: dynamic path of spare_capacity by group
+# Event-study: dynamic path of spare_capacity by group
 # =============================================================================
 # Consistent with the rest of the project's event studies: the anticipation
 # window (event_time in {-3,-2,-1}) is DROPPED, and event_time = -4 is used
@@ -368,8 +251,7 @@ ggsave(event_plot_fp, plot = p_event, width = 8, height = 5.5, dpi = 300)
 # -----------------------------------------------------------------------------
 # Console summary
 # -----------------------------------------------------------------------------
-cat("\n[write] ", normalizePath(static_tex_fp, winslash = "\\"), "\n", sep = "")
-cat("[write] ", normalizePath(group_summary_fp, winslash = "\\"), "\n", sep = "")
+cat("\n[write] ", normalizePath(group_summary_fp, winslash = "\\"), "\n", sep = "")
 cat("[write] ", normalizePath(density_plot_fp, winslash = "\\"), "\n", sep = "")
 cat("[write] ", normalizePath(event_coefs_fp, winslash = "\\"), "\n", sep = "")
 cat("[write] ", normalizePath(event_plot_fp, winslash = "\\"), "\n", sep = "")
