@@ -1,0 +1,134 @@
+\documentclass[12pt]{article}
+
+\usepackage[margin=1in]{geometry}
+\usepackage{booktabs}
+\usepackage{tabularx}
+\usepackage{threeparttable}
+\usepackage{makecell}
+\usepackage{array}
+\usepackage{caption}
+\usepackage{float}
+
+\newcolumntype{Y}{>{\centering\arraybackslash}X}
+
+\begin{document}
+
+\section*{FE-Only vs. Standard-Controls Specification, All Outcomes}
+Per C. Moul's request: each outcome estimated with (1) ONLY facility and time fixed effects plus \textit{post} (no other covariates), and (2) the standard fully-controlled specification used elsewhere in this project, for direct comparison. All specifications use the donut design (anticipation window / transition period excluded).
+
+\begin{table}[H]
+\centering
+\begin{threeparttable}
+\caption{Staffing Outcomes (Monthly)}
+\label{tab:fe-only-staffing}
+\small
+\setlength{\tabcolsep}{6pt}
+\begin{tabularx}{\textwidth}{@{} l Y Y r @{}}
+\toprule
+Outcome & FE + Treatment Only & Standard Controls & Observations \\
+\midrule
+RN HPRD & \makecell[t]{$-0.0349^{***}$ \\ $(0.0052)$} & \makecell[t]{$-0.0316^{***}$ \\ $(0.0052)$} & 626,307 \\
+LPN HPRD & \makecell[t]{$-0.0027$ \\ $(0.0059)$} & \makecell[t]{$-0.0004$ \\ $(0.0060)$} & 626,307 \\
+CNA HPRD & \makecell[t]{$-0.0519^{***}$ \\ $(0.0091)$} & \makecell[t]{$-0.0548^{***}$ \\ $(0.0093)$} & 626,307 \\
+Total HPRD & \makecell[t]{$-0.0895^{***}$ \\ $(0.0127)$} & \makecell[t]{$-0.0868^{***}$ \\ $(0.0129)$} & 626,307 \\
+\bottomrule
+\end{tabularx}
+
+\begin{tablenotes}[flushleft]
+\footnotesize
+\item \textit{Notes:} Each cell reports the coefficient on \textit{post}, with standard errors in parentheses. \textbf{FE + Treatment Only} includes ONLY facility and time fixed effects plus \textit{post} -- no other covariates. \textbf{Standard Controls} is the fully-controlled specification used elsewhere in this project.
+\item Standard errors are clustered two ways by facility and time period. Statistical significance: $^{***}p<0.01$, $^{**}p<0.05$, $^{*}p<0.10$.
+\end{tablenotes}
+\end{threeparttable}
+\end{table}
+
+\clearpage
+\begin{table}[H]
+\centering
+\begin{threeparttable}
+\caption{Strategic / Business-Model Outcomes (Monthly)}
+\label{tab:fe-only-strategic}
+\small
+\setlength{\tabcolsep}{6pt}
+\begin{tabularx}{\textwidth}{@{} l Y Y r @{}}
+\toprule
+Outcome & FE + Treatment Only & Standard Controls & Observations \\
+\midrule
+Occupancy rate & \makecell[t]{$\phantom{-}2.6491^{***}$ \\ $(0.3359)$} & \makecell[t]{$\phantom{-}2.8206^{***}$ \\ $(0.3443)$} & 626,307 \\
+Medicare share & \makecell[t]{$\phantom{-}1.3575^{***}$ \\ $(0.2054)$} & \makecell[t]{$\phantom{-}1.0928^{***}$ \\ $(0.2142)$} & 626,307 \\
+Medicaid share & \makecell[t]{$-0.9001$ \\ $(0.5567)$} & \makecell[t]{$-1.5839^{***}$ \\ $(0.5755)$} & 626,307 \\
+Average length of stay & \makecell[t]{$-11.4359^{***}$ \\ $(4.0715)$} & \makecell[t]{$-12.7772^{***}$ \\ $(4.5143)$} & 614,480 \\
+Spare capacity & \makecell[t]{$-0.0262^{***}$ \\ $(0.0033)$} & \makecell[t]{$-0.0281^{***}$ \\ $(0.0034)$} & 626,307 \\
+\bottomrule
+\end{tabularx}
+
+\begin{tablenotes}[flushleft]
+\footnotesize
+\item \textit{Notes:} Each cell reports the coefficient on \textit{post}, with standard errors in parentheses. \textbf{FE + Treatment Only} includes ONLY facility and time fixed effects plus \textit{post} -- no other covariates. \textbf{Standard Controls} is the fully-controlled specification used elsewhere in this project.
+\item Occupancy rate, spare capacity, Medicare share, Medicaid share, and average length of stay are excluded from each other's control set in the Standard Controls column (each pair is mechanically related).
+\item Standard errors are clustered two ways by facility and time period. Statistical significance: $^{***}p<0.01$, $^{**}p<0.05$, $^{*}p<0.10$.
+\end{tablenotes}
+\end{threeparttable}
+\end{table}
+
+\begin{table}[H]
+\centering
+\begin{threeparttable}
+\caption{Short-Stay Quality Measures (Quarterly)}
+\label{tab:fe-only-short-stay-quality}
+\small
+\setlength{\tabcolsep}{6pt}
+\begin{tabularx}{\textwidth}{@{} l Y Y r @{}}
+\toprule
+Outcome & FE + Treatment Only & Standard Controls & Observations \\
+\midrule
+Pneumococcal vaccine & \makecell[t]{$-3.7194^{***}$ \\ $(0.6274)$} & \makecell[t]{$-4.6356^{***}$ \\ $(0.6771)$} & 180,687 \\
+New antipsychotic medication & \makecell[t]{$-0.0082$ \\ $(0.0427)$} & \makecell[t]{$-0.0122$ \\ $(0.0478)$} & 149,556 \\
+Improved function & \makecell[t]{$-0.1936$ \\ $(0.4879)$} & \makecell[t]{$-0.9714^{*}$ \\ $(0.5602)$} & 98,004 \\
+Influenza vaccine & \makecell[t]{$-3.3858^{***}$ \\ $(0.6095)$} & \makecell[t]{$-3.9127^{***}$ \\ $(0.6644)$} & 144,903 \\
+\bottomrule
+\end{tabularx}
+
+\begin{tablenotes}[flushleft]
+\footnotesize
+\item \textit{Notes:} Each cell reports the coefficient on \textit{post}, with standard errors in parentheses. \textbf{FE + Treatment Only} includes ONLY facility and time fixed effects plus \textit{post} -- no other covariates. \textbf{Standard Controls} is the fully-controlled specification used elsewhere in this project.
+\item Moderate/severe pain (qm\_424) and new/worsened pressure ulcers (qm\_425) are excluded (effectively unreported from 2019/2020 onward). Improved function is estimated on 2017--2022 only; influenza vaccine is estimated on 2018--2023 only, reflecting each measure's actual reporting window.
+\item The ownership-change quarter is excluded from all quality regressions.
+\item Standard errors are clustered two ways by facility and time period. Statistical significance: $^{***}p<0.01$, $^{**}p<0.05$, $^{*}p<0.10$.
+\end{tablenotes}
+\end{threeparttable}
+\end{table}
+
+\clearpage
+\begin{table}[H]
+\centering
+\begin{threeparttable}
+\caption{Long-Stay Quality Measures (Quarterly)}
+\label{tab:fe-only-long-stay-quality}
+\small
+\setlength{\tabcolsep}{6pt}
+\begin{tabularx}{\textwidth}{@{} l Y Y r @{}}
+\toprule
+Outcome & FE + Treatment Only & Standard Controls & Observations \\
+\midrule
+Decline in physical functioning & \makecell[t]{$\phantom{-}0.3361$ \\ $(0.2649)$} & \makecell[t]{$\phantom{-}0.1656$ \\ $(0.2634)$} & 187,479 \\
+Weight loss & \makecell[t]{$\phantom{-}0.1863^{*}$ \\ $(0.1013)$} & \makecell[t]{$\phantom{-}0.1375$ \\ $(0.1138)$} & 195,198 \\
+Catheter use & \makecell[t]{$-0.1750^{***}$ \\ $(0.0458)$} & \makecell[t]{$-0.1749^{***}$ \\ $(0.0503)$} & 197,383 \\
+Urinary tract infections & \makecell[t]{$-0.3444^{***}$ \\ $(0.0742)$} & \makecell[t]{$-0.3049^{***}$ \\ $(0.0762)$} & 199,268 \\
+Falls with major injury & \makecell[t]{$\phantom{-}0.0089$ \\ $(0.0617)$} & \makecell[t]{$-0.0065$ \\ $(0.0666)$} & 200,090 \\
+Anti-psychotic medication use & \makecell[t]{$-0.3571$ \\ $(0.2121)$} & \makecell[t]{$-0.1442$ \\ $(0.2180)$} & 195,943 \\
+Anti-anxiety/hypnotic medication use & \makecell[t]{$-0.3939^{*}$ \\ $(0.2012)$} & \makecell[t]{$-0.4246^{*}$ \\ $(0.2107)$} & 196,496 \\
+Pressure injuries & \makecell[t]{$\phantom{-}0.1854$ \\ $(0.1701)$} & \makecell[t]{$\phantom{-}0.1483$ \\ $(0.1791)$} & 139,667 \\
+\bottomrule
+\end{tabularx}
+
+\begin{tablenotes}[flushleft]
+\footnotesize
+\item \textit{Notes:} Each cell reports the coefficient on \textit{post}, with standard errors in parentheses. \textbf{FE + Treatment Only} includes ONLY facility and time fixed effects plus \textit{post} -- no other covariates. \textbf{Standard Controls} is the fully-controlled specification used elsewhere in this project.
+\item CAVEAT: pressure injuries (qm\_453) may have a coverage transition around Q4 2023 (successor code 479 identified in a separate investigation of the short-stay measures) that has NOT been re-verified or trimmed here.
+\item Standard errors are clustered two ways by facility and time period. Statistical significance: $^{***}p<0.01$, $^{**}p<0.05$, $^{*}p<0.10$.
+\end{tablenotes}
+\end{threeparttable}
+\end{table}
+
+\end{document}

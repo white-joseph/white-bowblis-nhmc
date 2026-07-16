@@ -32,6 +32,7 @@ CLEAN_DIR = cfg.ensure_dir(cfg.CLEAN_DIR)
 
 PROVIDER_FP = INTERIM / "provider.csv"
 PBJ_FP = INTERIM / "pbj_nurse.csv"
+PBJ_NON_NURSE_FP = INTERIM / "pbj_non_nurse.csv"
 MCR_FP = INTERIM / "mcr.csv"
 CHOW_FP = INTERIM / "chow.csv"
 
@@ -40,6 +41,7 @@ OUT_FINAL_FP = CLEAN_DIR / "staffing_panel.csv"
 print(
     f"[paths] provider={PROVIDER_FP.exists()}  "
     f"pbj={PBJ_FP.exists()}  "
+    f"pbj_non_nurse={PBJ_NON_NURSE_FP.exists()}  "
     f"mcr={MCR_FP.exists()}  "
     f"chow={CHOW_FP.exists()}"
 )
@@ -388,16 +390,34 @@ def finalize_regression_panel(df: pd.DataFrame) -> pd.DataFrame:
 # ============================== Load ==========================================
 provider = pd.read_csv(PROVIDER_FP, low_memory=False)
 pbj = pd.read_csv(PBJ_FP, low_memory=False)
+pbj_non_nurse = pd.read_csv(PBJ_NON_NURSE_FP, low_memory=False)
 mcr = pd.read_csv(MCR_FP, low_memory=False)
 chow = pd.read_csv(CHOW_FP, low_memory=False)
 
-for df in (provider, pbj, mcr, chow):
+for df in (provider, pbj, pbj_non_nurse, mcr, chow):
     if "cms_certification_number" in df.columns:
         df["cms_certification_number"] = cfg.normalize_ccn_any(df["cms_certification_number"])
+
+# pbj_non_nurse.csv shares several column NAMES with pbj_nurse.csv (resident_days,
+# avg_daily_census, days_reported, days_in_month, coverage_ratio,
+# gap_from_prev_months) even though they measure non-nurse staff coverage
+# specifically. Rename before merging so pandas doesn't silently suffix them
+# (_x/_y) -- keep everything explicit.
+pbj_non_nurse = pbj_non_nurse.rename(columns={
+    "resident_days": "resident_days_nonnurse",
+    "avg_daily_census": "avg_daily_census_nonnurse",
+    "days_reported": "days_reported_nonnurse",
+    "days_in_month": "days_in_month_nonnurse",
+    "coverage_ratio": "coverage_ratio_nonnurse",
+    "gap_from_prev_months": "gap_from_prev_months_nonnurse",
+    "total_hprd": "nonnurse_total_hprd",
+    "total_hours": "nonnurse_total_hours",
+})
 
 # Restrict window BEFORE merge
 provider = filter_to_window(provider)
 pbj = filter_to_window(pbj)
+pbj_non_nurse = filter_to_window(pbj_non_nurse)
 mcr = filter_to_window(mcr)
 
 # ============================== CHOW agreement filter =========================
@@ -434,12 +454,12 @@ chow_timing["treated_agree"] = (
 
 # ============================== Outer join base ===============================
 keys = ["cms_certification_number", "quarter", "year_month"]
-for name, df in [("provider", provider), ("pbj", pbj), ("mcr", mcr)]:
+for name, df in [("provider", provider), ("pbj", pbj), ("pbj_non_nurse", pbj_non_nurse), ("mcr", mcr)]:
     miss = [k for k in keys if k not in df.columns]
     if miss:
         raise KeyError(f"[{name}] missing key columns: {miss}")
 
-base = provider.merge(pbj, on=keys, how="outer").merge(mcr, on=keys, how="outer")
+base = provider.merge(pbj, on=keys, how="outer").merge(pbj_non_nurse, on=keys, how="outer").merge(mcr, on=keys, how="outer")
 
 # Keep only CHOW-agree CCNs
 base["cms_certification_number"] = cfg.normalize_ccn_any(base["cms_certification_number"])
@@ -521,6 +541,29 @@ want_cols = [
     "lpn_hprd",
     "cna_hprd",
     "total_hprd",
+    "rn_hours_month",
+    "lpn_hours_month",
+    "cna_hours_month",
+    "total_hours",
+    "pt_hprd",
+    "ptasst_hprd",
+    "ptaide_hprd",
+    "ot_hprd",
+    "otasst_hprd",
+    "otaide_hprd",
+    "slp_hprd",
+    "pt_hours_month",
+    "ptasst_hours_month",
+    "ptaide_hours_month",
+    "ot_hours_month",
+    "otasst_hours_month",
+    "otaide_hours_month",
+    "slp_hours_month",
+    "nonnurse_total_hprd",
+    "nonnurse_total_hours",
+    "resident_days_nonnurse",
+    "avg_daily_census_nonnurse",
+    "coverage_ratio_nonnurse",
     "non_profit",
     "government",
     "chain",
@@ -676,6 +719,29 @@ for c in [
     "avg_los_medicare",
     "avg_los_medicaid",
     "case_mix_total",
+    "rn_hours_month",
+    "lpn_hours_month",
+    "cna_hours_month",
+    "total_hours",
+    "pt_hprd",
+    "ptasst_hprd",
+    "ptaide_hprd",
+    "ot_hprd",
+    "otasst_hprd",
+    "otaide_hprd",
+    "slp_hprd",
+    "pt_hours_month",
+    "ptasst_hours_month",
+    "ptaide_hours_month",
+    "ot_hours_month",
+    "otasst_hours_month",
+    "otaide_hours_month",
+    "slp_hours_month",
+    "nonnurse_total_hprd",
+    "nonnurse_total_hours",
+    "resident_days_nonnurse",
+    "avg_daily_census_nonnurse",
+    "coverage_ratio_nonnurse",
 ]:
     if c in panel.columns:
         panel[c] = pd.to_numeric(panel[c], errors="coerce")

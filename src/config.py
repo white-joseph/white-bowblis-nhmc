@@ -38,6 +38,7 @@ NH_COMPARE_DIR = RAW_DIR / "nh-compare"
 PROVIDER_DIR = RAW_DIR / "provider-info-files"
 OWNERSHIP_DIR = RAW_DIR / "ownership-files"
 PBJ_DIR = RAW_DIR / "pbj-nurse"
+PBJ_NON_NURSE_DIR = RAW_DIR / "pbj-non-nurse"
 MCR_DIR = RAW_DIR / "medicare-cost-reports"
 QUALITY_DIR = RAW_DIR / "quality-measures"
 

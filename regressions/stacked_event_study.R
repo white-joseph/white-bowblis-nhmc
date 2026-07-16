@@ -1,334 +1,345 @@
-# C:/Repositories/white-bowblis-nhmc/regressions/twfe_event_study_date_mcr_preview.R
-# Preview TWFE event-study plots using MCR event timing
-# - Full sample WITH anticipation
-# - Full sample WITHOUT anticipation
-# - Shows plots only (does not save)
-# - Adds titles
-# - Prints joint Wald pretrend tests (no LaTeX table output)
+# =============================================================================
+# regressions/stacked_event_study.R
+#
+# Purpose:
+#   Stacked difference-in-differences event study for staffing HPRD outcomes,
+#   used as a robustness check against staggered-adoption TWFE concerns
+#   (Goodman-Bacon). Combines:
+#     - the cohort-stacking approach already used in stacked_twfe_post.R
+#       (each treated cohort g compared only to never-treated / not-yet-
+#       treated facilities within its own event window)
+#     - an actual EVENT-TIME specification (not just post/pre), so dynamics
+#       can be plotted and pre-trends can be tested
+#     - the joint Wald pretrend-test machinery already used in wald.R
+#
+#   Built on the CURRENT staffing_panel.csv (not the old panel.csv used by
+#   stacked_twfe_post.R), so column names match the rest of the project
+#   (rn_hprd, not rn_hppd; etc.).
+#
+#   TWO windows are estimated, matching the old (panel.csv-based) Table 8:
+#     - 2 Year Window with Donut: event window +/-24 months, tests
+#       tau = -24..-5, reference tau = -4
+#     - 1 Year Window with Donut: event window +/-12 months, tests
+#       tau = -12..-5, reference tau = -4
+#   Both physically drop tau = -3,-2,-1 for treated units before fitting.
+#
+# Plots:
+#   Built directly from extracted model coefficients (NOT fixest's iplot()),
+#   so only event-times that actually have a fitted coefficient are ever
+#   drawn -- donut months are explicitly filtered out a second time at the
+#   plotting stage as a safeguard, guaranteeing no stray points there.
+#   Plain sans-serif font throughout (ggplot2's default is already
+#   sans-serif; base_family is set explicitly for portability).
+#
+# Output:
+#   outputs/tables/pretrend_wald_tests_stacked_levels_fragment.tex
+#     (inputtable LaTeX fragment -- matches the \input{} already present,
+#     commented out, in ma_thesis.tex)
+#   outputs/plots/stacked_es_rn_baseline.pdf
+#   outputs/plots/stacked_es_lpn_baseline.pdf
+#   outputs/plots/stacked_es_cna_baseline.pdf
+#   outputs/plots/stacked_es_total_baseline.pdf
+#     (from the 2-year window model, matching the paper's existing figure)
+# =============================================================================
+
+source("C:/Repositories/white-bowblis-nhmc/regressions/_setup.R")
 
 suppressPackageStartupMessages({
-  library(fixest)
-  library(readr)
   library(dplyr)
-  library(MASS)   # ginv()
+  library(fixest)
+  library(ggplot2)
+  library(tibble)
+  library(MASS)  # ginv
 })
 
 options(scipen = 999, digits = 4)
 
-# ------------------------------ Plot font ------------------------------
-set_plot_font <- function() {
-  fam <- "Times New Roman"
-  par(family = fam)
-}
-set_plot_font()
+out_dir <- out_tables_dir
+plots_dir <- out_plots_dir
+dir.create(out_dir, showWarnings = FALSE, recursive = TRUE)
+dir.create(plots_dir, showWarnings = FALSE, recursive = TRUE)
 
-# ------------------------------ Load ------------------------------
-panel_fp <- "C:/Repositories/white-bowblis-nhmc/data/clean/panel_date_mcr.csv"
+wald_frag_path <- file.path(out_dir, "pretrend_wald_tests_stacked_levels_fragment.tex")
 
+# -----------------------------------------------------------------------------
+# Load current panel
+# -----------------------------------------------------------------------------
 keep_cols <- c(
-  "cms_certification_number","year_month","anticipation2",
-  "event_time","treatment",
-  "time","time_treated",
-  "government","non_profit","chain","beds",
-  "occupancy_rate","pct_medicare","pct_medicaid",
-  "cm_q_state_2","cm_q_state_3","cm_q_state_4",
-  "rn_hppd","lpn_hppd","cna_hppd","total_hppd"
+  "cms_certification_number", "year_month", "time", "time_treated",
+  "government", "non_profit", "chain", "beds",
+  "occupancy_rate", "pct_medicare", "pct_medicaid",
+  "cm_q_state_2", "cm_q_state_3", "cm_q_state_4",
+  "rn_hprd", "lpn_hprd", "cna_hprd", "total_hprd"
 )
 
-df <- read_csv(panel_fp, show_col_types = FALSE, col_select = all_of(keep_cols)) %>%
-  mutate(
+df0 <- load_staffing_panel() %>%
+  dplyr::select(any_of(keep_cols)) %>%
+  dplyr::mutate(
     cms_certification_number = as.factor(cms_certification_number),
-    year_month_chr = as.character(year_month),
-    year_month = as.factor(year_month_chr),
-    ym_date = as.Date(paste0(gsub("/", "-", year_month_chr), "-01"))
+    year_month = as.factor(year_month)
   )
 
-# ------------------------------ Treated window + logs ------------------------------
-df <- df %>%
+controls_rhs <- make_controls_rhs(df0)
+
+outs_lvl <- c("rn_hprd", "lpn_hprd", "cna_hprd", "total_hprd")
+nice_out <- c(rn_hprd = "RN", lpn_hprd = "LPN", cna_hprd = "CNA", total_hprd = "Total")
+
+# -----------------------------------------------------------------------------
+# Cohort g_i (treatment month), same convention as stacked_twfe_post.R
+# -----------------------------------------------------------------------------
+g_df <- df0 %>%
   group_by(cms_certification_number) %>%
-  mutate(
-    ever_treated = as.integer(any(treatment == 1, na.rm = TRUE) | any(!is.na(event_time)))
-  ) %>%
-  ungroup() %>%
-  mutate(
-    event_time_capped = case_when(
-      ever_treated == 1L & !is.na(event_time) ~ pmin(pmax(as.integer(event_time), -24L), 24L),
-      TRUE ~ 9999L
-    )
+  summarise(
+    g = {
+      tt <- unique(time_treated[!is.na(time_treated)])
+      if (length(tt) == 1) as.integer(tt) else NA_integer_
+    },
+    .groups = "drop"
   )
 
-mk_log <- function(x) ifelse(x > 0, log(x), NA_real_)
+df0 <- df0 %>% left_join(g_df, by = "cms_certification_number")
+cohorts <- sort(unique(df0$g[!is.na(df0$g)]))
+cat("[stacked] unique cohorts (treated months):", length(cohorts), "\n")
 
-df <- df %>%
-  mutate(
-    ln_rn    = mk_log(rn_hppd),
-    ln_lpn   = mk_log(lpn_hppd),
-    ln_cna   = mk_log(cna_hppd),
-    ln_total = mk_log(total_hppd)
-  )
+# -----------------------------------------------------------------------------
+# Build stacked data WITH event time (not just post), donut applied by
+# physically dropping rel in {-3,-2,-1} for treated units
+# -----------------------------------------------------------------------------
+REF <- -4L
+DONUT_SET <- c(-3L, -2L, -1L)
 
-# ------------------------------ Controls ------------------------------
-controls_rhs <- paste(
-  "government + non_profit + chain + beds +",
-  "occupancy_rate + pct_medicare + pct_medicaid +",
-  "cm_q_state_2 + cm_q_state_3 + cm_q_state_4"
-)
-
-pick_ref <- function(dat, desired = NULL) {
-  ev <- sort(unique(dat$event_time_capped[dat$ever_treated == 1L]))
-  ev <- ev[is.finite(ev) & ev != 9999L]
-  if (!length(ev)) stop("No treated event times found.")
-  if (!is.null(desired) && desired %in% ev) return(as.integer(desired))
-  if (-1L %in% ev) return(-1L)
-  if (-4L %in% ev) return(-4L)
-  negs <- ev[ev < 0L]
-  if (length(negs)) return(max(negs))
-  return(ev[1])
+make_stacked_event_data <- function(data, cohorts_vec, L, R, donut_set) {
+  stacked <- lapply(cohorts_vec, function(g0) {
+    d <- data %>%
+      dplyr::filter(time >= g0 - L, time <= g0 + R) %>%
+      dplyr::filter(is.na(g) | g > g0 | g == g0) %>%
+      dplyr::mutate(
+        cohort = as.integer(g0),
+        rel = as.integer(time - g0),
+        treated_stack = as.integer(!is.na(g) & g == g0),
+        stack_id = interaction(cms_certification_number, cohort, drop = TRUE)
+      ) %>%
+      # Donut: physically drop treated rows at the excluded event times.
+      # Never-treated/not-yet-treated comparison rows are untouched.
+      dplyr::filter(!(treated_stack == 1L & rel %in% donut_set)) %>%
+      dplyr::select(
+        cms_certification_number, year_month,
+        cohort, stack_id, rel, treated_stack,
+        government, non_profit, chain, beds,
+        occupancy_rate, pct_medicare, pct_medicaid,
+        cm_q_state_2, cm_q_state_3, cm_q_state_4,
+        rn_hprd, lpn_hprd, cna_hprd, total_hprd
+      )
+    d
+  })
+  dplyr::bind_rows(stacked)
 }
 
-run_es_twfe <- function(lhs, data, ref_val, window = c(-24L, 24L)) {
-  fml <- as.formula(paste0(
-    lhs, " ~ i(event_time_capped, ever_treated, ref = ", ref_val,
-    ", keep = ", window[1], ":", window[2], ") + ",
+vc_stack <- ~ cms_certification_number + year_month  # two-way clustering (facility + calendar month)
+
+make_es_fml <- function(lhs, keep_levels) {
+  as.formula(paste0(
+    lhs,
+    " ~ i(rel, treated_stack, ref = ", REF, ", keep = c(",
+    paste(keep_levels, collapse = ","), ")) + ",
     controls_rhs,
-    " | cms_certification_number + year_month"
+    " | stack_id + year_month + cohort"
   ))
-  feols(
-    fml,
-    data = data,
-    vcov = ~ cms_certification_number + year_month,
-    lean = TRUE
-  )
 }
 
-# ------------------------------ Pretrend helpers ------------------------------
-.es_pick <- function(mod, var = "event_time_capped", trt = "ever_treated") {
+fit_window <- function(L, R) {
+  keep_levels <- setdiff(-L:R, DONUT_SET)
+  stack <- make_stacked_event_data(df0, cohorts, L = L, R = R, donut_set = DONUT_SET)
+  cat(sprintf("[stacked] window +/-%d: rows = %s\n", L, format(nrow(stack), big.mark = ",")))
+
+  mods <- list()
+  for (y in outs_lvl) {
+    cat(sprintf("  [fit] window +/-%d, %s\n", L, y))
+    mods[[y]] <- feols(make_es_fml(y, keep_levels), data = stack, vcov = vc_stack, lean = TRUE)
+    gc()
+  }
+  list(mods = mods, n = nrow(stack))
+}
+
+cat("\n=== Fitting 2-year window (+/-24 months) ===\n")
+win24 <- fit_window(L = 24L, R = 24L)
+
+cat("\n=== Fitting 1-year window (+/-12 months) ===\n")
+win12 <- fit_window(L = 12L, R = 12L)
+
+# -----------------------------------------------------------------------------
+# Joint Wald pretrend test (reused pattern from wald.R)
+# -----------------------------------------------------------------------------
+.es_pick <- function(mod, var = "rel", trt = "treated_stack") {
   cn <- names(coef(mod))
   if (is.null(cn) || !length(cn)) return(list(names = character(0), taus = integer(0)))
-  pat <- sprintf("^%s::-?\\d+:%s$", var, trt)
+  pat <- sprintf("^%s::[-]?[0-9]+:%s$", var, trt)
   es_names <- grep(pat, cn, value = TRUE)
-  get_tau <- function(s) as.integer(regmatches(s, regexpr("-?\\d+", s)))
+  get_tau <- function(s) as.integer(regmatches(s, regexpr("-?[0-9]+", s)))
   taus <- vapply(es_names, get_tau, integer(1))
   names(taus) <- es_names
   list(names = es_names, taus = taus)
 }
 
-pretrend_wald <- function(mod, ref_tau, from = -Inf, to = -2,
-                          var = "event_time_capped", trt = "ever_treated") {
+pretrend_wald <- function(mod, ref_tau, from, to, var = "rel", trt = "treated_stack") {
+  if (is.null(mod)) return(list(note = "Model is NULL"))
   es <- .es_pick(mod, var, trt)
+  if (!length(es$names)) return(list(note = "No ES coefficients found"))
+
   pre_idx <- es$taus < 0L & es$taus != ref_tau & es$taus >= from & es$taus <= to
   pre_names <- names(es$taus)[pre_idx]
-  if (!length(pre_names)) {
-    return(list(
-      statistic = NA_real_,
-      df = NA_integer_,
-      p.value = NA_real_,
-      tested_taus = integer(0),
-      n_constraints = 0L,
-      note = "No preperiod coefficients in window"
-    ))
-  }
-  
+  if (!length(pre_names)) return(list(note = "No preperiod coefficients in window"))
+
   b <- coef(mod)[pre_names]
   V <- vcov(mod)[pre_names, pre_names, drop = FALSE]
+
   W <- as.numeric(t(b) %*% MASS::ginv(V) %*% b)
   df_w <- qr(V)$rank
   pval <- pchisq(W, df = df_w, lower.tail = FALSE)
-  
-  list(
-    statistic = W,
-    df = df_w,
-    p.value = pval,
-    tested_taus = sort(unique(es$taus[pre_idx])),
-    n_constraints = length(pre_names),
-    note = NULL
-  )
+
+  list(statistic = W, df = df_w, p.value = pval, window = c(from, to))
 }
 
-print_pretrend <- function(title, res) {
-  cat("\n================ ", title, " ================\n", sep = "")
-  if (!is.null(res$note)) {
-    cat("[info] ", res$note, "\n", sep = "")
-    return(invisible(NULL))
-  }
-  cat(sprintf("Joint Wald: W = %.3f on %d df  =>  p = %.4g\n",
-              res$statistic, res$df, res$p.value))
-  cat("Tested pre τ: ", paste(res$tested_taus, collapse = ", "), "\n", sep = "")
+fmt_wald_cell <- function(res) {
+  if (!is.null(res$note)) return("$\\,$")
+  sprintf("$%.2f$ (%d) [%.4f]", res$statistic, res$df, res$p.value)
 }
 
-wald_df_from_list <- function(res_list, spec_label) {
-  data.frame(
-    specification = spec_label,
-    outcome = names(res_list),
-    wald_stat = sapply(res_list, function(x) x$statistic),
-    df = sapply(res_list, function(x) x$df),
-    p_value = sapply(res_list, function(x) x$p.value),
-    tested_taus = sapply(res_list, function(x) {
-      if (length(x$tested_taus) == 0) return(NA_character_)
-      paste(x$tested_taus, collapse = ", ")
-    }),
-    n_constraints = sapply(res_list, function(x) x$n_constraints),
-    row.names = NULL
-  )
+wald_24 <- lapply(outs_lvl, function(y) pretrend_wald(win24$mods[[y]], ref_tau = REF, from = -24L, to = -5L))
+names(wald_24) <- outs_lvl
+
+wald_12 <- lapply(outs_lvl, function(y) pretrend_wald(win12$mods[[y]], ref_tau = REF, from = -12L, to = -5L))
+names(wald_12) <- outs_lvl
+
+cat("\n[wald] 2 Year Window with Donut:\n")
+for (y in outs_lvl) cat(sprintf("  %-6s -> %s\n", nice_out[[y]], fmt_wald_cell(wald_24[[y]])))
+cat("[wald] 1 Year Window with Donut:\n")
+for (y in outs_lvl) cat(sprintf("  %-6s -> %s\n", nice_out[[y]], fmt_wald_cell(wald_12[[y]])))
+
+# -----------------------------------------------------------------------------
+# Build inputtable LaTeX fragment (two rows, matches old Table 8's structure)
+# -----------------------------------------------------------------------------
+mk_row <- function(rowlabel, reslist) {
+  cells <- vapply(outs_lvl, function(y) fmt_wald_cell(reslist[[y]]), character(1))
+  paste0(rowlabel, " & ", paste(cells, collapse = " & "), " \\\\")
 }
 
-# ------------------------------ Outcomes ------------------------------
-outs_lvl <- c("rn_hppd","lpn_hppd","cna_hppd","total_hppd")
-outs_log <- c("ln_rn","ln_lpn","ln_cna","ln_total")
+row_24 <- mk_row("2 Year Window with Donut", wald_24)
+row_12 <- mk_row("1 Year Window with Donut", wald_12)
 
-# ------------------------------ Fitting block ------------------------------
-fit_block <- function(tag, data, desired_ref = -1L, event_window = c(-24L, 24L)) {
-  cat("\n\n", strrep("=", 84), "\nBLOCK: ", tag, "\n", strrep("=", 84), "\n", sep = "")
-  ref <- pick_ref(data, desired = desired_ref)
-  cat("Reference used: t = ", ref, "\n", sep = "")
-  
-  mods_lvl <- lapply(outs_lvl, function(y) run_es_twfe(y, data, ref_val = ref, window = event_window))
-  names(mods_lvl) <- outs_lvl
-  
-  mods_log <- lapply(outs_log, function(y) run_es_twfe(y, data, ref_val = ref, window = event_window))
-  names(mods_log) <- outs_log
-  
-  invisible(list(levels = mods_lvl, logs = mods_log, ref = ref, tag = tag))
-}
+N_24 <- format(win24$n, big.mark = ",")
+N_12 <- format(win12$n, big.mark = ",")
 
-# ------------------------------ Plot helpers ------------------------------
-plot_block_levels <- function(mod_obj, title_prefix, event_window = c(-24L, 24L)) {
-  ref <- mod_obj$ref
-  
-  old_par <- par(no.readonly = TRUE)
-  on.exit(par(old_par), add = TRUE)
-  
-  par(mfrow = c(2, 2))
-  set_plot_font()
-  
-  iplot(mod_obj$levels[["rn_hppd"]],
-        ref = ref, xlim = event_window,
-        xlab = "Months relative to treatment", ylab = "RN HPRD",
-        main = paste0(title_prefix, ": RN"), sub = "")
-  
-  iplot(mod_obj$levels[["lpn_hppd"]],
-        ref = ref, xlim = event_window,
-        xlab = "Months relative to treatment", ylab = "LPN HPRD",
-        main = paste0(title_prefix, ": LPN"), sub = "")
-  
-  iplot(mod_obj$levels[["cna_hppd"]],
-        ref = ref, xlim = event_window,
-        xlab = "Months relative to treatment", ylab = "CNA HPRD",
-        main = paste0(title_prefix, ": CNA"), sub = "")
-  
-  iplot(mod_obj$levels[["total_hppd"]],
-        ref = ref, xlim = event_window,
-        xlab = "Months relative to treatment", ylab = "Total HPRD",
-        main = paste0(title_prefix, ": Total"), sub = "")
-}
-
-plot_block_logs <- function(mod_obj, title_prefix, event_window = c(-24L, 24L)) {
-  ref <- mod_obj$ref
-  
-  old_par <- par(no.readonly = TRUE)
-  on.exit(par(old_par), add = TRUE)
-  
-  par(mfrow = c(2, 2))
-  set_plot_font()
-  
-  iplot(mod_obj$logs[["ln_rn"]],
-        ref = ref, xlim = event_window,
-        xlab = "Months relative to treatment", ylab = "Log(RN HPRD)",
-        main = paste0(title_prefix, ": Log RN"), sub = "")
-  
-  iplot(mod_obj$logs[["ln_lpn"]],
-        ref = ref, xlim = event_window,
-        xlab = "Months relative to treatment", ylab = "Log(LPN HPRD)",
-        main = paste0(title_prefix, ": Log LPN"), sub = "")
-  
-  iplot(mod_obj$logs[["ln_cna"]],
-        ref = ref, xlim = event_window,
-        xlab = "Months relative to treatment", ylab = "Log(CNA HPRD)",
-        main = paste0(title_prefix, ": Log CNA"), sub = "")
-  
-  iplot(mod_obj$logs[["ln_total"]],
-        ref = ref, xlim = event_window,
-        xlab = "Months relative to treatment", ylab = "Log(Total HPRD)",
-        main = paste0(title_prefix, ": Log Total"), sub = "")
-}
-
-# ------------------------------ Samples ------------------------------
-S_full  <- df
-S_noant <- df %>% filter(anticipation2 == 0)
-
-# ------------------------------ Run models ------------------------------
-mods_full <- fit_block(
-  tag = "MCR timing — WITH anticipation",
-  data = S_full,
-  desired_ref = -1L,
-  event_window = c(-24L, 24L)
+wald_tab <- c(
+  "\\begin{table}[!ht]",
+  "\\centering",
+  "\\begin{threeparttable}",
+  "\\caption{Joint Wald Tests of Pre-Trends: Stacked Event Study (Levels)}",
+  "\\label{tab:pretrend-wald-tests-stacked-levels}",
+  "\\small",
+  "\\setlength{\\tabcolsep}{6pt}",
+  "",
+  "\\begin{tabularx}{\\textwidth}{@{} l YYYY @{} }",
+  "\\toprule",
+  " & \\multicolumn{4}{c}{\\textbf{Outcomes}} \\\\",
+  "\\cmidrule(lr){2-5}",
+  sprintf(" & \\textbf{%s} & \\textbf{%s} & \\textbf{%s} & \\textbf{%s} \\\\",
+          nice_out[["rn_hprd"]], nice_out[["lpn_hprd"]], nice_out[["cna_hprd"]], nice_out[["total_hprd"]]),
+  "\\midrule",
+  row_24,
+  row_12,
+  "\\bottomrule",
+  "\\end{tabularx}",
+  "",
+  "\\begin{tablenotes}[flushleft]",
+  "\\footnotesize",
+  "\\item \\textit{Notes:} Each cell reports the Wald $\\chi^2$ statistic for the joint null that all pre-treatment event-time coefficients equal zero, followed by degrees of freedom in parentheses and the p-value in brackets.",
+  sprintf("\\item Tested windows and reference periods: 2 Year Window with Donut tests $\\tau=-24$ to $\\tau=-5$ with reference $\\tau=%d$ (dropping $\\tau=-3,-2,-1$); 1 Year Window with Donut tests $\\tau=-12$ to $\\tau=-5$ with reference $\\tau=%d$ (dropping $\\tau=-3,-2,-1$).", REF, REF),
+  sprintf("\\item Sample sizes (stacked rows): 2 Year Window with Donut ($N=%s$); 1 Year Window with Donut ($N=%s$).", N_24, N_12),
+  "\\item Stacked design: each treated cohort is compared only to never-treated and not-yet-treated facilities within its own event window; the donut excludes $\\tau=-3,-2,-1$ (physically dropped from the estimation sample for treated units).",
+  "\\item All specifications include facility-by-cohort fixed effects (stack\\_id), calendar-month fixed effects, cohort fixed effects, and covariates: \\textit{government}, \\textit{non-profit}, \\textit{chain}, \\textit{beds}, \\textit{occupancy rate}, \\textit{percent Medicare}, \\textit{percent Medicaid}, and state case-mix quartile indicators. Standard errors are clustered by facility.",
+  "\\end{tablenotes}",
+  "\\end{threeparttable}",
+  "\\end{table}",
+  ""
 )
 
-mods_noant <- fit_block(
-  tag = "MCR timing — WITHOUT anticipation",
-  data = S_noant,
-  desired_ref = -4L,
-  event_window = c(-24L, 24L)
-)
+writeLines(wald_tab, wald_frag_path, useBytes = TRUE)
+cat("\n[write] ", normalizePath(wald_frag_path, winslash = "\\"), "\n", sep = "")
 
-# ------------------------------ Wald tests ------------------------------
-# With anticipation: 2-year full prewindow, ref = -1, test tau = -24,...,-2
-wald_full_levels <- lapply(
-  mods_full$levels,
-  function(m) pretrend_wald(m, ref_tau = mods_full$ref, from = -24L, to = -2L)
-)
-wald_full_logs <- lapply(
-  mods_full$logs,
-  function(m) pretrend_wald(m, ref_tau = mods_full$ref, from = -24L, to = -2L)
-)
+# -----------------------------------------------------------------------------
+# Plots: custom ggplot2 build from extracted coefficients (2-year window)
+#   - Only event-times with an actual fitted coefficient are ever included.
+#   - Donut taus filtered out again here as an explicit safeguard, even
+#     though the underlying rows/keep-list already exclude them.
+#   - Plain sans-serif font.
+# -----------------------------------------------------------------------------
+extract_es_coefs <- function(mod, ref_tau) {
+  es <- .es_pick(mod)
+  if (!length(es$names)) return(tibble(event_time = integer(0), estimate = numeric(0), se = numeric(0)))
 
-# Without anticipation: 2-year donut prewindow, ref = -4, test tau = -24,...,-5
-wald_noant_levels <- lapply(
-  mods_noant$levels,
-  function(m) pretrend_wald(m, ref_tau = mods_noant$ref, from = -24L, to = -5L)
-)
-wald_noant_logs <- lapply(
-  mods_noant$logs,
-  function(m) pretrend_wald(m, ref_tau = mods_noant$ref, from = -24L, to = -5L)
-)
+  keep_idx <- !(es$taus %in% DONUT_SET)  # safeguard: never plot donut taus
+  nm <- es$names[keep_idx]
+  taus <- es$taus[keep_idx]
 
-cat("\n\n", strrep("=", 84), "\nJOINT WALD PRETREND TESTS — LEVELS\n", strrep("=", 84), "\n", sep = "")
-for (nm in names(wald_full_levels)) {
-  print_pretrend(paste("WITH anticipation —", nm), wald_full_levels[[nm]])
-}
-for (nm in names(wald_noant_levels)) {
-  print_pretrend(paste("WITHOUT anticipation —", nm), wald_noant_levels[[nm]])
+  b <- coef(mod)[nm]
+  s <- se(mod)[nm]
+
+  out <- tibble(event_time = taus, estimate = unname(b), se = unname(s))
+  # Add the reference point explicitly (estimate = 0, se = 0 by construction)
+  out <- bind_rows(out, tibble(event_time = ref_tau, estimate = 0, se = 0))
+  out %>% arrange(event_time)
 }
 
-cat("\n\n", strrep("=", 84), "\nJOINT WALD PRETREND TESTS — LOGS\n", strrep("=", 84), "\n", sep = "")
-for (nm in names(wald_full_logs)) {
-  print_pretrend(paste("WITH anticipation —", nm), wald_full_logs[[nm]])
-}
-for (nm in names(wald_noant_logs)) {
-  print_pretrend(paste("WITHOUT anticipation —", nm), wald_noant_logs[[nm]])
-}
-
-wald_levels_table <- bind_rows(
-  wald_df_from_list(wald_full_levels,  "2 Year Window with Anticipation"),
-  wald_df_from_list(wald_noant_levels, "2 Year Window with Donut")
+plot_fp <- c(
+  rn_hprd    = file.path(plots_dir, "stacked_es_rn_baseline.pdf"),
+  lpn_hprd   = file.path(plots_dir, "stacked_es_lpn_baseline.pdf"),
+  cna_hprd   = file.path(plots_dir, "stacked_es_cna_baseline.pdf"),
+  total_hprd = file.path(plots_dir, "stacked_es_total_baseline.pdf")
 )
 
-wald_logs_table <- bind_rows(
-  wald_df_from_list(wald_full_logs,  "2 Year Window with Anticipation"),
-  wald_df_from_list(wald_noant_logs, "2 Year Window with Donut")
+plot_title <- c(
+  rn_hprd    = "Stacked Event Study: RN",
+  lpn_hprd   = "Stacked Event Study: LPN",
+  cna_hprd   = "Stacked Event Study: CNA",
+  total_hprd = "Stacked Event Study: Total"
 )
 
-cat("\n\n================ WALD SUMMARY TABLE: LEVELS ================\n")
-print(wald_levels_table, row.names = FALSE)
+plot_ylab <- c(
+  rn_hprd    = "RN HPRD",
+  lpn_hprd   = "LPN HPRD",
+  cna_hprd   = "CNA HPRD",
+  total_hprd = "Total HPRD"
+)
 
-cat("\n\n================ WALD SUMMARY TABLE: LOGS ================\n")
-print(wald_logs_table, row.names = FALSE)
+for (y in outs_lvl) {
+  coefs <- extract_es_coefs(win24$mods[[y]], ref_tau = REF)
+  coefs <- coefs %>%
+    mutate(ci_lo = estimate - 1.96 * se, ci_hi = estimate + 1.96 * se)
 
-# ------------------------------ Preview plots only ------------------------------
-plot_block_levels(mods_full,  "MCR timing with anticipation",    event_window = c(-24L, 24L))
-plot_block_levels(mods_noant, "MCR timing without anticipation", event_window = c(-24L, 24L))
+  # Export the exact coefficients/SEs alongside the plot, so pre-trend
+  # patterns can be inspected numerically rather than only visually.
+  coefs_csv_fp <- file.path(out_dir, sprintf("stacked_es_%s_coefs.csv", sub("_hprd$", "", y)))
+  readr::write_csv(coefs, coefs_csv_fp)
+  cat("[write] ", normalizePath(coefs_csv_fp, winslash = "\\"), "\n", sep = "")
 
-plot_block_logs(mods_full,  "MCR timing with anticipation",    event_window = c(-24L, 24L))
-plot_block_logs(mods_noant, "MCR timing without anticipation", event_window = c(-24L, 24L))
+  p <- ggplot(coefs, aes(x = event_time, y = estimate)) +
+    geom_hline(yintercept = 0, linetype = "dotted", color = "grey40") +
+    geom_vline(xintercept = -0.5, linetype = "dashed", color = "grey40") +
+    geom_errorbar(aes(ymin = ci_lo, ymax = ci_hi), width = 0.4, color = "steelblue") +
+    geom_point(color = "steelblue", size = 1.6) +
+    labs(
+      x = "Months relative to ownership change",
+      y = plot_ylab[[y]]
+    ) +
+    theme_minimal(base_size = 12, base_family = "sans") +
+    theme(
+      panel.border = element_rect(color = "black", fill = NA, linewidth = 1),
+      panel.grid.minor = element_blank()
+    )
 
-cat("\nPreview plots and Wald tests completed for MCR timing panel.\n")
+  ggsave(plot_fp[[y]], plot = p, width = 7, height = 5, device = "pdf")
+  cat("[write] ", normalizePath(plot_fp[[y]], winslash = "\\"), "\n", sep = "")
+}
+
+cat("\nDone. Stacked event study (2-year and 1-year windows), Wald fragment, and plots all regenerated.\n")

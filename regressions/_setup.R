@@ -42,6 +42,21 @@ log_outcome_map <- c(
   total_hprd = "ln_total"
 )
 
+# Raw PBJ hours (numerator only, not divided by resident-days) -- added
+# alongside HPRD per advisor request, to test whether occupancy-driven
+# denominator changes are mechanically responsible for the HPRD results.
+# Same construction as HPRD's log_outcome_map, kept as a separate map so
+# code that loops over log_outcome_map (assuming exactly the 4 HPRD vars)
+# is unaffected.
+raw_hours_outcomes <- c("rn_hours_month", "lpn_hours_month", "cna_hours_month", "total_hours")
+
+log_raw_hours_map <- c(
+  rn_hours_month   = "ln_rn_hours",
+  lpn_hours_month  = "ln_lpn_hours",
+  cna_hours_month  = "ln_cna_hours",
+  total_hours      = "ln_total_hours"
+)
+
 base_controls <- c(
   "government",
   "non_profit",
@@ -129,6 +144,7 @@ load_staffing_panel <- function(fp = panel_fp) {
   # Numeric coercion for key variables if present
   numeric_candidates <- c(
     staffing_outcomes,
+    raw_hours_outcomes,
     "beds",
     "occupancy_rate",
     "pct_medicare",
@@ -168,10 +184,18 @@ load_staffing_panel <- function(fp = panel_fp) {
       mutate(across(all_of(binary_candidates), ~ suppressWarnings(as.integer(.x))))
   }
   
-  # Safe logs for staffing outcomes
+  # Safe logs for staffing outcomes (HPRD)
   for (nm in names(log_outcome_map)) {
     if (nm %in% names(df)) {
       df[[log_outcome_map[[nm]]]] <- mk_log(df[[nm]])
+    }
+  }
+
+  # Safe logs for raw hours (numerator only) -- guarded so this doesn't
+  # break on an older staffing_panel.csv that predates these columns.
+  for (nm in names(log_raw_hours_map)) {
+    if (nm %in% names(df)) {
+      df[[log_raw_hours_map[[nm]]]] <- mk_log(df[[nm]])
     }
   }
   
@@ -305,7 +329,15 @@ pretty_outcome_labels <- c(
   ln_rn      = "log(RN HPRD)",
   ln_lpn     = "log(LPN HPRD)",
   ln_cna     = "log(CNA HPRD)",
-  ln_total   = "log(Total HPRD)"
+  ln_total   = "log(Total HPRD)",
+  rn_hours_month  = "RN hours (monthly)",
+  lpn_hours_month = "LPN hours (monthly)",
+  cna_hours_month = "CNA hours (monthly)",
+  total_hours     = "Total hours (monthly)",
+  ln_rn_hours     = "log(RN hours)",
+  ln_lpn_hours    = "log(LPN hours)",
+  ln_cna_hours    = "log(CNA hours)",
+  ln_total_hours  = "log(Total hours)"
 )
 
 get_pretty_label <- function(x) {

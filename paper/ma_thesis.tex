@@ -114,7 +114,7 @@
 
 \section{Introduction} \label{sec:introduction}
 
-Ownership changes have become an increasingly common feature of the healthcare sector (footnote w/ citation?). Policymakers \citep{Khan2024PrivateCapital,MurphyScanlon2026,OliveiraBlanco2024}, academics \citep{StevensonEtAl2023, RyskinaEtAl2024, GuptaEtAl2024}, and the public have expressed growing concern over the implications of these changes for patients and the quality of care. This concern is especially important in nursing homes as they serve and medically vulnerable population. Yet, existing literature gives limited or mixed results on how ownership changes affect patients and quality. This is in part because ownership is difficult to measure and many studies only focus on specific forms of ownership, such as private equity, chain mergers, or for-profit acquisitions. This paper addresses that gap by introducing a new measure of verified substantive ownership changes and estimating their effects on both the production and quality of care in U.S. nursing homes.
+Ownership changes have become an increasingly common feature of the healthcare sector (footnote w/ citation?). Policymakers \citep{Khan2024PrivateCapital,MurphyScanlon2026,OliveiraBlanco2024}, academics \citep{StevensonEtAl2023, RyskinaEtAl2024, GuptaEtAl2024}, and the public have expressed growing concern over the implications of these changes for patients and the quality of care. This concern is especially important in nursing homes as they serve and medically vulnerable population who face a wide range of frictions. Yet, existing literature gives limited or mixed results on how ownership changes affect patients and quality. This is in part because ownership is difficult to measure and many studies only focus on specific forms of ownership, such as private equity, chain mergers, or for-profit acquisitions. This paper addresses that gap by introducing a new measure of verified substantive ownership changes and estimating their effects on both the production and quality of care in U.S. nursing homes.
 
 This paper studies that question in U.S. nursing homes. We use CMS panel data from 2017 through 2024 to identify true transfers of economic control and estimate how staffing inputs and quality outcomes change following ownership changes. Nursing homes are a useful setting because prices are heavily shaped by public reimbursement, residents are medically vulnerable, and staffing is a central input into care production. If ownership changes affect care in this setting, the effects are likely to operate through internal production decisions: nurse staffing, staffing composition, task allocation, medication management, monitoring, documentation, and clinical routines.
 
@@ -320,13 +320,13 @@ RN staffing declines immediately following ownership changes and remains far bel
 % Row 1
 \begin{subfigure}[t]{0.49\linewidth}
   \centering
-  \includegraphics[width=\linewidth]{C:/Repositories/white-bowblis-nhmc/outputs/plots/twfe_es_rn_without_anticipation.pdf}
   \caption{Registered Nurses (RN)}
+  \includegraphics[width=\linewidth]{C:/Repositories/white-bowblis-nhmc/outputs/plots/twfe_es_rn_without_anticipation.pdf}
 \end{subfigure}\hfill
 \begin{subfigure}[t]{0.49\linewidth}
   \centering
-  \includegraphics[width=\linewidth]{C:/Repositories/white-bowblis-nhmc/outputs/plots/twfe_es_lpn_without_anticipation.pdf}
   \caption{Licensed Practical Nurses (LPN)}
+  \includegraphics[width=\linewidth]{C:/Repositories/white-bowblis-nhmc/outputs/plots/twfe_es_lpn_without_anticipation.pdf}
 \end{subfigure}
 
 \vspace{1em}
@@ -334,13 +334,13 @@ RN staffing declines immediately following ownership changes and remains far bel
 % Row 2
 \begin{subfigure}[t]{0.49\linewidth}
   \centering
-  \includegraphics[width=\linewidth]{C:/Repositories/white-bowblis-nhmc/outputs/plots/twfe_es_cna_without_anticipation.pdf}
   \caption{Certified Nursing Assistants (CNA)}
+  \includegraphics[width=\linewidth]{C:/Repositories/white-bowblis-nhmc/outputs/plots/twfe_es_cna_without_anticipation.pdf}
 \end{subfigure}\hfill
 \begin{subfigure}[t]{0.49\linewidth}
   \centering
-  \includegraphics[width=\linewidth]{C:/Repositories/white-bowblis-nhmc/outputs/plots/twfe_es_total_without_anticipation.pdf}
   \caption{Total Nursing Hours}
+  \includegraphics[width=\linewidth]{C:/Repositories/white-bowblis-nhmc/outputs/plots/twfe_es_total_without_anticipation.pdf}
 \end{subfigure}
 
 \caption{
@@ -370,10 +370,7 @@ To summarize these dynamic effects with a single average treatment estimate, Tab
 
 \subsubsection{Heterogeneity Before and After the Onset of COVID-19}
 
-\todo[color = pastelyellow]{I think that Appendix table 8 is interesting since the difference is only statistically significant in LPNs}
-
 Table~\ref{tab:twfe-prepost} examines whether these effects differ before and after the COVID-19 pandemic. The estimated reductions are generally smaller during the pandemic period for CNA and total HPRD, while RN reductions remain negative and statistically significant. This pattern suggests that pandemic-era labor market constraints and heightened regulatory scrutiny may have limited some staffing adjustments after ownership change.
-
 
 \input{C:/Repositories/white-bowblis-nhmc/outputs/tables/twfe_prepost.tex}
 \FloatBarrier
@@ -397,13 +394,13 @@ Figure~\ref{fig:quality_routine_process_landscape} presents event-study estimate
 % Row 1
 \begin{subfigure}[t]{0.49\linewidth}
   \centering
-  \includegraphics[width=\linewidth]{C:/Repositories/white-bowblis-nhmc/outputs/plots/twfe_es_quality_qm_406_drop_tau0.pdf}
   \caption{Catheter Use}
+  \includegraphics[width=\linewidth]{C:/Repositories/white-bowblis-nhmc/outputs/plots/twfe_es_quality_qm_406_drop_tau0.pdf}
 \end{subfigure}\hfill
 \begin{subfigure}[t]{0.49\linewidth}
   \centering
-  \includegraphics[width=\linewidth]{C:/Repositories/white-bowblis-nhmc/outputs/plots/twfe_es_quality_qm_419_drop_tau0.pdf}
   \caption{Anti-Psychotic Medication Use}
+  \includegraphics[width=\linewidth]{C:/Repositories/white-bowblis-nhmc/outputs/plots/twfe_es_quality_qm_419_drop_tau0.pdf}
 \end{subfigure}
 
 \vspace{1em}
@@ -411,8 +408,8 @@ Figure~\ref{fig:quality_routine_process_landscape} presents event-study estimate
 % Row 2
 \begin{subfigure}[t]{0.49\linewidth}
   \centering
-  \includegraphics[width=\linewidth]{C:/Repositories/white-bowblis-nhmc/outputs/plots/twfe_es_quality_qm_452_drop_tau0.pdf}
   \caption{Anti-Anxiety or Hypnotic Medication Use}
+  \includegraphics[width=\linewidth]{C:/Repositories/white-bowblis-nhmc/outputs/plots/twfe_es_quality_qm_452_drop_tau0.pdf}
 \end{subfigure}
 
 \caption{
@@ -451,18 +448,18 @@ Figure~\ref{fig:quality_resident_outcomes_landscape} presents event-study estima
 % Row 1
 \begin{subfigure}[t]{0.32\linewidth}
   \centering
-  \includegraphics[width=\linewidth]{C:/Repositories/white-bowblis-nhmc/outputs/plots/twfe_es_quality_qm_453_drop_tau0.pdf}
   \caption{Pressure Injuries}
+  \includegraphics[width=\linewidth]{C:/Repositories/white-bowblis-nhmc/outputs/plots/twfe_es_quality_qm_453_drop_tau0.pdf}
 \end{subfigure}\hfill
 \begin{subfigure}[t]{0.32\linewidth}
   \centering
-  \includegraphics[width=\linewidth]{C:/Repositories/white-bowblis-nhmc/outputs/plots/twfe_es_quality_qm_410_drop_tau0.pdf}
   \caption{Falls with Major Injury}
+  \includegraphics[width=\linewidth]{C:/Repositories/white-bowblis-nhmc/outputs/plots/twfe_es_quality_qm_410_drop_tau0.pdf}
 \end{subfigure}\hfill
 \begin{subfigure}[t]{0.32\linewidth}
   \centering
-  \includegraphics[width=\linewidth]{C:/Repositories/white-bowblis-nhmc/outputs/plots/twfe_es_quality_qm_404_drop_tau0.pdf}
   \caption{Weight Loss}
+  \includegraphics[width=\linewidth]{C:/Repositories/white-bowblis-nhmc/outputs/plots/twfe_es_quality_qm_404_drop_tau0.pdf}
 \end{subfigure}
 
 \vspace{1em}
@@ -470,13 +467,13 @@ Figure~\ref{fig:quality_resident_outcomes_landscape} presents event-study estima
 % Row 2
 \begin{subfigure}[t]{0.32\linewidth}
   \centering
-  \includegraphics[width=\linewidth]{C:/Repositories/white-bowblis-nhmc/outputs/plots/twfe_es_quality_qm_401_drop_tau0.pdf}
   \caption{Decline in Physical Functioning}
+  \includegraphics[width=\linewidth]{C:/Repositories/white-bowblis-nhmc/outputs/plots/twfe_es_quality_qm_401_drop_tau0.pdf}
 \end{subfigure}\hspace{0.06\linewidth}
 \begin{subfigure}[t]{0.32\linewidth}
   \centering
-  \includegraphics[width=\linewidth]{C:/Repositories/white-bowblis-nhmc/outputs/plots/twfe_es_quality_qm_407_drop_tau0.pdf}
   \caption{Urinary Tract Infections}
+  \includegraphics[width=\linewidth]{C:/Repositories/white-bowblis-nhmc/outputs/plots/twfe_es_quality_qm_407_drop_tau0.pdf}
 \end{subfigure}
 
 \caption{
@@ -549,8 +546,6 @@ The results of our regressions on quality help distinguish between alternative i
 At the same time, we find that labor saving mechanism measures improve. Catheter use falls, and anti-anxiety or hypnotic medication use declines after ownership change. Anti-psychotic medication use also declines moderately, though the average post-change estimate is not statistically significant. These measures may respond to changes in care routines, medication management, monitoring, documentation, and managerial oversight. Their improvement suggests that ownership changes may lead facilities to revise care processes rather than simply reduce labor inputs.
 
 This pattern is consistent with incumbent nursing home owners operating their facilities inside their feasible production frontier. A facility can be inside its feasible production frontier if existing routines persist even when better combinations of inputs and outcomes are attainable. Ownership change may interrupt those routines by introducing new managers, new monitoring systems, different performance targets, or greater willingness to change staffing and care practices. Under this interpretation, lower RN and CNA hours do not necessarily imply a proportional decline in care quality. Instead, they may reflect a reorganization of production in which some inefficient practices are reduced while selected quality measures improve.
-
-\todo[inline, color = pastelyellow]{I was thinking about putting a paragraph about how the quality metrics are limited and don't capture all aspects of resident welfare. Therefore, our results should be interpreted very specifically. Thoughts?}
 
 \subsection{Heterogeneity and Constraints}
 
@@ -733,7 +728,7 @@ Final analytic ownership-change sample & XXX \\
 \input{C:/Repositories/white-bowblis-nhmc/outputs/tables/twfe_robustness_summary_code.tex}
 \FloatBarrier
 
-%\input{C:/Repositories/white-bowblis-nhmc/outputs/tables/pretrend_wald_tests_stacked_levels_fragment.tex}
+\input{C:/Repositories/white-bowblis-nhmc/outputs/tables/pretrend_wald_tests_stacked_levels_fragment.tex}
 
 \clearpage
 
@@ -761,14 +756,14 @@ The figure reports the share of nursing homes in each state that experienced an 
 % Row 1
 \begin{subfigure}[t]{0.49\linewidth}
   \centering
-  \includegraphics[width=\linewidth]{C:/Repositories/white-bowblis-nhmc/outputs/plots/stacked_es_rn_baseline.pdf}
   \caption{Registered Nurses (RN)}
+  \includegraphics[width=\linewidth]{C:/Repositories/white-bowblis-nhmc/outputs/plots/stacked_es_rn_baseline.pdf}
   \label{fig:stacked-es-rn}
 \end{subfigure}\hfill
 \begin{subfigure}[t]{0.49\linewidth}
   \centering
-  \includegraphics[width=\linewidth]{C:/Repositories/white-bowblis-nhmc/outputs/plots/stacked_es_lpn_baseline.pdf}
   \caption{Licensed Practical Nurses (LPN)}
+  \includegraphics[width=\linewidth]{C:/Repositories/white-bowblis-nhmc/outputs/plots/stacked_es_lpn_baseline.pdf}
   \label{fig:stacked-es-lpn}
 \end{subfigure}
 
@@ -777,14 +772,14 @@ The figure reports the share of nursing homes in each state that experienced an 
 % Row 2
 \begin{subfigure}[t]{0.49\linewidth}
   \centering
-  \includegraphics[width=\linewidth]{C:/Repositories/white-bowblis-nhmc/outputs/plots/stacked_es_cna_baseline.pdf}
   \caption{Certified Nursing Assistants (CNA)}
+  \includegraphics[width=\linewidth]{C:/Repositories/white-bowblis-nhmc/outputs/plots/stacked_es_cna_baseline.pdf}
   \label{fig:stacked-es-cna}
 \end{subfigure}\hfill
 \begin{subfigure}[t]{0.49\linewidth}
   \centering
-  \includegraphics[width=\linewidth]{C:/Repositories/white-bowblis-nhmc/outputs/plots/stacked_es_total_baseline.pdf}
   \caption{Total Nursing Hours}
+  \includegraphics[width=\linewidth]{C:/Repositories/white-bowblis-nhmc/outputs/plots/stacked_es_total_baseline.pdf}
   \label{fig:stacked-es-total}
 \end{subfigure}
 

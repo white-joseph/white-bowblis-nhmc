@@ -1,65 +1,66 @@
-# C:/Repositories/white-bowblis-nhmc/regressions/stacked_twfe_post.R
-# Basic TWFE DiD (post-only) on the STACKED dataset
-# Fix: avoid "*** recursive gc invocation" by:
-#   - trimming stacked dataset columns
-#   - fitting ONE model at a time (no lapply over 24M rows)
-#   - extracting post coef/SE/p immediately, then rm()+gc()
-# Outputs:
-#   - outputs/tables/stacked_twfe_post_full.tex
-#   - outputs/tables/stacked_twfe_post_full_QA.tex
+# =============================================================================
+# regressions/stacked_twfe_post.R
+#
+# Basic TWFE DiD (post-only) on the STACKED dataset -- companion to
+# stacked_event_study.R, same cohort-stacking approach, but a single
+# post-period estimate rather than an event-time profile.
+#
+# Updated to match current project conventions:
+#   - reads the CURRENT staffing_panel.csv (via load_staffing_panel() in
+#     _setup.R), not the old panel.csv -- column names are rn_hprd etc.,
+#     not rn_hppd
+#   - reuses the already-computed ln_rn/ln_lpn/ln_cna/ln_total log columns
+#     from _setup.R instead of recomputing them
+#   - reuses make_controls_rhs() for the control set instead of a hardcoded
+#     string
+#   - TWO-WAY clustering (facility + calendar month), matching the rest of
+#     the project and matching the fix just made in stacked_event_study.R.
+#     NOTE: this is meaningfully more expensive to compute than the
+#     facility-only clustering used previously -- expect longer runtime.
+#
+# Memory management (unchanged from the original): models are fit ONE
+# outcome at a time, coefficients extracted immediately, then rm()+gc(),
+# to avoid holding multiple large stacked-sample model objects at once.
+#
+# Output:
+#   outputs/tables/stacked_twfe_post_full.tex
+#   outputs/tables/stacked_twfe_post_full_QA.tex
+# =============================================================================
+
+source("C:/Repositories/white-bowblis-nhmc/regressions/_setup.R")
 
 suppressPackageStartupMessages({
   library(fixest)
-  library(readr)
   library(dplyr)
 })
 
 options(scipen = 999, digits = 4)
 
-# ------------------------------ Paths ------------------------------
-panel_fp <- "C:/Repositories/white-bowblis-nhmc/data/clean/panel.csv"
-out_dir  <- "C:/Repositories/white-bowblis-nhmc/outputs/tables"
+out_dir <- out_tables_dir
 dir.create(out_dir, showWarnings = FALSE, recursive = TRUE)
 
-# ------------------------------ Load ------------------------------
+# ------------------------------ Load current panel ------------------------------
 keep_cols <- c(
-  "cms_certification_number","year_month",
-  "time","time_treated",
-  "government","non_profit","chain","beds",
-  "occupancy_rate","pct_medicare","pct_medicaid",
-  "cm_q_state_2","cm_q_state_3","cm_q_state_4",
-  "rn_hppd","lpn_hppd","cna_hppd","total_hppd"
+  "cms_certification_number", "year_month", "time", "time_treated",
+  "government", "non_profit", "chain", "beds",
+  "occupancy_rate", "pct_medicare", "pct_medicaid",
+  "cm_q_state_2", "cm_q_state_3", "cm_q_state_4",
+  "rn_hprd", "lpn_hprd", "cna_hprd", "total_hprd",
+  "ln_rn", "ln_lpn", "ln_cna", "ln_total"
 )
 
-raw <- read_csv(panel_fp, show_col_types = FALSE)
-keep_cols_present <- intersect(keep_cols, names(raw))
-
-df <- raw[, keep_cols_present] %>%
-  mutate(
+df <- load_staffing_panel() %>%
+  dplyr::select(any_of(keep_cols)) %>%
+  dplyr::mutate(
     cms_certification_number = as.factor(cms_certification_number),
     year_month = as.factor(year_month)
   )
-rm(raw)
 
-# ------------------------------ Logs ------------------------------
-mk_log <- function(x) ifelse(x > 0, log(x), NA_real_)
-df <- df %>%
-  mutate(
-    ln_rn    = mk_log(rn_hppd),
-    ln_lpn   = mk_log(lpn_hppd),
-    ln_cna   = mk_log(cna_hppd),
-    ln_total = mk_log(total_hppd)
-  )
+controls_rhs <- make_controls_rhs(df)
 
-outs_lvl <- c("rn_hppd","lpn_hppd","cna_hppd","total_hppd")
-outs_log <- c(rn_hppd="ln_rn", lpn_hppd="ln_lpn", cna_hppd="ln_cna", total_hppd="ln_total")
-
-# ------------------------------ Controls ------------------------------
-controls_rhs <- paste(
-  "government + non_profit + chain + beds +",
-  "occupancy_rate + pct_medicare + pct_medicaid +",
-  "cm_q_state_2 + cm_q_state_3 + cm_q_state_4"
-)
+outs_lvl <- c("rn_hprd", "lpn_hprd", "cna_hprd", "total_hprd")
+outs_log <- c(rn_hprd = "ln_rn", lpn_hprd = "ln_lpn", cna_hprd = "ln_cna", total_hprd = "ln_total")
+nice_out <- c(rn_hprd = "RN", lpn_hprd = "LPN", cna_hprd = "CNA", total_hprd = "Total")
 
 # ------------------------------ Cohort g_i ------------------------------
 g_df <- df %>%
@@ -78,9 +79,9 @@ cat("Unique cohorts (treated months):", length(cohorts), "\n")
 
 # ------------------------------ Build stacked data (baseline donut) ------------------------------
 make_stacked_data <- function(data, cohorts_vec, L = 24L, R = 24L, drop_set = -3:-1) {
-  
+
   stacked <- lapply(cohorts_vec, function(g0) {
-    
+
     d <- data %>%
       dplyr::filter(time >= g0 - L, time <= g0 + R) %>%
       dplyr::filter(is.na(g) | g > g0 | g == g0) %>%
@@ -101,13 +102,13 @@ make_stacked_data <- function(data, cohorts_vec, L = 24L, R = 24L, drop_set = -3
         government, non_profit, chain, beds,
         occupancy_rate, pct_medicare, pct_medicaid,
         cm_q_state_2, cm_q_state_3, cm_q_state_4,
-        rn_hppd, lpn_hppd, cna_hppd, total_hppd,
+        rn_hprd, lpn_hprd, cna_hprd, total_hprd,
         ln_rn, ln_lpn, ln_cna, ln_total
       )
-    
+
     d
   })
-  
+
   dplyr::bind_rows(stacked)
 }
 
@@ -121,7 +122,11 @@ cat("Stacked rows (baseline donut):", nrow(stack), "\n")
 make_fml <- function(lhs) as.formula(paste0(
   lhs, " ~ post + ", controls_rhs, " | stack_id + year_month + cohort"
 ))
-vc <- ~ cms_certification_number  # facility-only clustering (stable)
+
+# Two-way clustering (facility + calendar month) -- meaningfully more
+# expensive than facility-only on a ~24M row stacked dataset; matches the
+# fix just applied in stacked_event_study.R.
+vc <- ~ cms_certification_number + year_month
 
 # Extract post info without keeping giant model objects around
 extract_post <- function(mod, term = "post") {
@@ -165,12 +170,11 @@ row_from_res <- function(reslist) {
   }, character(1)), collapse = "  &  ")
 }
 
-row_HPPD <- row_from_res(res_lvl)
+row_HPRD <- row_from_res(res_lvl)
 row_LOG  <- row_from_res(res_log)
 
 N_levels <- format(nrow(stack), big.mark = ",")
-# Logs N: rows where all logs are non-missing (simple, conservative)
-N_logs <- format(sum(complete.cases(stack[, c("ln_rn","ln_lpn","ln_cna","ln_total")])), big.mark = ",")
+N_logs <- format(sum(complete.cases(stack[, c("ln_rn", "ln_lpn", "ln_cna", "ln_total")])), big.mark = ",")
 
 # ------------------------------ Write LaTeX table ------------------------------
 tab <- c(
@@ -187,19 +191,21 @@ tab <- c(
   "\\toprule",
   " & \\multicolumn{4}{c}{\\textbf{Outcomes}} \\\\",
   "\\cmidrule(lr){2-5}",
-  " & \\textbf{RN} & \\textbf{LPN} & \\textbf{CNA} & \\textbf{Total} \\\\",
+  sprintf(" & \\textbf{%s} & \\textbf{%s} & \\textbf{%s} & \\textbf{%s} \\\\",
+          nice_out[["rn_hprd"]], nice_out[["lpn_hprd"]], nice_out[["cna_hprd"]], nice_out[["total_hprd"]]),
   "\\midrule",
-  paste0("HPPD & ", row_HPPD, " \\\\"),
+  paste0("HPRD & ", row_HPRD, " \\\\"),
   "\\addlinespace[3pt]",
-  paste0("Log(HPPD) & ", row_LOG, " \\\\"),
+  paste0("Log(HPRD) & ", row_LOG, " \\\\"),
   "\\bottomrule",
   "\\end{tabularx}",
   "",
   "\\begin{tablenotes}[flushleft]",
   "\\footnotesize",
-  sprintf("\\item \\textit{Notes:} Each cell reports the coefficient on \\textit{post} with facility-clustered standard errors in parentheses. The stacked sample includes never-treated and not-yet-treated controls for each cohort; the donut excludes $\\tau\\in\\{-3,-2,-1\\}$. Sample sizes: $N_{\\mathrm{HPPD}}=%s$; $N_{\\mathrm{Log}}=%s$.",
+  sprintf("\\item \\textit{Notes:} Each cell reports the coefficient on \\textit{post} with standard errors in parentheses. The stacked sample includes never-treated and not-yet-treated controls for each cohort; the donut excludes $\\tau\\in\\{-3,-2,-1\\}$. Sample sizes: $N_{\\mathrm{HPRD}}=%s$; $N_{\\mathrm{Log}}=%s$.",
           N_levels, N_logs),
   "\\item Specifications include facility-by-cohort fixed effects (stack\\_id), calendar-month fixed effects, cohort fixed effects, and covariates: \\textit{government}, \\textit{non-profit}, \\textit{chain}, \\textit{beds}, \\textit{occupancy rate}, \\textit{percent Medicare}, \\textit{percent Medicaid}, and state case-mix quartile indicators.",
+  "\\item Standard errors are clustered two ways by facility and calendar month.",
   "\\item Statistical significance: $^{***}p<0.01$, $^{**}p<0.05$, $^{*}p<0.10$.",
   "\\end{tablenotes}",
   "\\end{threeparttable}",

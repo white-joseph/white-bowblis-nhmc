@@ -1,0 +1,43 @@
+\documentclass[12pt]{article}
+
+\usepackage[margin=1in]{geometry}
+\usepackage{booktabs}
+\usepackage{tabularx}
+\usepackage{threeparttable}
+\usepackage{makecell}
+\usepackage{array}
+\usepackage{caption}
+\usepackage{float}
+
+\newcolumntype{Y}{>{\centering\arraybackslash}X}
+
+\begin{document}
+
+\begin{table}[H]
+\centering
+\begin{threeparttable}
+\caption{Robustness: Case-Mix Control Granularity (State vs. National, Quartile vs. Decile)}
+\label{tab:robustness-case-mix-bins}
+\small
+\setlength{\tabcolsep}{6pt}
+\begin{tabularx}{\textwidth}{@{} l Y Y Y Y @{}}
+\toprule
+Outcome & State Quartile (current default) & State Decile & National Quartile & National Decile \\
+\midrule
+RN HPRD & \makecell[t]{$-0.0316^{***}$ \\ $(0.0052)$} & \makecell[t]{$-0.0318^{***}$ \\ $(0.0052)$} & \makecell[t]{$-0.0318^{***}$ \\ $(0.0052)$} & \makecell[t]{$-0.0322^{***}$ \\ $(0.0052)$} \\
+LPN HPRD & \makecell[t]{$-0.0004$ \\ $(0.0060)$} & \makecell[t]{$-0.0006$ \\ $(0.0060)$} & \makecell[t]{$-0.0002$ \\ $(0.0060)$} & \makecell[t]{$-0.0003$ \\ $(0.0060)$} \\
+CNA HPRD & \makecell[t]{$-0.0548^{***}$ \\ $(0.0093)$} & \makecell[t]{$-0.0552^{***}$ \\ $(0.0093)$} & \makecell[t]{$-0.0551^{***}$ \\ $(0.0093)$} & \makecell[t]{$-0.0556^{***}$ \\ $(0.0093)$} \\
+Total HPRD & \makecell[t]{$-0.0868^{***}$ \\ $(0.0129)$} & \makecell[t]{$-0.0876^{***}$ \\ $(0.0129)$} & \makecell[t]{$-0.0871^{***}$ \\ $(0.0130)$} & \makecell[t]{$-0.0881^{***}$ \\ $(0.0129)$} \\
+\bottomrule
+\end{tabularx}
+
+\begin{tablenotes}[flushleft]
+\footnotesize
+\item \textit{Notes:} Each cell reports the coefficient on \textit{post}, with standard errors in parentheses. $N = 626,307$ for all models. Only the case-mix control set changes across columns -- base controls (beds, government, non-profit, chain, occupancy rate, Medicare share, Medicaid share), facility and calendar-month fixed effects, and the anticipation-window exclusion are identical across all four columns.
+\item ``State Quartile'' is the project's current default (see \texttt{\_setup.R}'s \texttt{preferred\_case\_mix\_controls}). Quartile bins use dummies for bins 2-4 (bin 1 omitted as reference); decile bins use dummies for bins 2-10 (bin 1 omitted as reference).
+\item Standard errors are clustered two ways by facility and calendar month. Statistical significance: $^{***}p<0.01$, $^{**}p<0.05$, $^{*}p<0.10$.
+\end{tablenotes}
+\end{threeparttable}
+\end{table}
+
+\end{document}

@@ -18,12 +18,19 @@
 #   regression table.
 #
 # Short-stay quality outcomes:
-#   1. qm_424: Short-stay moderate/severe pain
-#   2. qm_425: Short-stay new/worsened pressure ulcers
-#   3. qm_430: Short-stay pneumococcal vaccine
-#   4. qm_434: Short-stay newly receiving antipsychotic medication
-#   5. qm_471: Short-stay improved function
-#   6. qm_472: Short-stay influenza vaccine
+#   1. qm_430: Short-stay pneumococcal vaccine
+#   2. qm_434: Short-stay newly receiving antipsychotic medication
+#   3. qm_471: Short-stay improved function (trimmed to 2017-2022; missingness
+#      degrades sharply in 2023 and the measure is effectively absent in 2024)
+#   4. qm_472: Short-stay influenza vaccine (trimmed to 2018-2023; the measure
+#      is effectively absent in 2017 and again in 2024)
+#
+#   NOTE: qm_424 (moderate/severe pain) and qm_425 (new/worsened pressure
+#   ulcers) have been DROPPED. Missingness checks showed these measures go
+#   to ~100% missing starting in 2019/2020 and stay there for the rest of
+#   the panel -- not sparse reporting, effectively discontinued measures.
+#   Treating them as full-panel outcomes would be misleading regardless of
+#   what controls are added.
 #
 # Output:
 #   outputs/tables/composition_checks_monthly_standalone.tex
@@ -277,7 +284,7 @@ controls_quality <- intersect(
 
 rhs_controls_quality <- paste(c("post", controls_quality), collapse = " + ")
 
-run_quality_nocontrols <- function(outcome) {
+run_quality_nocontrols <- function(outcome, dat) {
   feols(
     as.formula(
       paste0(
@@ -285,13 +292,13 @@ run_quality_nocontrols <- function(outcome) {
         " ~ post | cms_certification_number + year_quarter"
       )
     ),
-    data = df_quality_post,
+    data = dat,
     vcov = vc_quarter,
     lean = FALSE
   )
 }
 
-run_quality_controls <- function(outcome) {
+run_quality_controls <- function(outcome, dat) {
   feols(
     as.formula(
       paste0(
@@ -301,28 +308,38 @@ run_quality_controls <- function(outcome) {
         " | cms_certification_number + year_quarter"
       )
     ),
-    data = df_quality_post,
+    data = dat,
     vcov = vc_quarter,
     lean = FALSE
   )
 }
 
+# year_min/year_max trim each outcome to the window where it's actually
+# reported (NA = no trim, use the full sample). See notes above for why
+# qm_471 and qm_472 are trimmed; qm_430 and qm_434 are flat across all
+# years (consistent with an ordinary minimum-denominator suppression rule,
+# not a coverage gap), so they use the full sample.
 short_stay_specs <- tibble::tribble(
-  ~outcome, ~label, ~direction,
-  "qm_424", "Moderate/severe pain", "Lower is better",
-  "qm_425", "New/worsened pressure ulcers", "Lower is better",
-  "qm_430", "Pneumococcal vaccine", "Higher is better",
-  "qm_434", "New antipsychotic medication", "Lower is better",
-  "qm_471", "Improved function", "Higher is better",
-  "qm_472", "Influenza vaccine", "Higher is better"
+  ~outcome, ~label, ~direction, ~year_min, ~year_max,
+  "qm_430", "Pneumococcal vaccine", "Higher is better", NA_integer_, NA_integer_,
+  "qm_434", "New antipsychotic medication", "Lower is better", NA_integer_, NA_integer_,
+  "qm_471", "Improved function", "Higher is better", NA_integer_, 2022L,
+  "qm_472", "Influenza vaccine", "Higher is better", 2018L, 2023L
 ) %>%
   filter(outcome %in% names(df_quality_post))
+
+subset_for_outcome <- function(dat, year_min, year_max) {
+  if (!is.na(year_min)) dat <- dat %>% filter(year >= year_min)
+  if (!is.na(year_max)) dat <- dat %>% filter(year <= year_max)
+  dat
+}
 
 short_stay_models <- short_stay_specs %>%
   rowwise() %>%
   mutate(
-    mod_nocontrols = list(run_quality_nocontrols(outcome)),
-    mod_controls = list(run_quality_controls(outcome)),
+    dat_sub = list(subset_for_outcome(df_quality_post, year_min, year_max)),
+    mod_nocontrols = list(run_quality_nocontrols(outcome, dat_sub)),
+    mod_controls = list(run_quality_controls(outcome, dat_sub)),
     row = make_row(label, mod_nocontrols, mod_controls)
   ) %>%
   ungroup()
@@ -442,6 +459,8 @@ tex_lines <- c(
   "\\begin{tablenotes}[flushleft]",
   "\\footnotesize",
   "\\item \\textit{Notes:} Each cell reports the coefficient on \\textit{post}, with standard errors in parentheses. All models include facility and calendar-quarter fixed effects. The controls column adds beds, government ownership, nonprofit ownership, chain affiliation, occupancy rate, Medicare share, and Medicaid share when available.",
+  "\\item Moderate/severe pain (qm\\_424) and new/worsened pressure ulcers (qm\\_425) are dropped from this table: both become effectively unreported (near 100\\% missing) starting in 2019/2020 and remain so for the rest of the sample, rather than showing ordinary sparse reporting.",
+  "\\item Improved function is estimated on 2017--2022 only; influenza vaccine is estimated on 2018--2023 only. Both measures show near-complete absence outside these windows (improved function is effectively unreported from 2023 onward; influenza vaccine is effectively unreported in 2017 and again from 2024 onward), so each is trimmed to the years where it is actually reported rather than treated as a full-panel outcome.",
   "\\item The ownership-change quarter is excluded from the short-stay quality regressions.",
   "\\item Standard errors are clustered two ways by facility and calendar quarter. Statistical significance: $^{***}p<0.01$, $^{**}p<0.05$, $^{*}p<0.10$.",
   "\\end{tablenotes}",
