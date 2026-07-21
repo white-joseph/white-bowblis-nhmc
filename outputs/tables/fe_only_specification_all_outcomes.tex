@@ -13,12 +13,8 @@
 
 \begin{document}
 
-\section*{FE-Only vs. Standard-Controls Specification, All Outcomes}
-Per C. Moul's request: each outcome estimated with (1) ONLY facility and time fixed effects plus \textit{post} (no other covariates), and (2) the standard fully-controlled specification used elsewhere in this project, for direct comparison. All specifications use the donut design (anticipation window / transition period excluded).
-
 \begin{table}[H]
 \centering
-\begin{threeparttable}
 \caption{Staffing Outcomes (Monthly)}
 \label{tab:fe-only-staffing}
 \small
@@ -33,19 +29,10 @@ CNA HPRD & \makecell[t]{$-0.0519^{***}$ \\ $(0.0091)$} & \makecell[t]{$-0.0548^{
 Total HPRD & \makecell[t]{$-0.0895^{***}$ \\ $(0.0127)$} & \makecell[t]{$-0.0868^{***}$ \\ $(0.0129)$} & 626,307 \\
 \bottomrule
 \end{tabularx}
-
-\begin{tablenotes}[flushleft]
-\footnotesize
-\item \textit{Notes:} Each cell reports the coefficient on \textit{post}, with standard errors in parentheses. \textbf{FE + Treatment Only} includes ONLY facility and time fixed effects plus \textit{post} -- no other covariates. \textbf{Standard Controls} is the fully-controlled specification used elsewhere in this project.
-\item Standard errors are clustered two ways by facility and time period. Statistical significance: $^{***}p<0.01$, $^{**}p<0.05$, $^{*}p<0.10$.
-\end{tablenotes}
-\end{threeparttable}
 \end{table}
 
-\clearpage
 \begin{table}[H]
 \centering
-\begin{threeparttable}
 \caption{Strategic / Business-Model Outcomes (Monthly)}
 \label{tab:fe-only-strategic}
 \small
@@ -61,19 +48,10 @@ Average length of stay & \makecell[t]{$-11.4359^{***}$ \\ $(4.0715)$} & \makecel
 Spare capacity & \makecell[t]{$-0.0262^{***}$ \\ $(0.0033)$} & \makecell[t]{$-0.0281^{***}$ \\ $(0.0034)$} & 626,307 \\
 \bottomrule
 \end{tabularx}
-
-\begin{tablenotes}[flushleft]
-\footnotesize
-\item \textit{Notes:} Each cell reports the coefficient on \textit{post}, with standard errors in parentheses. \textbf{FE + Treatment Only} includes ONLY facility and time fixed effects plus \textit{post} -- no other covariates. \textbf{Standard Controls} is the fully-controlled specification used elsewhere in this project.
-\item Occupancy rate, spare capacity, Medicare share, Medicaid share, and average length of stay are excluded from each other's control set in the Standard Controls column (each pair is mechanically related).
-\item Standard errors are clustered two ways by facility and time period. Statistical significance: $^{***}p<0.01$, $^{**}p<0.05$, $^{*}p<0.10$.
-\end{tablenotes}
-\end{threeparttable}
 \end{table}
 
 \begin{table}[H]
 \centering
-\begin{threeparttable}
 \caption{Short-Stay Quality Measures (Quarterly)}
 \label{tab:fe-only-short-stay-quality}
 \small
@@ -88,21 +66,10 @@ Improved function & \makecell[t]{$-0.1936$ \\ $(0.4879)$} & \makecell[t]{$-0.971
 Influenza vaccine & \makecell[t]{$-3.3858^{***}$ \\ $(0.6095)$} & \makecell[t]{$-3.9127^{***}$ \\ $(0.6644)$} & 144,903 \\
 \bottomrule
 \end{tabularx}
-
-\begin{tablenotes}[flushleft]
-\footnotesize
-\item \textit{Notes:} Each cell reports the coefficient on \textit{post}, with standard errors in parentheses. \textbf{FE + Treatment Only} includes ONLY facility and time fixed effects plus \textit{post} -- no other covariates. \textbf{Standard Controls} is the fully-controlled specification used elsewhere in this project.
-\item Moderate/severe pain (qm\_424) and new/worsened pressure ulcers (qm\_425) are excluded (effectively unreported from 2019/2020 onward). Improved function is estimated on 2017--2022 only; influenza vaccine is estimated on 2018--2023 only, reflecting each measure's actual reporting window.
-\item The ownership-change quarter is excluded from all quality regressions.
-\item Standard errors are clustered two ways by facility and time period. Statistical significance: $^{***}p<0.01$, $^{**}p<0.05$, $^{*}p<0.10$.
-\end{tablenotes}
-\end{threeparttable}
 \end{table}
 
-\clearpage
 \begin{table}[H]
 \centering
-\begin{threeparttable}
 \caption{Long-Stay Quality Measures (Quarterly)}
 \label{tab:fe-only-long-stay-quality}
 \small
@@ -121,14 +88,26 @@ Anti-anxiety/hypnotic medication use & \makecell[t]{$-0.3939^{*}$ \\ $(0.2012)$}
 Pressure injuries & \makecell[t]{$\phantom{-}0.1854$ \\ $(0.1701)$} & \makecell[t]{$\phantom{-}0.1483$ \\ $(0.1791)$} & 139,667 \\
 \bottomrule
 \end{tabularx}
+\end{table}
 
-\begin{tablenotes}[flushleft]
-\footnotesize
-\item \textit{Notes:} Each cell reports the coefficient on \textit{post}, with standard errors in parentheses. \textbf{FE + Treatment Only} includes ONLY facility and time fixed effects plus \textit{post} -- no other covariates. \textbf{Standard Controls} is the fully-controlled specification used elsewhere in this project.
-\item CAVEAT: pressure injuries (qm\_453) may have a coverage transition around Q4 2023 (successor code 479 identified in a separate investigation of the short-stay measures) that has NOT been re-verified or trimmed here.
-\item Standard errors are clustered two ways by facility and time period. Statistical significance: $^{***}p<0.01$, $^{**}p<0.05$, $^{*}p<0.10$.
-\end{tablenotes}
-\end{threeparttable}
+\begin{table}[H]
+\centering
+\caption{Effects of Ownership Change on Standard Control Variables}
+\label{tab:fe-only-standard-controls}
+\small
+\setlength{\tabcolsep}{6pt}
+\begin{tabularx}{\textwidth}{@{} l Y Y r @{}}
+\toprule
+Outcome & FE + Treatment Only & Standard Controls & Observations \\
+\midrule
+Beds & \makecell[t]{$\phantom{-}0.4054$ \\ $(0.2615)$} & \makecell[t]{$\phantom{-}0.5398^{**}$ \\ $(0.2696)$} & 626,307 \\
+Government ownership (0/1) & \makecell[t]{$\phantom{-}0.0398^{***}$ \\ $(0.0066)$} & \makecell[t]{$\phantom{-}0.0351^{***}$ \\ $(0.0067)$} & 626,307 \\
+Non-profit ownership (0/1) & \makecell[t]{$-0.0602^{***}$ \\ $(0.0081)$} & \makecell[t]{$-0.0552^{***}$ \\ $(0.0080)$} & 626,307 \\
+For-profit ownership (0/1) & \makecell[t]{$\phantom{-}0.0204^{*}$ \\ $(0.0106)$} & \makecell[t]{$\phantom{-}0.0201^{*}$ \\ $(0.0105)$} & 626,307 \\
+Chain affiliation (0/1) & \makecell[t]{$-0.2479^{***}$ \\ $(0.0184)$} & \makecell[t]{$-0.2424^{***}$ \\ $(0.0183)$} & 626,307 \\
+Case mix (total) & \makecell[t]{$\phantom{-}0.0488^{***}$ \\ $(0.0067)$} & \makecell[t]{$\phantom{-}0.0451^{***}$ \\ $(0.0073)$} & 624,246 \\
+\bottomrule
+\end{tabularx}
 \end{table}
 
 \end{document}

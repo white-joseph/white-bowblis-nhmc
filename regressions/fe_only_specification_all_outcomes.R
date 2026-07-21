@@ -87,11 +87,10 @@ make_row <- function(label, mod_fe_only, mod_controls) {
   paste(label, fmt_est(mod_fe_only), fmt_est(mod_controls), fmt_n(mod_fe_only), sep = " & ")
 }
 
-build_table_block <- function(rows, caption, label, extra_notes = character(0)) {
+build_table_block <- function(rows, caption, label) {
   c(
     "\\begin{table}[H]",
     "\\centering",
-    "\\begin{threeparttable}",
     paste0("\\caption{", caption, "}"),
     paste0("\\label{", label, "}"),
     "\\small",
@@ -103,14 +102,6 @@ build_table_block <- function(rows, caption, label, extra_notes = character(0)) 
     paste0(rows, " \\\\"),
     "\\bottomrule",
     "\\end{tabularx}",
-    "",
-    "\\begin{tablenotes}[flushleft]",
-    "\\footnotesize",
-    "\\item \\textit{Notes:} Each cell reports the coefficient on \\textit{post}, with standard errors in parentheses. \\textbf{FE + Treatment Only} includes ONLY facility and time fixed effects plus \\textit{post} -- no other covariates. \\textbf{Standard Controls} is the fully-controlled specification used elsewhere in this project.",
-    extra_notes,
-    "\\item Standard errors are clustered two ways by facility and time period. Statistical significance: $^{***}p<0.01$, $^{**}p<0.05$, $^{*}p<0.10$.",
-    "\\end{tablenotes}",
-    "\\end{threeparttable}",
     "\\end{table}",
     ""
   )
@@ -140,12 +131,15 @@ staffing_outcomes_tbl <- tibble::tribble(
   "total_hprd",  "Total HPRD"
 )
 
-staffing_rows <- sapply(seq_len(nrow(staffing_outcomes_tbl)), function(i) {
+staffing_rows <- character(nrow(staffing_outcomes_tbl))
+for (i in seq_len(nrow(staffing_outcomes_tbl))) {
   v <- staffing_outcomes_tbl$var[i]; lab <- staffing_outcomes_tbl$label[i]
+  cat(sprintf("[fit] staffing: %s\n", lab))
   m_fe   <- fit_fe_only(df_wo, v, "cms_certification_number + year_month")
   m_ctrl <- fit_with_controls(df_wo, v, controls_rhs_full, "cms_certification_number + year_month")
-  make_row(lab, m_fe, m_ctrl)
-})
+  staffing_rows[i] <- make_row(lab, m_fe, m_ctrl)
+  rm(m_fe, m_ctrl); gc()
+}
 
 # =============================================================================
 # PART B: Strategic / business-model outcomes (monthly)
@@ -168,12 +162,70 @@ strategic_outcomes_tbl <- tibble::tribble(
 )
 strategic_outcomes_tbl <- strategic_outcomes_tbl %>% filter(var %in% names(df_wo))
 
-strategic_rows <- sapply(seq_len(nrow(strategic_outcomes_tbl)), function(i) {
+strategic_rows <- character(nrow(strategic_outcomes_tbl))
+for (i in seq_len(nrow(strategic_outcomes_tbl))) {
   v <- strategic_outcomes_tbl$var[i]; lab <- strategic_outcomes_tbl$label[i]
+  cat(sprintf("[fit] strategic: %s\n", lab))
   m_fe   <- fit_fe_only(df_wo, v, "cms_certification_number + year_month")
   m_ctrl <- fit_with_controls(df_wo, v, strategic_ctrl_rhs, "cms_certification_number + year_month")
-  make_row(lab, m_fe, m_ctrl)
-})
+  strategic_rows[i] <- make_row(lab, m_fe, m_ctrl)
+  rm(m_fe, m_ctrl); gc()
+}
+
+# =============================================================================
+# PART E: Standard controls -- are THEY affected by ownership change?
+# =============================================================================
+# Per C. Moul's follow-up: occupancy/payer-mix/LOS/spare-capacity (Part B)
+# were already shown to respond to ownership change. This section checks
+# the remaining standard controls not yet tested: beds, government,
+# non-profit, chain, and case mix. Bivariate (FE + Treatment Only) vs.
+# Standard Controls (the OTHER standard controls, self excluded), same
+# pattern as Part B.
+#
+# for_profit is constructed explicitly (1 - government - non_profit) so it
+# can be tested directly, with its own standard error, rather than inferred
+# algebraically from the government/non_profit coefficients (which would
+# require the covariance between two separately-fit models to get a valid
+# SE -- not available from two separate regressions).
+#
+# government/non_profit/for_profit are mutually related by construction, so
+# whichever of the three is the outcome, the OTHER TWO ownership-type
+# variables are excluded from its control set (not just itself).
+
+df_wo <- df_wo %>% mutate(for_profit = 1 - government - non_profit)
+
+ownership_group <- c("government", "non_profit")
+
+controls_rhs_for_standard <- function(dat, outcome) {
+  exclude <- character(0)
+  if (outcome %in% c("government", "non_profit", "for_profit")) exclude <- c(exclude, ownership_group)
+  if (outcome == "beds") exclude <- c(exclude, "beds")
+  if (outcome == "chain") exclude <- c(exclude, "chain")
+  if (outcome == "case_mix_total") exclude <- c(exclude, "cm_q_state_2", "cm_q_state_3", "cm_q_state_4")
+  ctrls <- setdiff(get_controls(dat), exclude)
+  paste(ctrls, collapse = " + ")
+}
+
+standard_ctrl_outcomes_tbl <- tibble::tribble(
+  ~var,             ~label,
+  "beds",           "Beds",
+  "government",     "Government ownership (0/1)",
+  "non_profit",     "Non-profit ownership (0/1)",
+  "for_profit",     "For-profit ownership (0/1)",
+  "chain",          "Chain affiliation (0/1)",
+  "case_mix_total", "Case mix (total)"
+) %>% filter(var %in% names(df_wo))
+
+standard_ctrl_rows <- character(nrow(standard_ctrl_outcomes_tbl))
+for (i in seq_len(nrow(standard_ctrl_outcomes_tbl))) {
+  v <- standard_ctrl_outcomes_tbl$var[i]; lab <- standard_ctrl_outcomes_tbl$label[i]
+  cat(sprintf("[fit] standard control: %s\n", lab))
+  ctrls_rhs_v <- controls_rhs_for_standard(df_wo, v)
+  m_fe   <- fit_fe_only(df_wo, v, "cms_certification_number + year_month")
+  m_ctrl <- fit_with_controls(df_wo, v, ctrls_rhs_v, "cms_certification_number + year_month")
+  standard_ctrl_rows[i] <- make_row(lab, m_fe, m_ctrl)
+  rm(m_fe, m_ctrl); gc()
+}
 
 rm(df, df_wo); gc()
 
@@ -224,13 +276,16 @@ short_stay_specs <- tibble::tribble(
   "qm_472", "Influenza vaccine", 2018L, 2023L
 ) %>% filter(outcome %in% names(df_quality_post))
 
-short_stay_rows <- sapply(seq_len(nrow(short_stay_specs)), function(i) {
+short_stay_rows <- character(nrow(short_stay_specs))
+for (i in seq_len(nrow(short_stay_specs))) {
   v <- short_stay_specs$outcome[i]; lab <- short_stay_specs$label[i]
+  cat(sprintf("[fit] short-stay quality: %s\n", lab))
   dat_sub <- subset_for_outcome(df_quality_post, short_stay_specs$year_min[i], short_stay_specs$year_max[i])
   m_fe   <- fit_q_fe_only(dat_sub, v)
   m_ctrl <- fit_q_controls(dat_sub, v)
-  make_row(lab, m_fe, m_ctrl)
-})
+  short_stay_rows[i] <- make_row(lab, m_fe, m_ctrl)
+  rm(m_fe, m_ctrl, dat_sub); gc()
+}
 
 # ---- Long-stay (matches the measures used in the paper's quality figures) ----
 long_stay_specs <- tibble::tribble(
@@ -245,12 +300,15 @@ long_stay_specs <- tibble::tribble(
   "qm_453", "Pressure injuries"
 ) %>% filter(outcome %in% names(df_quality_post))
 
-long_stay_rows <- sapply(seq_len(nrow(long_stay_specs)), function(i) {
+long_stay_rows <- character(nrow(long_stay_specs))
+for (i in seq_len(nrow(long_stay_specs))) {
   v <- long_stay_specs$outcome[i]; lab <- long_stay_specs$label[i]
+  cat(sprintf("[fit] long-stay quality: %s\n", lab))
   m_fe   <- fit_q_fe_only(df_quality_post, v)
   m_ctrl <- fit_q_controls(df_quality_post, v)
-  make_row(lab, m_fe, m_ctrl)
-})
+  long_stay_rows[i] <- make_row(lab, m_fe, m_ctrl)
+  rm(m_fe, m_ctrl); gc()
+}
 
 # =============================================================================
 # Assemble document
@@ -271,36 +329,30 @@ tex_lines <- c(
   "",
   "\\begin{document}",
   "",
-  "\\section*{FE-Only vs. Standard-Controls Specification, All Outcomes}",
-  "Per C. Moul's request: each outcome estimated with (1) ONLY facility and time fixed effects plus \\textit{post} (no other covariates), and (2) the standard fully-controlled specification used elsewhere in this project, for direct comparison. All specifications use the donut design (anticipation window / transition period excluded).",
-  "",
   build_table_block(
     staffing_rows,
     "Staffing Outcomes (Monthly)",
     "tab:fe-only-staffing"
   ),
-  "\\clearpage",
   build_table_block(
     strategic_rows,
     "Strategic / Business-Model Outcomes (Monthly)",
-    "tab:fe-only-strategic",
-    extra_notes = "\\item Occupancy rate, spare capacity, Medicare share, Medicaid share, and average length of stay are excluded from each other's control set in the Standard Controls column (each pair is mechanically related)."
+    "tab:fe-only-strategic"
   ),
   build_table_block(
     short_stay_rows,
     "Short-Stay Quality Measures (Quarterly)",
-    "tab:fe-only-short-stay-quality",
-    extra_notes = c(
-      "\\item Moderate/severe pain (qm\\_424) and new/worsened pressure ulcers (qm\\_425) are excluded (effectively unreported from 2019/2020 onward). Improved function is estimated on 2017--2022 only; influenza vaccine is estimated on 2018--2023 only, reflecting each measure's actual reporting window.",
-      "\\item The ownership-change quarter is excluded from all quality regressions."
-    )
+    "tab:fe-only-short-stay-quality"
   ),
-  "\\clearpage",
   build_table_block(
     long_stay_rows,
     "Long-Stay Quality Measures (Quarterly)",
-    "tab:fe-only-long-stay-quality",
-    extra_notes = "\\item CAVEAT: pressure injuries (qm\\_453) may have a coverage transition around Q4 2023 (successor code 479 identified in a separate investigation of the short-stay measures) that has NOT been re-verified or trimmed here."
+    "tab:fe-only-long-stay-quality"
+  ),
+  build_table_block(
+    standard_ctrl_rows,
+    "Effects of Ownership Change on Standard Control Variables",
+    "tab:fe-only-standard-controls"
   ),
   "\\end{document}"
 )

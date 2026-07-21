@@ -198,7 +198,63 @@ load_staffing_panel <- function(fp = panel_fp) {
       df[[log_raw_hours_map[[nm]]]] <- mk_log(df[[nm]])
     }
   }
-  
+
+  # ---------------------------------------------------------------------------
+  # Per C. Moul / J. Bowblis: drop any facility that is government-owned at
+  # ANY point in the panel, not just the ~74 that transitioned into
+  # government ownership specifically. The paper's audience is interested
+  # in non-governmental ownership changes; the government-transfer
+  # subgroup investigated separately (mostly TX/IN hospital-district
+  # reimbursement transfers) does not behave like a substantive ownership
+  # change, so it is cleaner to drop them entirely.
+  # ---------------------------------------------------------------------------
+  if ("government" %in% names(df)) {
+    ever_government_ccns <- df %>%
+      dplyr::filter(government == 1) %>%
+      dplyr::distinct(cms_certification_number) %>%
+      dplyr::pull(cms_certification_number)
+
+    n_before <- dplyr::n_distinct(df$cms_certification_number)
+    df <- df %>% dplyr::filter(!(cms_certification_number %in% ever_government_ccns))
+    n_after <- dplyr::n_distinct(df$cms_certification_number)
+
+    message(sprintf(
+      "[setup] dropped %d facilities ever government-owned (%d -> %d facilities)",
+      length(ever_government_ccns), n_before, n_after
+    ))
+  }
+
+  # ---------------------------------------------------------------------------
+  # chain_at_start: per Bowblis, chain status is self-reported and
+  # unreliable LATER in the sample, but the indicator at the START of the
+  # sample is considered reliable. Replicates the exact baseline-chain
+  # convention already used in twfe_post.R (chain status in January 2017,
+  # a single fixed calendar month), with a fallback to each facility's
+  # own earliest observed chain value for facilities absent from the
+  # panel in January 2017 (early PBJ reporting was still ramping up then,
+  # so a strict Jan-2017-only rule would silently drop many facilities).
+  # ---------------------------------------------------------------------------
+  if ("chain" %in% names(df)) {
+    chain_at_start_lookup <- df %>%
+      dplyr::arrange(cms_certification_number, ym_date) %>%
+      dplyr::group_by(cms_certification_number) %>%
+      dplyr::summarise(
+        chain_jan2017  = chain[year_month == "2017/01"][1],
+        chain_earliest = chain[!is.na(chain)][1],
+        .groups = "drop"
+      ) %>%
+      dplyr::mutate(chain_at_start = dplyr::coalesce(chain_jan2017, chain_earliest)) %>%
+      dplyr::select(cms_certification_number, chain_at_start)
+
+    df <- df %>% dplyr::left_join(chain_at_start_lookup, by = "cms_certification_number")
+
+    n_fallback <- sum(is.na(chain_at_start_lookup$chain_jan2017) & !is.na(chain_at_start_lookup$chain_at_start))
+    message(sprintf(
+      "[setup] chain_at_start: %d facilities used fallback (own earliest observed chain value)",
+      n_fallback
+    ))
+  }
+
   df
 }
 
@@ -217,6 +273,69 @@ get_case_mix_controls <- function(df) {
 
 get_controls <- function(df) {
   c(intersect_existing(base_controls, df), get_case_mix_controls(df))
+}
+
+# -----------------------------------------------------------------------------
+# Nested A/B/C/D control specifications (per C. Moul, following discussion
+# of endogenous regressors). Each spec builds on the previous one. Applied
+# by outcome category as follows:
+#
+#   Spec A = post + FE + beds + chain_at_start
+#     -> Case mix, Non-profit status, Strategic/Business-model, Staffing, Quality
+#   Spec B = A + case mix (state quartile dummies) + non_profit
+#     -> Strategic/Business-model, Staffing, Quality (NOT Case mix/Non-profit
+#        themselves -- circular, would be controlling for themselves)
+#   Spec C = B + occupancy_rate + pct_medicare + pct_medicaid + avg_los_total
+#     -> Staffing, Quality only (NOT Strategic/Business-model -- these ARE
+#        the strategic outcomes, so C doesn't apply to them)
+#   Spec D = C + staffing (rn_hprd, lpn_hprd, cna_hprd, total_hprd)
+#     -> Quality only
+#
+# Two judgment calls made explicit here (flag/confirm if wrong):
+#   - Case mix in spec B is read as the case-mix QUARTILE DUMMIES already
+#     used as the project's standard case-mix control elsewhere (state
+#     quartiles preferred, national as fallback) -- NOT the raw continuous
+#     case_mix_total variable, which has so far only been tested as an
+#     OUTCOME (endogeneity check), never as a control.
+#   - Staffing in spec D is read as all four individual HPRD measures
+#     (RN/LPN/CNA/Total), not just Total, matching how Strategic/Business
+#     Model already refers to the whole group of variables in spec C.
+#
+# `government` does not appear in any spec: after the government-ever
+# exclusion in load_staffing_panel(), it is constant (=0) in the remaining
+# sample and therefore uninformative as a regressor. Time-varying `chain`
+# is never used (per Bowblis) -- only `chain_at_start`.
+# -----------------------------------------------------------------------------
+controls_A <- function(df) {
+  intersect_existing(c("beds", "chain_at_start"), df)
+}
+
+controls_B <- function(df) {
+  c(controls_A(df), intersect_existing("non_profit", df), get_case_mix_controls(df))
+}
+
+controls_C <- function(df) {
+  c(controls_B(df), intersect_existing(c("occupancy_rate", "pct_medicare", "pct_medicaid", "avg_los_total"), df))
+}
+
+controls_D <- function(df) {
+  c(controls_C(df), intersect_existing(staffing_outcomes, df))
+}
+
+# Convenience: build the "post + controls" RHS string for a given spec
+# letter (A, B, C, or D), excluding any variables in `exclude` (e.g., the
+# outcome itself, or its close cousins -- same self-exclusion pattern used
+# throughout this project for strategic/circular variables).
+make_spec_rhs <- function(df, spec = c("A", "B", "C", "D"), exclude = character(0)) {
+  spec <- match.arg(spec)
+  ctrls <- switch(spec,
+    A = controls_A(df),
+    B = controls_B(df),
+    C = controls_C(df),
+    D = controls_D(df)
+  )
+  ctrls <- setdiff(ctrls, exclude)
+  paste(c("post", ctrls), collapse = " + ")
 }
 
 make_controls_rhs <- function(df) {
