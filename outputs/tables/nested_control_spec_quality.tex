@@ -1,0 +1,39 @@
+\begin{table}[H]
+\centering
+\begin{threeparttable}
+\caption{Quality Outcomes: Nested Control Specification (Spec A--D)}
+\label{tab:nested-quality}
+\small
+\setlength{\tabcolsep}{6pt}
+\begin{tabularx}{\textwidth}{@{} l Y Y Y Y r @{}}
+\toprule
+Outcome & Spec A\\(Treat.+FE+Beds+Chain$_{0}$) & Spec B\\(A+Case-mix+Non-profit) & Spec C\\(B+Occ.+Payer mix+LOS) & Spec D\\(C+Staffing) & Observations \\
+\midrule
+Pneumococcal vaccine & \makecell[t]{$-4.2357^{***}$ \\ $(0.6547)$} & \makecell[t]{$-4.4026^{***}$ \\ $(0.6631)$} & \makecell[t]{$-4.7400^{***}$ \\ $(0.6968)$} & \makecell[t]{$-4.4915^{***}$ \\ $(0.6883)$} & 160,443 \\
+New antipsychotic medication & \makecell[t]{$-0.0187$ \\ $(0.0432)$} & \makecell[t]{$-0.0121$ \\ $(0.0438)$} & \makecell[t]{$-0.0337$ \\ $(0.0462)$} & \makecell[t]{$-0.0390$ \\ $(0.0464)$} & 134,016 \\
+Improved function & \makecell[t]{$-0.0568$ \\ $(0.4888)$} & \makecell[t]{$-0.0814$ \\ $(0.5013)$} & \makecell[t]{$-0.5070$ \\ $(0.5231)$} & \makecell[t]{$-0.5141$ \\ $(0.5214)$} & 88,786 \\
+Influenza vaccine & \makecell[t]{$-3.7639^{***}$ \\ $(0.6372)$} & \makecell[t]{$-3.7850^{***}$ \\ $(0.6439)$} & \makecell[t]{$-3.9334^{***}$ \\ $(0.6697)$} & \makecell[t]{$-3.8017^{***}$ \\ $(0.6632)$} & 128,634 \\
+Decline in physical functioning & \makecell[t]{$\phantom{-}0.3242$ \\ $(0.2696)$} & \makecell[t]{$\phantom{-}0.4013$ \\ $(0.2526)$} & \makecell[t]{$\phantom{-}0.3275$ \\ $(0.2595)$} & \makecell[t]{$\phantom{-}0.3502$ \\ $(0.2657)$} & 163,983 \\
+Weight loss & \makecell[t]{$\phantom{-}0.2037^{*}$ \\ $(0.1040)$} & \makecell[t]{$\phantom{-}0.1188$ \\ $(0.1067)$} & \makecell[t]{$\phantom{-}0.0443$ \\ $(0.1112)$} & \makecell[t]{$\phantom{-}0.0396$ \\ $(0.1112)$} & 170,728 \\
+Catheter use & \makecell[t]{$-0.1694^{***}$ \\ $(0.0488)$} & \makecell[t]{$-0.1613^{***}$ \\ $(0.0491)$} & \makecell[t]{$-0.1459^{***}$ \\ $(0.0516)$} & \makecell[t]{$-0.1488^{***}$ \\ $(0.0518)$} & 172,669 \\
+Urinary tract infections & \makecell[t]{$-0.3281^{***}$ \\ $(0.0765)$} & \makecell[t]{$-0.3091^{***}$ \\ $(0.0747)$} & \makecell[t]{$-0.2752^{***}$ \\ $(0.0747)$} & \makecell[t]{$-0.2698^{***}$ \\ $(0.0750)$} & 174,379 \\
+Falls with major injury & \makecell[t]{$\phantom{-}0.0120$ \\ $(0.0636)$} & \makecell[t]{$\phantom{-}0.0136$ \\ $(0.0625)$} & \makecell[t]{$\phantom{-}0.0033$ \\ $(0.0656)$} & \makecell[t]{$\phantom{-}0.0051$ \\ $(0.0663)$} & 175,120 \\
+Anti-psychotic medication use & \makecell[t]{$-0.3353$ \\ $(0.2218)$} & \makecell[t]{$-0.2578$ \\ $(0.2237)$} & \makecell[t]{$-0.1289$ \\ $(0.2258)$} & \makecell[t]{$-0.1473$ \\ $(0.2274)$} & 171,354 \\
+Anti-anxiety/hypnotic medication use & \makecell[t]{$-0.2312$ \\ $(0.2019)$} & \makecell[t]{$-0.2410$ \\ $(0.2021)$} & \makecell[t]{$-0.3074$ \\ $(0.2048)$} & \makecell[t]{$-0.2854$ \\ $(0.2054)$} & 171,850 \\
+Pressure injuries & \makecell[t]{$\phantom{-}0.2585$ \\ $(0.1762)$} & \makecell[t]{$\phantom{-}0.2381$ \\ $(0.1792)$} & \makecell[t]{$\phantom{-}0.2717$ \\ $(0.1837)$} & \makecell[t]{$\phantom{-}0.2898$ \\ $(0.1854)$} & 121,968 \\
+\bottomrule
+\end{tabularx}
+
+\begin{tablenotes}[flushleft]
+\footnotesize
+\item \textit{Notes:} Each cell reports the coefficient on \textit{post}, standard error in parentheses. All specifications include facility and calendar-period fixed effects. Sample excludes any facility that was ever government-owned. Chain status enters only as \textit{chain\_at\_start} (baseline period), never as the time-varying indicator.
+\item Spec A: Treatment + FE + Beds + Chain-at-start. Spec B: A + case-mix (state quartile dummies) + non-profit status. Spec C: B + occupancy rate + Medicare share + Medicaid share + average length of stay. Spec D: C + staffing (RN/LPN/CNA/Total HPRD).
+\item Quality outcomes get the full nested progression through Spec D.
+\item The ownership-change (transition) quarter is excluded from all quality specifications.
+\item KNOWN GAP: quality\_panel.csv has no average-length-of-stay column; Spec C/D controls for quality outcomes omit it until a quarterly avg\_los\_total is merged in from the monthly staffing panel -- verify before treating these numbers as final.
+\item Improved function (Spec sample: 2017--2022) and influenza vaccine (2018--2023) are trimmed to the years where each measure is actually reported.
+\item Statistical significance: $^{***}p<0.01$, $^{**}p<0.05$, $^{*}p<0.10$. Observations are from the leanest (first) spec column shown; N can fall slightly in later columns due to covariate missingness.
+\end{tablenotes}
+\end{threeparttable}
+\end{table}
+

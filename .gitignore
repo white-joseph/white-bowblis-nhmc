@@ -250,3 +250,14 @@ Thumbs.db
 .RData
 .Rproj.user/
 /presentation/
+
+# ---------- Raw data (large, obtained from CMS; documented separately, not stored in git) ----------
+/data/raw/
+
+# ---------- Regenerable output CSVs (coefficient dumps, QA/diagnostic tables) ----------
+# The paper only \input{}s .tex fragments and includes .pdf figures -- it never
+# reads a CSV under outputs/ directly, so these are pure build-artifact/debug
+# output with no reason to live in git. Keep .tex and .pdf tracked (those are
+# what the paper actually depends on).
+outputs/tables/*.csv
+outputs/plots/*.csv

@@ -26,7 +26,7 @@ outs_order <- staffing_outcomes
 df_wo <- drop_anticipation_window(df)
 
 datasets <- list(
-  full = df,
+  full = df_wo,
   prepandemic = sample_prepandemic(df_wo),
   pandemic = sample_pandemic(df_wo)
 )

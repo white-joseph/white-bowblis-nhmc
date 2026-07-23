@@ -1,0 +1,44 @@
+\begin{table}[!ht]
+\centering
+\begin{threeparttable}
+\caption{Spec C (B + Occupancy + Payer Mix + LOS): Staffing and Quality Outcomes}
+\label{tab:nested-spec-C}
+\footnotesize
+\setlength{\tabcolsep}{6pt}
+\begin{tabularx}{\textwidth}{@{} l Y r @{}}
+\toprule
+Outcome & Coefficient (SE) & Observations \\
+\midrule
+\multicolumn{3}{@{}l}{\textbf{Staffing}} \\[2pt]
+RN HPRD & \makecell[t]{$-0.0359^{***}$ \\ $(0.0056)$} & 540,346 \\
+LPN HPRD & \makecell[t]{$\phantom{-}0.0016$ \\ $(0.0063)$} & 540,346 \\
+CNA HPRD & \makecell[t]{$-0.0446^{***}$ \\ $(0.0097)$} & 540,346 \\
+Total HPRD & \makecell[t]{$-0.0789^{***}$ \\ $(0.0136)$} & 540,346 \\
+\addlinespace[4pt]
+\multicolumn{3}{@{}l}{\textbf{Quality (Short-Stay)}} \\[2pt]
+Pneumococcal vaccine & \makecell[t]{$-4.7400^{***}$ \\ $(0.6968)$} & 144,339 \\
+New antipsychotic medication & \makecell[t]{$-0.0337$ \\ $(0.0462)$} & 120,800 \\
+Improved function & \makecell[t]{$-0.5070$ \\ $(0.5231)$} & 79,681 \\
+Influenza vaccine & \makecell[t]{$-3.9334^{***}$ \\ $(0.6697)$} & 115,942 \\
+\addlinespace[4pt]
+\multicolumn{3}{@{}l}{\textbf{Quality (Long-Stay)}} \\[2pt]
+Decline in physical functioning & \makecell[t]{$\phantom{-}0.3275$ \\ $(0.2595)$} & 150,201 \\
+Weight loss & \makecell[t]{$\phantom{-}0.0443$ \\ $(0.1112)$} & 156,141 \\
+Catheter use & \makecell[t]{$-0.1459^{***}$ \\ $(0.0516)$} & 157,515 \\
+Urinary tract infections & \makecell[t]{$-0.2752^{***}$ \\ $(0.0747)$} & 158,822 \\
+Falls with major injury & \makecell[t]{$\phantom{-}0.0033$ \\ $(0.0656)$} & 159,389 \\
+Anti-psychotic medication use & \makecell[t]{$-0.1289$ \\ $(0.2258)$} & 156,259 \\
+Anti-anxiety/hypnotic medication use & \makecell[t]{$-0.3074$ \\ $(0.2048)$} & 157,112 \\
+Pressure injuries & \makecell[t]{$\phantom{-}0.2717$ \\ $(0.1837)$} & 112,111 \\
+\bottomrule
+\end{tabularx}
+
+\begin{tablenotes}[flushleft]
+\footnotesize
+\item \textit{Notes:} Each cell reports the coefficient on \textit{post}, with standard errors in parentheses. All specifications include facility and calendar-period fixed effects; sample excludes facilities ever government-owned.
+\item Statistical significance: $^{***}p<0.01$, $^{**}p<0.05$, $^{*}p<0.10$.
+\item Transition quarter excluded from quality specifications.
+\end{tablenotes}
+\end{threeparttable}
+\end{table}
+
