@@ -1,0 +1,86 @@
+\documentclass[11pt]{article}
+\usepackage[margin=1in]{geometry}
+\usepackage{booktabs}
+\usepackage{tabularx}
+\usepackage{threeparttable}
+\usepackage{array}
+\usepackage{caption}
+\captionsetup{labelfont=bf, font=small}
+
+\begin{document}
+\begin{table}[!ht]
+\centering
+\begin{threeparttable}
+\caption{Summary Statistics}
+\label{tab:sumstats}
+\footnotesize
+\setlength{\tabcolsep}{8pt}
+
+\begin{tabularx}{\textwidth}{@{} X r r r @{} }
+\toprule
+\textbf{Variable} & \textbf{Mean} & \textbf{SD} & \textbf{N} \\
+\midrule
+\multicolumn{4}{@{}l}{\textbf{Panel A: Staffing sample (facility--month)}} \\[2pt]
+\multicolumn{4}{@{}l}{\textit{Staffing outcomes}} \\[2pt]
+RN HPRD & 0.432 & 0.309 & 554,045 \\
+LPN HPRD & 0.802 & 0.326 & 554,045 \\
+CNA HPRD & 2.118 & 0.530 & 554,045 \\
+Total HPRD & 3.352 & 0.777 & 554,045 \\
+\addlinespace[0.4em]
+RN hours (monthly) & 1,030 & 945 & 554,045 \\
+LPN hours (monthly) & 2,031 & 1,382 & 554,045 \\
+CNA hours (monthly) & 5,312 & 3,358 & 554,045 \\
+Total hours (monthly) & 8,373 & 5,103 & 554,045 \\
+\addlinespace[0.6em]
+\multicolumn{4}{@{}l}{\textit{Facility characteristics}} \\[2pt]
+Non-profit & 0.191 & 0.393 & 554,045 \\
+Chain affiliation (baseline) & 0.572 & 0.495 & 554,045 \\
+Beds & 107.5 & 56.4 & 554,045 \\
+Occupancy rate (\%) & 77.2 & 15.3 & 554,045 \\
+\% Medicare & 13.5 & 11.4 & 554,045 \\
+\% Medicaid & 60.1 & 20.8 & 554,045 \\
+Average length of stay (days) & 160.9 & 157.9 & 544,030 \\
+Acuity quartile 2 & 0.230 & 0.421 & 554,045 \\
+Acuity quartile 3 & 0.233 & 0.423 & 554,045 \\
+Acuity quartile 4 & 0.240 & 0.427 & 554,045 \\
+\addlinespace[0.9em]
+\multicolumn{4}{@{}l}{\textbf{Panel B: Quality sample (facility--quarter)}} \\[2pt]
+\multicolumn{4}{@{}l}{\textit{Quality measures}} \\[2pt]
+Catheter use & 1.610 & 2.135 & 173,838 \\
+Anti-psychotic medication use & 14.447 & 9.371 & 172,519 \\
+Anti-anxiety/hypnotic medication use & 20.238 & 10.319 & 173,036 \\
+\addlinespace[0.4em]
+Pressure injuries & 7.922 & 5.310 & 122,915 \\
+Falls with major injury & 3.341 & 2.831 & 176,296 \\
+Weight loss & 6.300 & 4.886 & 171,896 \\
+Decline in physical functioning & 14.809 & 8.797 & 165,126 \\
+Urinary tract infections & 2.511 & 3.250 & 175,551 \\
+\addlinespace[0.6em]
+\multicolumn{4}{@{}l}{\textit{Staffing and facility characteristics}} \\[2pt]
+RN HPRD & 0.429 & 0.303 & 183,977 \\
+LPN HPRD & 0.800 & 0.320 & 183,977 \\
+CNA HPRD & 2.113 & 0.518 & 183,977 \\
+Total HPRD & 3.342 & 0.762 & 183,977 \\
+\addlinespace[0.4em]
+Non-profit & 0.190 & 0.393 & 182,894 \\
+Chain affiliation (baseline) & 0.572 & 0.495 & 183,977 \\
+Beds & 107.8 & 56.3 & 183,977 \\
+Occupancy rate (\%) & 77.3 & 15.2 & 180,689 \\
+\% Medicare & 13.9 & 12.7 & 181,263 \\
+\% Medicaid & 60.1 & 20.9 & 164,327 \\
+Acuity quartile 2 & 0.248 & 0.432 & 183,977 \\
+Acuity quartile 3 & 0.251 & 0.434 & 183,977 \\
+Acuity quartile 4 & 0.259 & 0.438 & 183,977 \\
+\bottomrule
+\end{tabularx}
+
+\begin{tablenotes}[flushleft]
+\footnotesize
+\item \textit{Notes:} $N$ is the number of non-missing observations for each variable. HPRD denotes hours per resident day; monthly hours are the HPRD numerator. Chain affiliation is measured at the start of each facility's panel and held fixed. Acuity quartiles are within-state, within-period case-mix quartiles, with quartile 1 omitted. For every quality measure, lower values indicate better measured quality.
+\item Panel A: 6,867 facilities (1,413 with an ownership change), 2017/01--2024/06. Panel B: 6,854 facilities (1,413 with an ownership change), 2017Q1--2024Q2.
+\item Both samples exclude hospital-based facilities, facilities outside the 48 contiguous states, and any facility government-owned at any point during the study period.
+\end{tablenotes}
+
+\end{threeparttable}
+\end{table}
+\end{document}

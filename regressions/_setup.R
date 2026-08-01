@@ -1,10 +1,15 @@
 # =============================================================================
 # regressions/_setup.R
 #
-# Shared setup for staffing-panel regressions.
+# Shared setup for BOTH analysis panels.
 #
 # Notes:
-# - Canonical panel source: data/clean/staffing_panel.csv
+# - Canonical panel sources: data/clean/staffing_panel.csv (facility-month)
+#   and data/clean/quality_panel.csv (facility-quarter)
+# - load_staffing_panel() and load_quality_panel() are the only sanctioned
+#   entry points. Both route through apply_facility_lookups(), so the
+#   government-ever exclusion, chain_at_start, and CCN normalization are
+#   defined once and cannot drift between the two samples.
 # - Assumes MCR timing is already the baseline in the panel
 # - Assumes staffing variables use *_hprd naming
 # - Keeps this file focused on shared setup/helpers, not estimation loops
@@ -24,6 +29,7 @@ suppressPackageStartupMessages({
 project_root <- "C:/Repositories/white-bowblis-nhmc"
 
 panel_fp <- file.path(project_root, "data", "clean", "staffing_panel.csv")
+quality_panel_fp <- file.path(project_root, "data", "clean", "quality_panel.csv")
 out_tables_dir <- file.path(project_root, "outputs", "tables")
 out_plots_dir  <- file.path(project_root, "outputs", "plots")
 
@@ -55,6 +61,52 @@ log_raw_hours_map <- c(
   lpn_hours_month  = "ln_lpn_hours",
   cna_hours_month  = "ln_cna_hours",
   total_hours      = "ln_total_hours"
+)
+
+# ---------------------------------------------------------------------------
+# Quality measure sets (quarterly panel). Previously each quality script
+# (quality_event_study.R, quarterly_quality_twfe_tables.R,
+# quarterly_summary_stats.R, composition_checks.R) carried its own private
+# copy of these code->label maps, which is how they drifted apart. Single
+# definition here; scripts should reference these rather than re-declaring.
+#
+# Vaccination measures (qm_430 pneumococcal, qm_472 influenza) are recorded
+# here but deliberately NOT in the main long/short-stay sets, per CM and
+# Bowblis's joint decision to omit them from the paper's quality outcomes.
+# ---------------------------------------------------------------------------
+long_stay_quality_measures <- c(
+  qm_406 = "Catheter use",
+  qm_419 = "Anti-psychotic medication use",
+  qm_452 = "Anti-anxiety/hypnotic medication use",
+  qm_453 = "Pressure injuries",
+  qm_410 = "Falls with major injury",
+  qm_404 = "Weight loss",
+  qm_401 = "Decline in physical functioning",
+  qm_407 = "Urinary tract infections"
+)
+
+# Labor-saving mechanism vs. resident outcome grouping used by the paper's
+# two multi-panel quality figures and by the quality tables.
+quality_mechanism_measures <- c("qm_406", "qm_419", "qm_452")
+quality_outcome_measures   <- c("qm_453", "qm_410", "qm_404", "qm_401", "qm_407")
+
+short_stay_quality_measures <- c(
+  qm_434 = "New antipsychotic medication",
+  qm_471 = "Improved function"
+)
+
+vaccination_quality_measures <- c(
+  qm_430 = "Pneumococcal vaccine (short-stay)",
+  qm_472 = "Influenza vaccine (short-stay)"
+)
+
+# Reporting-window trims established by the measure-code investigation:
+# qm_424/qm_425 are effectively discontinued (excluded entirely above);
+# qm_471 and qm_472 exist only over the windows below. NA = no trim.
+quality_measure_year_windows <- tibble::tribble(
+  ~var,     ~year_min,   ~year_max,
+  "qm_471", NA_integer_, 2022L,
+  "qm_472", 2018L,       2023L
 )
 
 base_controls <- c(
@@ -112,8 +164,213 @@ intersect_existing <- function(x, df) {
   intersect(x, names(df))
 }
 
+# ---------------------------------------------------------------------------
+# CCN normalization.
+#
+# staffing_panel.csv and quality_panel.csv are read separately, and readr
+# may type the CCN column differently in each (numeric in one, character in
+# the other) depending on what happens to be in the first rows it sniffs.
+# A numeric parse silently strips leading zeros, so "015009" and 15009 would
+# fail to join even though they are the same facility. Every facility-level
+# key in this project passes through here first so both panels agree.
+#
+# Falls back to a trimmed character value for anything non-numeric rather
+# than producing NA, so a genuinely alphanumeric identifier is preserved
+# instead of being silently dropped.
+# ---------------------------------------------------------------------------
+norm_ccn <- function(x) {
+  x_chr <- trimws(as.character(x))
+  x_num <- suppressWarnings(as.numeric(x_chr))
+  ifelse(
+    is.na(x_num),
+    x_chr,
+    formatC(x_num, width = 6, flag = "0", format = "d")
+  )
+}
+
 # -----------------------------------------------------------------------------
-# Panel loader
+# Facility-level derived attributes -- computed ONCE, from the monthly panel
+# -----------------------------------------------------------------------------
+# Two facility-level attributes define the sample and a control across BOTH
+# panels:
+#
+#   1. ever_government -- the exclusion set (per C. Moul / J. Bowblis: drop
+#      any facility government-owned at any point in the panel).
+#   2. chain_at_start  -- baseline chain status (per Bowblis: the
+#      time-varying `chain` variable is unreliable, the baseline is not).
+#
+# Both are derived from the MONTHLY panel and then JOINED onto whichever
+# panel is being loaded. They are deliberately NOT recomputed from the
+# quarterly panel. Recomputing gives different answers for the same
+# facility: a facility can be observed as government in a month that
+# survives into staffing_panel.csv but whose quarters are sparse or absent
+# in quality_panel.csv, and a quarterly chain baseline anchors on 2017Q1
+# rather than 2017/01. Per-panel recomputation is exactly how the staffing
+# and quality samples drifted apart, so there is one definition, one source.
+#
+# Only four columns are read to build these, so the cost is a small fraction
+# of a full panel load. Cached in .nhmc_cache so a script that loads both
+# panels pays for it once. Pass refresh = TRUE after rebuilding the panels.
+# -----------------------------------------------------------------------------
+.nhmc_cache <- new.env(parent = emptyenv())
+
+build_facility_lookups <- function(fp = panel_fp, refresh = FALSE) {
+  if (!refresh && !is.null(.nhmc_cache$facility_lookups)) {
+    return(.nhmc_cache$facility_lookups)
+  }
+
+  if (!file.exists(fp)) {
+    stop(sprintf("Panel file not found: %s", fp), call. = FALSE)
+  }
+
+  raw <- readr::read_csv(
+    fp,
+    col_select = dplyr::any_of(
+      c("cms_certification_number", "year_month", "government", "chain")
+    ),
+    show_col_types = FALSE,
+    progress = FALSE
+  )
+
+  assert_has_cols(
+    raw,
+    c("cms_certification_number", "year_month"),
+    "facility_lookups"
+  )
+
+  raw <- raw %>%
+    dplyr::mutate(
+      cms_certification_number = norm_ccn(cms_certification_number),
+      year_month = as.character(year_month),
+      ym_date = as.Date(paste0(year_month, "/01"), format = "%Y/%m/%d")
+    )
+
+  ever_government <- if ("government" %in% names(raw)) {
+    raw %>%
+      dplyr::filter(government == 1) %>%
+      dplyr::distinct(cms_certification_number) %>%
+      dplyr::pull(cms_certification_number)
+  } else {
+    character(0)
+  }
+
+  chain_lookup <- if ("chain" %in% names(raw)) {
+    raw %>%
+      dplyr::arrange(cms_certification_number, ym_date) %>%
+      dplyr::group_by(cms_certification_number) %>%
+      dplyr::summarise(
+        chain_jan2017  = chain[year_month == "2017/01"][1],
+        chain_earliest = chain[!is.na(chain)][1],
+        .groups = "drop"
+      ) %>%
+      dplyr::mutate(chain_at_start = dplyr::coalesce(chain_jan2017, chain_earliest)) %>%
+      dplyr::select(cms_certification_number, chain_at_start)
+  } else {
+    tibble::tibble(
+      cms_certification_number = character(0),
+      chain_at_start = integer(0)
+    )
+  }
+
+  n_fallback <- 0L
+  if ("chain" %in% names(raw)) {
+    tmp <- raw %>%
+      dplyr::group_by(cms_certification_number) %>%
+      dplyr::summarise(
+        has_jan2017 = any(year_month == "2017/01" & !is.na(chain)),
+        has_any     = any(!is.na(chain)),
+        .groups = "drop"
+      )
+    n_fallback <- sum(!tmp$has_jan2017 & tmp$has_any)
+  }
+
+  lookups <- list(
+    ever_government    = ever_government,
+    chain_lookup       = chain_lookup,
+    n_chain_fallback   = n_fallback,
+    n_facilities_total = dplyr::n_distinct(raw$cms_certification_number),
+    source_fp          = fp
+  )
+
+  message(sprintf(
+    "[setup] facility lookups built from %s: %d facilities, %d ever government-owned, %d chain_at_start fallbacks",
+    basename(fp), lookups$n_facilities_total, length(ever_government), n_fallback
+  ))
+
+  .nhmc_cache$facility_lookups <- lookups
+  lookups
+}
+
+# Apply the shared lookups to a panel: normalize the key, drop the
+# ever-government facilities, join chain_at_start, factor the key. Used by
+# BOTH loaders so the two panels cannot disagree about which facilities are
+# in the sample or what their baseline chain status is.
+apply_facility_lookups <- function(df, panel_label = "panel") {
+  lookups <- build_facility_lookups()
+
+  df <- df %>%
+    dplyr::mutate(cms_certification_number = norm_ccn(cms_certification_number))
+
+  n_before <- dplyr::n_distinct(df$cms_certification_number)
+
+  if (length(lookups$ever_government) > 0) {
+    df <- df %>%
+      dplyr::filter(!(cms_certification_number %in% lookups$ever_government))
+  }
+
+  n_after <- dplyr::n_distinct(df$cms_certification_number)
+
+  message(sprintf(
+    "[%s] dropped %d facilities ever government-owned (%d -> %d facilities)",
+    panel_label, n_before - n_after, n_before, n_after
+  ))
+
+  if (nrow(lookups$chain_lookup) > 0) {
+    df <- df %>%
+      dplyr::left_join(lookups$chain_lookup, by = "cms_certification_number")
+
+    n_missing <- dplyr::n_distinct(
+      df$cms_certification_number[is.na(df$chain_at_start)]
+    )
+    if (n_missing > 0) {
+      message(sprintf(
+        "[%s] %d facilities have no chain_at_start (present in this panel but not in the monthly panel)",
+        panel_label, n_missing
+      ))
+    }
+  }
+
+  df %>%
+    dplyr::mutate(cms_certification_number = as.factor(cms_certification_number))
+}
+
+# Diagnostic: do the two panels agree on the facility set after the shared
+# exclusion is applied? Any disagreement is a data-pipeline issue, not a
+# regression issue, and should be visible rather than silently absorbed
+# into differing table Ns.
+compare_panel_samples <- function() {
+  s <- load_staffing_panel()
+  q <- load_quality_panel()
+
+  s_ccn <- unique(as.character(s$cms_certification_number))
+  q_ccn <- unique(as.character(q$cms_certification_number))
+
+  cat(sprintf("Staffing panel:  %d facilities, %s rows\n",
+              length(s_ccn), format(nrow(s), big.mark = ",")))
+  cat(sprintf("Quality panel:   %d facilities, %s rows\n",
+              length(q_ccn), format(nrow(q), big.mark = ",")))
+  cat(sprintf("In both:         %d\n", length(intersect(s_ccn, q_ccn))))
+  cat(sprintf("Staffing only:   %d\n", length(setdiff(s_ccn, q_ccn))))
+  cat(sprintf("Quality only:    %d\n", length(setdiff(q_ccn, s_ccn))))
+
+  invisible(list(
+    staffing_only = setdiff(s_ccn, q_ccn),
+    quality_only  = setdiff(q_ccn, s_ccn)
+  ))
+}
+
+# -----------------------------------------------------------------------------
+# Panel loaders
 # -----------------------------------------------------------------------------
 load_staffing_panel <- function(fp = panel_fp) {
   if (!file.exists(fp)) {
@@ -132,10 +389,12 @@ load_staffing_panel <- function(fp = panel_fp) {
   )
   assert_has_cols(df, required_cols, "staffing_panel")
   
-  # Core types
+  # Core types. The CCN is left as a normalized character key here and only
+  # converted to a factor at the end of apply_facility_lookups(), after the
+  # facility-level joins have happened.
   df <- df %>%
     mutate(
-      cms_certification_number = as.factor(cms_certification_number),
+      cms_certification_number = norm_ccn(cms_certification_number),
       year_month = as.character(year_month),
       quarter = as.character(quarter),
       ym_date = as.Date(paste0(year_month, "/01"), format = "%Y/%m/%d")
@@ -199,63 +458,105 @@ load_staffing_panel <- function(fp = panel_fp) {
     }
   }
 
-  # ---------------------------------------------------------------------------
-  # Per C. Moul / J. Bowblis: drop any facility that is government-owned at
-  # ANY point in the panel, not just the ~74 that transitioned into
-  # government ownership specifically. The paper's audience is interested
-  # in non-governmental ownership changes; the government-transfer
-  # subgroup investigated separately (mostly TX/IN hospital-district
-  # reimbursement transfers) does not behave like a substantive ownership
-  # change, so it is cleaner to drop them entirely.
-  # ---------------------------------------------------------------------------
-  if ("government" %in% names(df)) {
-    ever_government_ccns <- df %>%
-      dplyr::filter(government == 1) %>%
-      dplyr::distinct(cms_certification_number) %>%
-      dplyr::pull(cms_certification_number)
+  # Government exclusion and chain_at_start are applied from the shared
+  # facility-level lookups (see build_facility_lookups above) rather than
+  # recomputed here, so the staffing and quality panels cannot diverge.
+  apply_facility_lookups(df, panel_label = "staffing")
+}
 
-    n_before <- dplyr::n_distinct(df$cms_certification_number)
-    df <- df %>% dplyr::filter(!(cms_certification_number %in% ever_government_ccns))
-    n_after <- dplyr::n_distinct(df$cms_certification_number)
-
-    message(sprintf(
-      "[setup] dropped %d facilities ever government-owned (%d -> %d facilities)",
-      length(ever_government_ccns), n_before, n_after
-    ))
+# -----------------------------------------------------------------------------
+# Quarterly quality panel loader.
+#
+# Mirrors load_staffing_panel(): same government exclusion, same
+# chain_at_start, same CCN normalization -- all sourced from the SAME
+# facility-level lookups rather than recomputed from quarterly data.
+#
+# Adds a `year_quarter` key (e.g. "2017Q1") for use as the calendar fixed
+# effect and clustering dimension, matching what the existing quality
+# scripts construct by hand.
+#
+# KNOWN GAP (carried over from nested_control_spec_all_outcomes.R):
+# quality_panel.csv has no avg_los_total column, so Spec C/D controls for
+# quality outcomes silently omit average length of stay via
+# intersect_existing()'s tolerance until a quarterly avg_los_total is
+# merged in from the monthly panel. Warned about below rather than left
+# to be discovered from a coefficient table.
+# -----------------------------------------------------------------------------
+load_quality_panel <- function(fp = quality_panel_fp) {
+  if (!file.exists(fp)) {
+    stop(sprintf("Quality panel file not found: %s", fp), call. = FALSE)
   }
 
-  # ---------------------------------------------------------------------------
-  # chain_at_start: per Bowblis, chain status is self-reported and
-  # unreliable LATER in the sample, but the indicator at the START of the
-  # sample is considered reliable. Replicates the exact baseline-chain
-  # convention already used in twfe_post.R (chain status in January 2017,
-  # a single fixed calendar month), with a fallback to each facility's
-  # own earliest observed chain value for facilities absent from the
-  # panel in January 2017 (early PBJ reporting was still ramping up then,
-  # so a strict Jan-2017-only rule would silently drop many facilities).
-  # ---------------------------------------------------------------------------
-  if ("chain" %in% names(df)) {
-    chain_at_start_lookup <- df %>%
-      dplyr::arrange(cms_certification_number, ym_date) %>%
-      dplyr::group_by(cms_certification_number) %>%
-      dplyr::summarise(
-        chain_jan2017  = chain[year_month == "2017/01"][1],
-        chain_earliest = chain[!is.na(chain)][1],
-        .groups = "drop"
-      ) %>%
-      dplyr::mutate(chain_at_start = dplyr::coalesce(chain_jan2017, chain_earliest)) %>%
-      dplyr::select(cms_certification_number, chain_at_start)
+  df <- readr::read_csv(fp, show_col_types = FALSE)
 
-    df <- df %>% dplyr::left_join(chain_at_start_lookup, by = "cms_certification_number")
+  required_cols <- c(
+    "cms_certification_number",
+    "year",
+    "quarter",
+    "treated",
+    "post",
+    "event_time"
+  )
+  assert_has_cols(df, required_cols, "quality_panel")
 
-    n_fallback <- sum(is.na(chain_at_start_lookup$chain_jan2017) & !is.na(chain_at_start_lookup$chain_at_start))
-    message(sprintf(
-      "[setup] chain_at_start: %d facilities used fallback (own earliest observed chain value)",
-      n_fallback
-    ))
+  df <- df %>%
+    mutate(
+      cms_certification_number = norm_ccn(cms_certification_number),
+      year = suppressWarnings(as.integer(year)),
+      quarter = toupper(trimws(as.character(quarter))),
+      year_quarter = paste0(year, quarter)
+    )
+
+  numeric_candidates <- c(
+    staffing_outcomes,
+    names(long_stay_quality_measures),
+    names(short_stay_quality_measures),
+    names(vaccination_quality_measures),
+    "beds",
+    "num_beds",
+    "occupancy_rate",
+    "pct_medicare",
+    "pct_medicaid",
+    "time",
+    "time_treated",
+    "event_time",
+    "coverage_ratio",
+    "gap_from_prev_quarters"
+  )
+  numeric_candidates <- intersect_existing(numeric_candidates, df)
+
+  if (length(numeric_candidates) > 0) {
+    df <- df %>%
+      mutate(across(all_of(numeric_candidates), ~ suppressWarnings(as.numeric(.x))))
   }
 
-  df
+  binary_candidates <- c(
+    "treated",
+    "post",
+    "government",
+    "non_profit",
+    "chain",
+    "urban",
+    "provider_resides_in_hospital",
+    "ccrc_facility",
+    "sff_facility"
+  )
+  binary_candidates <- intersect_existing(binary_candidates, df)
+
+  if (length(binary_candidates) > 0) {
+    df <- df %>%
+      mutate(across(all_of(binary_candidates), ~ suppressWarnings(as.integer(.x))))
+  }
+
+  if (!("avg_los_total" %in% names(df))) {
+    message(
+      "[quality] avg_los_total is not present in quality_panel.csv -- Spec C/D ",
+      "controls for quality outcomes omit average length of stay until a ",
+      "quarterly avg_los_total is merged in from the monthly panel."
+    )
+  }
+
+  apply_facility_lookups(df, panel_label = "quality")
 }
 
 # -----------------------------------------------------------------------------
@@ -375,6 +676,26 @@ drop_event_month <- function(df) {
     filter(is.na(event_time) | event_time != 0)
 }
 
+# Same operation as drop_event_month(), named for the quarterly panel where
+# event_time is measured in quarters. The transition quarter may contain
+# care, assessment, and documentation from both before and after the
+# transfer, so it is excluded and tau = -1 is the reference period.
+drop_transition_quarter <- function(df) {
+  df %>%
+    filter(is.na(event_time) | event_time != 0)
+}
+
+# Apply the per-measure reporting-window trims in quality_measure_year_windows
+# to a single outcome. Returns the data unchanged for measures with no trim.
+trim_quality_measure_window <- function(df, measure) {
+  w <- quality_measure_year_windows %>%
+    dplyr::filter(.data$var == .env$measure)
+  if (nrow(w) == 0) return(df)
+  if (!is.na(w$year_min[1])) df <- df %>% dplyr::filter(year >= w$year_min[1])
+  if (!is.na(w$year_max[1])) df <- df %>% dplyr::filter(year <= w$year_max[1])
+  df
+}
+
 # -----------------------------------------------------------------------------
 # Event-study helpers
 # -----------------------------------------------------------------------------
@@ -457,6 +778,15 @@ pretty_outcome_labels <- c(
   ln_lpn_hours    = "log(LPN hours)",
   ln_cna_hours    = "log(CNA hours)",
   ln_total_hours  = "log(Total hours)"
+)
+
+# Quality measure labels fold into the same lookup, so get_pretty_label()
+# works for staffing and quality outcomes alike.
+pretty_outcome_labels <- c(
+  pretty_outcome_labels,
+  long_stay_quality_measures,
+  short_stay_quality_measures,
+  vaccination_quality_measures
 )
 
 get_pretty_label <- function(x) {
