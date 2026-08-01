@@ -103,8 +103,19 @@ vaccination_quality_measures <- c(
 # Reporting-window trims established by the measure-code investigation:
 # qm_424/qm_425 are effectively discontinued (excluded entirely above);
 # qm_471 and qm_472 exist only over the windows below. NA = no trim.
+#
+# qm_453 (pressure injuries) trim recovered from the retired
+# quarterly_quality_twfe_tables.R, which used 2018Q1--2023Q3 specifically.
+# trim_quality_measure_window() only filters by YEAR, not quarter, so
+# year_max = 2023 here includes all of 2023 (through Q4), three months
+# past the original 2023Q3 cutoff. This is a deliberate approximation, not
+# a rediscovery of the original evidence at quarter precision -- if the Q4
+# reporting gap turns out to be as severe as Q1-Q3, tighten this by adding
+# quarter bounds to trim_quality_measure_window() rather than assuming
+# year-level trimming is precise enough.
 quality_measure_year_windows <- tibble::tribble(
   ~var,     ~year_min,   ~year_max,
+  "qm_453", 2018L,       2023L,
   "qm_471", NA_integer_, 2022L,
   "qm_472", 2018L,       2023L
 )
@@ -228,6 +239,7 @@ build_facility_lookups <- function(fp = panel_fp, refresh = FALSE) {
     col_select = dplyr::any_of(
       c("cms_certification_number", "year_month", "government", "chain")
     ),
+    guess_max = Inf,
     show_col_types = FALSE,
     progress = FALSE
   )
@@ -377,7 +389,19 @@ load_staffing_panel <- function(fp = panel_fp) {
     stop(sprintf("Panel file not found: %s", fp), call. = FALSE)
   }
   
-  df <- readr::read_csv(fp, show_col_types = FALSE)
+  # guess_max = Inf: readr's default (guess_max = 1000) infers each column's
+  # type from only its first 1,000 rows. The panel is sorted by CCN then
+  # year_month, so a column that happens to be blank for the first ~1,000
+  # rows (e.g. an early-alphabetical facility with a long reporting gap) gets
+  # typed as logical instead of double -- every real numeric value later in
+  # that column then silently fails to parse and becomes NA. This is exactly
+  # what happened to total_hours: rn/lpn/cna_hours_month guessed correctly
+  # (type is inferred independently per column) while total_hours alone came
+  # back 100% NA, confirmed by total_hprd (built from the same source rows)
+  # being fully populated. guess_max = Inf costs an extra pass over the file
+  # but is the only fix that doesn't depend on knowing in advance which
+  # column will be hit next.
+  df <- readr::read_csv(fp, guess_max = Inf, show_col_types = FALSE)
   
   required_cols <- c(
     "cms_certification_number",
@@ -487,7 +511,11 @@ load_quality_panel <- function(fp = quality_panel_fp) {
     stop(sprintf("Quality panel file not found: %s", fp), call. = FALSE)
   }
 
-  df <- readr::read_csv(fp, show_col_types = FALSE)
+  # guess_max = Inf -- see load_staffing_panel() for why. Applied here too
+  # since the quarterly panel is subject to the exact same readr sampling
+  # behavior even though the total_hours bug itself was only confirmed on
+  # the monthly panel.
+  df <- readr::read_csv(fp, guess_max = Inf, show_col_types = FALSE)
 
   required_cols <- c(
     "cms_certification_number",

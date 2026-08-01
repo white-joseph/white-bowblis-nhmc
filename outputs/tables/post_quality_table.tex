@@ -1,0 +1,42 @@
+\begin{table}[!ht]
+\centering
+\begin{threeparttable}
+\caption{Effect of Ownership Change on Quality Measures}
+\label{tab:post-quality}
+\small
+\setlength{\tabcolsep}{6pt}
+
+\begin{tabularx}{\textwidth}{@{} l Y Y r @{}}
+\toprule
+Outcome & (1) & (2) & Observations \\
+\midrule
+\multicolumn{4}{@{}l}{\textbf{Panel A: Long-stay labor-saving mechanism measures}} \\[2pt]
+Catheter use & \makecell[t]{$-0.1695^{***}$ \\ $(0.0488)$} & \makecell[t]{$-0.1711^{***}$ \\ $(0.0488)$} & 172,671 \\
+Anti-psychotic medication use & \makecell[t]{$-0.3362$ \\ $(0.2218)$} & \makecell[t]{$-0.3543$ \\ $(0.2231)$} & 171,358 \\
+Anti-anxiety/hypnotic medication use & \makecell[t]{$-0.2321$ \\ $(0.2019)$} & \makecell[t]{$-0.2118$ \\ $(0.2027)$} & 171,854 \\
+\addlinespace[0.6em]
+\multicolumn{4}{@{}l}{\textbf{Panel B: Long-stay resident outcome measures}} \\[2pt]
+Pressure injuries & \makecell[t]{$\phantom{-}0.2586$ \\ $(0.1762)$} & \makecell[t]{$\phantom{-}0.2825$ \\ $(0.1783)$} & 121,962 \\
+Falls with major injury & \makecell[t]{$\phantom{-}0.0125$ \\ $(0.0636)$} & \makecell[t]{$\phantom{-}0.0138$ \\ $(0.0644)$} & 175,123 \\
+Weight loss & \makecell[t]{$\phantom{-}0.2042^{*}$ \\ $(0.1040)$} & \makecell[t]{$\phantom{-}0.2080^{*}$ \\ $(0.1034)$} & 170,733 \\
+Decline in physical functioning & \makecell[t]{$\phantom{-}0.3240$ \\ $(0.2695)$} & \makecell[t]{$\phantom{-}0.3501$ \\ $(0.2782)$} & 163,983 \\
+Urinary tract infections & \makecell[t]{$-0.3279^{***}$ \\ $(0.0765)$} & \makecell[t]{$-0.3181^{***}$ \\ $(0.0767)$} & 174,381 \\
+\addlinespace[0.6em]
+\multicolumn{4}{@{}l}{\textbf{Panel C: Short-stay measures}} \\[2pt]
+New antipsychotic medication & \makecell[t]{$-0.0187$ \\ $(0.0432)$} & \makecell[t]{$-0.0219$ \\ $(0.0433)$} & 134,020 \\
+Improved function & \makecell[t]{$-0.0569$ \\ $(0.4888)$} & \makecell[t]{$-0.0880$ \\ $(0.4889)$} & 88,792 \\
+\bottomrule
+\end{tabularx}
+
+\begin{tablenotes}[flushleft]
+\footnotesize
+\item \textit{Notes:} Each cell reports the coefficient on \textit{post}, with standard errors in parentheses. All specifications include facility and calendar-period fixed effects and control for the number of certified beds. Standard errors are two-way clustered by facility and calendar period. The sample excludes facilities government-owned at any point during the study period.
+\item Column (1) is the baseline specification. Column (2) adds RN, LPN, and CNA hours per resident day as controls. Because staffing is itself affected by ownership change, column (2) is not a preferred estimate of the total effect; it is reported to show whether the quality response is attenuated after conditioning on measured staffing inputs.
+\item Long-stay measures (Panels A-B) and short-stay measures (Panel C) are constructed from different resident populations and are not directly comparable to one another. For every measure, lower values indicate better measured quality.
+\item Pressure injuries is estimated on 2018--2023 only; improved function is estimated on 2017--2022 only. Both measures show near-complete absence outside these windows and are trimmed to the years where they are actually reported rather than treated as full-panel outcomes. Vaccination measures are excluded from this table.
+\item The transition quarter ($\tau = 0$) is excluded. Observations are reported for column (1); column (2) drops facility-quarters with missing staffing.
+\item Statistical significance: $^{***}p<0.01$, $^{**}p<0.05$, $^{*}p<0.10$.
+\end{tablenotes}
+
+\end{threeparttable}
+\end{table}
