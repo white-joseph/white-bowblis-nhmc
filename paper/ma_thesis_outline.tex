@@ -77,24 +77,6 @@
 
 \begin{document}
 
-\begin{titlepage}
-\title{Title}
-
-\author{
-  Joseph White
-  \and
-  John Bowblis
-  \and
-  Charles C. Moul
-}
-
-\date{\DTMtoday}
-
-\maketitle
-
-\end{titlepage}
-\pagebreak \newpage
-
 \doublespacing
 
 \section{Introduction} \label{sec:introduction}
@@ -102,14 +84,14 @@
 \noindent\textbf{Paragraph 1 (opening motivation)} Ownership changes have become an increasingly common feature of the health care sector (footnote w/ citation?). Policymakers, academics, and the public (citations for all 3) have expressed growing concern over the implications of these changes for patients and the quality of care. This concern is especially important in nursing homes as they serve an aging and medically vulnerable population who also face a wide range of frictions. Yet, existing literature gives limited or mixed results on how ownership changes affect patients, quality, and the nursing home's operating model. This is in part because ownership is difficult to measure and many studies only focus on specific forms of ownership, such as private equity, chain mergers, or for-profit acquisitions. This paper addresses that gap by introducing a new measure of verified substantive ownership changes and estimating their effects on both the production and quality of care in U.S. nursing homes.
 
 \medskip
-\noindent\textbf{Paragraph 2 (nursing labor and composition)} Nursing homes production is very labor-intensive and is a facilities dominant operating cost. Because prices are largely administered (Medicaid per-diems are set by states, Medicare rates federally) a new owner cannot re-optimize on price. The margins they can re-optimize on are the intensity and composition of labor inputs, the quantity and composition of the resident census, and the quality of care. Nursing labor is not homogeneous. RNs, LPNs, CNAs all have distinct scopes of practice with limited ability to substitute for each other, and RN wages are roughly double CNA wages. An interesting question is therefore not whether staffing falls after an ownership change, but where in the skill distribution does it fall.
+\noindent\textbf{Paragraph 2 (nursing labor and composition)} Nursing home production is very labor-intensive and is a facilities dominant operating cost. Because prices are largely administered (Medicaid per-diems are set by states, Medicare rates federally) a new owner cannot re-optimize on price. Instead, the margins they can re-optimize on are the intensity and composition of labor inputs, the quantity and composition of the resident census, and the quality of care. Nursing labor is not homogeneous. RNs, LPNs, CNAs all have distinct scopes of practice with limited ability to substitute for each other, and RN wages are roughly double CNA wages. An interesting question is therefore not whether staffing falls after an ownership change, but where in the skill distribution does it fall.
 
 \medskip
 \noindent\textbf{Paragraph 3 (theoretical ambiguity)} Describe the motives that make this an empirical question.
 Acquisitions of financially distressed facilities predict cost-cutting; owner succession and exit (retirement, etc...) predict modernization by a better-capitalized buyer; strategic or chain acquisition predicts scale economies; purely administrative or legal restructuring predicts no real change. These motives differ in their predictions. 
 
 \medskip
-\noindent\textbf{Paragraph 4 (measurement contribution)} NHC ownership records conflate substantive control changes with legal restructuring, and HCRIS measures either miss real changes or count fictitious ones. Our two-source verification isolates transfers in which operational control actually changed hands. The government-transfers (Texas/Indiana/Utah) might be a good example to demonstrate why this actually matters.
+\noindent\textbf{Paragraph 4 (measurement contribution)} NHC ownership records conflate substantive control changes with legal restructuring, and HCRIS measures either miss real changes or count fictitious ones. Our two-source verification isolates transfers in which operational control actually changed hands. The government-transfers (Texas/Indiana/Utah) might be a good example to demonstrate why this actually matters, although that could hurt our strategy because it originally made it through this verification.
 
 \medskip
 \noindent\textbf{Paragraph 5 (identification approach)} Ownership changes are not random, so our design compares each facility to itself before and after its own transition; a staggered event study with facility and calendar-time fixed effects, rather than comparing ownership types in the cross-section. Brief discussion about the donut and robustness.
@@ -134,14 +116,14 @@ Describe the change of ownership process and its timeline: agreement and contrac
 
 \subsection{The Reimbursement Environment} \label{sec:background-reimbursement}
 
-Make Paragraph 2 of the introduction institutionally concrete: Medicaid as the dominant payer with state-administered per-diems, Medicare's PDPM rates for short-stay post-acute residents. Explain why administered pricing pushes an acquirer's optimization onto input and census margins rather than price.
+Make Paragraph 2 of the introduction concrete: Medicaid as the dominant payer with state-administered per-diems, Medicare's PDPM rates for short-stay post-acute residents. Explain why administered pricing pushes an acquirer's optimization onto input and census margins rather than price.
 
 \subsection{Staff Types, Scope of Practice, and Staffing Regulation} \label{sec:background-staffing}
 
 \noindent\textbf{Scope of practice} RNs perform resident assessment, care planning, clinical judgment, MDS coordination, infection prevention and surveillance, and supervision of licensed staff. LPNs administer medications and perform treatments under RN supervision. CNAs deliver activities of daily living; bathing, feeding, toileting, transfers, and mobility, and account for the majority of direct resident-contact hours. We should emphasize that these roles are complements with legally constrained substitutability: a facility cannot simply replace RN hours with CNA hours and deliver the same production.
 
 \medskip
-\noindent\textbf{Wage structure} RN hourly wages run roughly double CNA wages. This is essential context for interpreting the main result: a reduction of 88.6 RN hours generates substantially larger cost savings than a reduction of 75.5 CNA hours, which is why cutting the smallest staffing category can be the rational margin for a cost-conscious new owner (I think raw hour decreases are more important than in my original paper, given the fact that occupancy rate increases simultaneously with the HPRD decrease).
+\noindent\textbf{Wage structure} RN hourly wages run roughly double CNA wages. This is essential context for interpreting the main result: a reduction of 102.4 RN hours generates substantially larger cost savings than a reduction of 95.6 CNA hours, which is why cutting the smallest staffing category can be the rational margin for a cost-conscious new owner (I think raw hour decreases are more important than in my original paper, given the fact that occupancy rate increases simultaneously with the HPRD decrease).
 
 \medskip
 \noindent\textbf{Regulatory floors} Federal requirements include an RN on duty at least 8 consecutive hours per day, licensed-nurse coverage 24 hours per day, and the general ``sufficient staffing'' standard; state-level minimums vary considerably in both level and bindingness. Not sure if we should discuss the 2024 federal minimum staffing rule and its repeal effective February 2026, since neither should have an effect on our data.
@@ -168,27 +150,27 @@ One paragraph per source, emphasizing what each contributes that the others cann
 
 \subsection{Identifying Verified Ownership Changes}
 
-First paragraph: The measurement problem, HCRIS reports that a change occurred and when, but cannot distinguish substantive from administrative change; NHC records ownership at the entity/layer level monthly, but is noisy and generates many false positives. Second paragraph: the verification rule, greater than 50\% ownership-share turnover at the highest observed ownership layer in NHC, an 80\%-same-family override excluding intra-family transfers, and agreement between HCRIS and NHC dates within six months. Third paragraph: The resulting analytic sample, facilities with zero verified changes (comparison group) or exactly one (treated), everything else is excluded; We should reference appendix tables with concrete examples.
+First paragraph: The measurement problem, HCRIS reports that a change occurred and when, but cannot distinguish substantive from administrative change; NHC records ownership at the entity/layer level monthly, but is noisy and generates many false positives. Second paragraph: the verification rule, greater than 50\% ownership-share turnover at the highest observed ownership layer in NHC, an 80\%-same-family override excluding intra-family transfers, and agreement between HCRIS and NHC dates within six months. Third paragraph: The resulting analytic sample, facilities with zero verified changes (comparison group) or exactly one (treated), everything else is excluded; We should reference appendix tables with concrete examples. One thing I didn't do in my honors thesis was justify these rules (80\%, 50\%, ...) so I think I should do that here. 
 
 \subsection{Outcome Construction}
 
 \noindent\textbf{Staffing outcomes (primary).} HPRD construction from PBJ daily hours and resident-days; raw monthly hours . PBJ coverage and reporting-gap data-quality variables; implausible-value exclusions per the CMS NHC Technical Users' Guide.
 
 \medskip
-\noindent\textbf{Business-model outcomes} Occupancy rate (patient days over available bed-days), spare capacity ($(\text{certified beds} - \text{average census})/\text{beds}$, and why this is not simply one minus occupancy), Medicare and Medicaid shares of patient days, average length of stay, and case-mix acuity (Do we know yet if we are reporting this as an outcome?). If so, then we should explain the CMS case-mix methodology breaks (October 2017 and January 2024) and the resulting restriction of case-mix-as-outcome to the stable 2017/10--2023/12 window.
+\noindent\textbf{Business-model outcomes} Occupancy rate (patient days over available bed-days), spare capacity ($(\text{certified beds} - \text{average census})/\text{beds}$, and why this is not simply one minus occupancy if we are using this), Medicare and Medicaid shares of patient days, average length of stay, and case-mix acuity (Do we know yet if we are reporting this as an outcome?). If so, then we should explain the CMS case-mix methodology breaks (October 2017 and January 2024) and the resulting restriction of case-mix-as-outcome to the stable 2017/10--2023/12 window.
 
 \medskip
-\noindent\textbf{Quality outcomes} Two conceptual groups with a sentence of relevance for each: measures tied to labor-saving care mechanisms (catheter use, antipsychotic use, anti-anxiety/hypnotic use), and resident-outcome measures (pressure injuries, falls with major injury, weight loss, functional decline, UTIs), plus the preventive process measures (pneumococcal and influenza vaccination). Should not that some of these variables have windows where they are discontinued so we have to restrict the sample in those cases.
+\noindent\textbf{Quality outcomes} Two conceptual groups with a sentence of relevance for each: measures tied to labor-saving care mechanisms (catheter use, antipsychotic use, anti-anxiety/hypnotic use), and resident-outcome measures (pressure injuries, falls with major injury, weight loss, functional decline, UTIs), plus the preventive process measures (pneumococcal and influenza vaccination). Should note that some of these variables have windows where they are discontinued so we have to restrict the sample in those cases.
 
 \subsection{Controls}
 
-Honestly I have no clue how we are handling this section, and I am going to defer to both of your advice/expertise. If I had to guess I would say we should state the control set and the reasoning that produced it, mentioning the endogenous controls. Occupancy, payer mix, LOS, and case mix are themselves outcomes here; specifications for the business-model outcomes therefore exclude these variables from each other's controls, and the staffing and quality results are shown under nested control tiers (is this the main table we are using). I am also still investigating new research on the bad controls that I had previously mentioned in one of my emails.
+Honestly I have no clue how we are handling this section, and I am going to defer to both of your advice/expertise. If I had to guess I would say we should state the control set and the reasoning that produced it, mentioning the endogenous controls. Occupancy, payer mix, LOS, and case mix are themselves outcomes here; specifications for the business-model outcomes therefore exclude these variables from each other's controls, and the staffing and quality results are shown under nested control tiers (is this the main table we are using). 
 
 \subsection{Empirical Strategy}
 
 First paragraph: the staggered event-study/TWFE design with facility and calendar fixed effects, two-way clustered standard errors, and the three estimating equations below. Second paragraph: the donut/anticipation logic, grounded in the CHOW timeline from Section~\ref{sec:background-chow}; $\tau\in\{-3,-2,-1\}$ excluded for monthly outcomes because contract signing precedes the recorded closing date, $\tau=0$ excluded for quarterly quality because the transition quarter mixes dates together. Then discuss the pre-trend deviations confined to the excluded window, stability to donut width, pre-trend Wald tests passing under the donut. Third paragraph: staggered-adoption concerns (Goodman--Bacon) and how the paper addresses them via the stacked event study restricting each cohort to never-/not-yet-treated comparisons. 
 
-This is where I am really trying to hone in on the newer event study designs, specifically Callaway-Sant 'Anna and/or Sun-Abraham. Both of these methods would give us the event study and ATT in one design, rather than having two like we currently do (event study + 2x2 twfe DiD). The other thing that I think we may be missing is that I haven't ran the Goodman-Bacon decomposition on that standard 2x2 twfe DiD. One thing that is a challenge is that in R it requires no gaps in the panel, directly contradicting the donut as well as missing data during Covid. There are other ways to get at the same analysis, so I am still looking into that. 
+This is where I am really trying to hone in on the newer event study designs, specifically Callaway-Sant 'Anna and/or Sun-Abraham. Both of these methods would give us the event study and ATT in one design, rather than having two like we currently do (event study + 2x2 twfe DiD). The other thing that I think we may be missing is that I haven't ran the Goodman-Bacon decomposition on that standard 2x2 twfe DiD. One thing that is a challenge is that in R it requires no gaps in the panel, directly contradicting the donut as well as missing data during Covid. There are other ways to get at the same analysis, so I am still looking into that. In the end I think that one of these designs should at least make it into the robustness checks.
 
 \begin{equation}
 \label{eq:event-study-staffing}
@@ -253,7 +235,7 @@ Staffing panel ($\sim$7,806 facilities, $\sim$632k facility-months, 1,589 treate
 \noindent Second paragraph: Report log HPRD, log raw hours; and state how much of the per-resident decline is driven by the numerator. 
 
 \medskip
-\noindent Third paragraph: RN hours fall roughly 8.4 percent against CNA at 1.8 percent and LPN flat; RNs supply approximately 60 percent of the total hour reduction ($-88.6$ of $-148.2$ monthly hours) from the smallest staffing category. Interpret through Section~\ref{sec:background-staffing}: the wage differential makes RN hours the largest cost saving per hour removed, and RN functions are the least immediately visible. 
+\noindent Third paragraph: Interpret through Section~\ref{sec:background-staffing}: the wage differential makes RN hours the largest cost saving per hour removed, and RN functions are the least immediately visible. 
 
 \medskip
 \noindent Fourth paragraph: non-nurse therapy staffing (PT/OT/SLP) as a secondary result, and pre-/post-pandemic heterogeneity.
@@ -279,7 +261,7 @@ Staffing panel ($\sim$7,806 facilities, $\sim$632k facility-months, 1,589 treate
 \noindent Second paragraph: the substantive pattern, improvement in labor-saving-mechanism measures, declining UTIs, broadly stable resident-outcome measures.
 
 \medskip
-\noindent Third paragraph: the preventive-process results and the argument from Introduction Paragraph 7. Pneumococcal vaccination falls 4.5 percentage points and influenza 3.9 percentage points, both highly significant and essentially unchanged when occupancy is added as a control, so these are not driven by the  census increase.
+\noindent Third paragraph: the preventive-process results and the argument from Introduction Paragraph 7. Pneumococcal vaccination falls 4.5 percentage points and influenza 3.9 percentage points, both significant and essentially unchanged when occupancy is added as a control, so these are not driven by the  census increase.
 
 \subsection{Heterogeneity and Robustness}
 
@@ -287,10 +269,10 @@ First paragraph: chain vs.\ non-chain (own-pre-event classification, motivated b
 
 \section{Discussion}\label{sec:discussion}
 
-First paragraph: pull the three outcome families into one interpretation; new owners reduce nursing inputs disproportionately at the RN margin while filling beds, and measured resident outcomes hold steady even as preventive process measures worsen. Second paragraph: why the skill-mix pattern favors a reorganization-with-selective-disinvestment reading over both pure cost-cutting and pure efficiency stories. Third paragraph: economic magnitudes benchmarked against baseline levels (monthly hours removed per facility, RN share of the reduction, occupancy gain relative to baseline spare capacity, translated into approximate annual labor cost savings if the wage figures support it). Fourth paragraph: heterogeneity (slack-capacity concentration, chain transitions, pandemic period) as evidence that capacity and constraints shape feasible adjustment. Fifth paragraph: limitations---residual timing measurement error; non-random transaction timing and coincident unobserved shocks; quality measures omitting mortality, hospitalization, and resident experience; HCRIS annual frequency limiting event-study resolution on business-model outcomes; inability to observe task allocation directly, which is what the mechanism argument would require; and a post-transition window that may be too short to detect slowly accruing harms.
+First paragraph: pull the three outcome families into one interpretation; new owners reduce nursing inputs disproportionately at the RN margin while filling beds, and measured resident outcomes hold steady even as preventive process measures worsen. Second paragraph: why the skill-mix pattern favors selective disinvestment reorganizing over both pure cost-cutting and pure efficiency stories. Third paragraph: economic magnitudes benchmarked against baseline levels (monthly hours removed per facility, RN share of the reduction, occupancy gain relative to baseline spare capacity, translated into approximate annual labor cost savings possibly). Fourth paragraph: heterogeneity (slack-capacity concentration, chain transitions, pandemic period) as evidence that capacity and constraints shape feasible adjustment. Fifth paragraph: limitations, possible measurement error; non-random transaction timing and unobserved shocks; quality measures omitting mortality, hospitalization, and resident experience; HCRIS annual frequency limiting event-study resolution on business-model outcomes; inability to observe task allocation directly, which is what the mechanism argument would require; and a window that may be too short to detect slowly accruing harms.
 
 \section{Conclusion} \label{sec:conclusion}
 
-Three short paragraphs: restate the skill-mix finding and the joint staffing--composition--quality pattern; restate the three contributions with both measurement contributions foregrounded; close on open questions---which acquisitions generate efficiency-enhancing reorganization versus quality-reducing disinvestment, whether the answer is predictable from pre-transition slack, ownership structure, or acquirer type, and whether the preventive-care erosion translates into resident harm over longer horizons than this panel observes.
+Three short paragraphs: restate the findings; restate the three contributions with both measurement contributions; close on open questions, address future extensions.
 
 \end{document}
