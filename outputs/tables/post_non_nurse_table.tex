@@ -1,0 +1,33 @@
+\begin{table}[!ht]
+\centering
+\begin{threeparttable}
+\caption{Effect of Ownership Change on Non-Nurse (Therapy) Staffing}
+\label{tab:post-non-nurse}
+\small
+\setlength{\tabcolsep}{6pt}
+
+\begin{tabularx}{\textwidth}{@{} l Y r @{}}
+\toprule
+Staff type & Coefficient (SE) & Observations \\
+\midrule
+Physical Therapist (PT) & \makecell[t]{$-0.0002$ \\ $(0.0017)$} & 550,330 \\
+PT Assistant & \makecell[t]{$\phantom{-}0.0012$ \\ $(0.0020)$} & 550,330 \\
+PT Aide & \makecell[t]{$\phantom{-}0.0047^{***}$ \\ $(0.0008)$} & 550,330 \\
+Occupational Therapist (OT) & \makecell[t]{$-0.0024$ \\ $(0.0016)$} & 550,330 \\
+OT Assistant & \makecell[t]{$\phantom{-}0.0039^{**}$ \\ $(0.0018)$} & 550,330 \\
+OT Aide & \makecell[t]{$\phantom{-}0.0029^{***}$ \\ $(0.0005)$} & 550,330 \\
+Speech-Language Pathologist & \makecell[t]{$-0.0031^{***}$ \\ $(0.0010)$} & 550,330 \\
+Total Non-Nurse & \makecell[t]{$\phantom{-}0.0070$ \\ $(0.0059)$} & 550,330 \\
+\bottomrule
+\end{tabularx}
+
+\begin{tablenotes}[flushleft]
+\footnotesize
+\item \textit{Notes:} Each cell reports the coefficient on \textit{post}, with standard errors in parentheses. All specifications include facility and calendar-period fixed effects and control for the number of certified beds. Standard errors are two-way clustered by facility and calendar period. The sample excludes facilities government-owned at any point during the study period.
+\item Outcomes are hours per resident day (HPRD) for each non-nurse staff type. Levels only are reported: several categories (PT Aide, OT Aide) have a large share of exact zeros, which makes log specifications and a raw-hours decomposition less informative here than for nursing staff.
+\item The anticipation window ($\tau = -3, -2, -1$) is excluded.
+\item Statistical significance: $^{***}p<0.01$, $^{**}p<0.05$, $^{*}p<0.10$.
+\end{tablenotes}
+
+\end{threeparttable}
+\end{table}
