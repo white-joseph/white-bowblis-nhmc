@@ -248,8 +248,15 @@ Thumbs.db
 
 .Rhistory
 .RData
+.RDataTmp*
 .Rproj.user/
 /presentation/
+
+# ---------- Editor sync/state files ----------
+# TeXstudio's PDF-comment-sync bookkeeping -- local editor state, not
+# reproducible source, one per .tex file it's been used on.
+*.upa
+*.upb
 
 # ---------- Raw data (large, obtained from CMS; documented separately, not stored in git) ----------
 /data/raw/
