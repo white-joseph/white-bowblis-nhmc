@@ -1,30 +1,64 @@
 # =============================================================================
 # regressions/stacked_twfe_post.R
 #
-# Basic TWFE DiD (post-only) on the STACKED dataset -- companion to
-# stacked_event_study.R, same cohort-stacking approach, but a single
-# post-period estimate rather than an event-time profile.
+# Post-only TWFE difference-in-differences on the stacked (cohort-by-
+# cohort) sample. Companion to stacked_event_study.R: same cohort-stacking
+# construction, but a single post-period estimate rather than an
+# event-time profile.
 #
-# Updated to match current project conventions:
-#   - reads the CURRENT staffing_panel.csv (via load_staffing_panel() in
-#     _setup.R), not the old panel.csv -- column names are rn_hprd etc.,
-#     not rn_hppd
-#   - reuses the already-computed ln_rn/ln_lpn/ln_cna/ln_total log columns
-#     from _setup.R instead of recomputing them
-#   - reuses make_controls_rhs() for the control set instead of a hardcoded
-#     string
-#   - TWO-WAY clustering (facility + calendar month), matching the rest of
-#     the project and matching the fix just made in stacked_event_study.R.
-#     NOTE: this is meaningfully more expensive to compute than the
-#     facility-only clustering used previously -- expect longer runtime.
+# -----------------------------------------------------------------------------
+# Description
+# -----------------------------------------------------------------------------
+# For each treatment cohort (facilities sharing the same ownership-change
+# month), a cohort-specific comparison sample is built consisting of that
+# cohort's treated facilities plus never-treated and not-yet-treated
+# facilities. The cohort samples are stacked into one dataset and a single
+# TWFE regression is estimated with facility-by-cohort, calendar-month, and
+# cohort fixed effects. This avoids using already-treated facilities as
+# controls for later cohorts, a known source of bias in ordinary two-way
+# fixed-effects estimates under staggered treatment timing.
 #
-# Memory management (unchanged from the original): models are fit ONE
-# outcome at a time, coefficients extracted immediately, then rm()+gc(),
-# to avoid holding multiple large stacked-sample model objects at once.
+# Models are fit one outcome at a time, with coefficients extracted
+# immediately and the model object discarded (rm() + gc()), since the
+# stacked dataset is large enough that holding several fitted models in
+# memory simultaneously is costly.
 #
-# Output:
-#   outputs/tables/stacked_twfe_post_full.tex
-#   outputs/tables/stacked_twfe_post_full_QA.tex
+# -----------------------------------------------------------------------------
+# Specification
+# -----------------------------------------------------------------------------
+#   outcome ~ post + controls | stack_id + year_month + cohort
+#
+# stack_id is a facility-by-cohort identifier (a facility appearing in
+# multiple cohort samples is treated as a distinct unit within each).
+# controls come from make_controls_rhs() (the legacy full control set).
+# Standard errors are two-way clustered by facility and calendar month.
+# The donut excludes tau in {-3,-2,-1} from the treated observations.
+#
+# -----------------------------------------------------------------------------
+# Inputs
+# -----------------------------------------------------------------------------
+#   data/clean/staffing_panel.csv (via load_staffing_panel())
+#
+# -----------------------------------------------------------------------------
+# Outputs
+# -----------------------------------------------------------------------------
+#   outputs/tables/stacked_twfe_post_full.tex     LaTeX fragment (label
+#                                                   tab:stacked-twfe-post)
+#   outputs/tables/stacked_twfe_post_full_QA.tex  Standalone compilable doc
+#
+# -----------------------------------------------------------------------------
+# Dependencies
+# -----------------------------------------------------------------------------
+#   regressions/_setup.R (load_staffing_panel(), make_controls_rhs())
+#   R packages: fixest, dplyr
+#
+# -----------------------------------------------------------------------------
+# Notes
+# -----------------------------------------------------------------------------
+#   stacked_event_study.R implements the same cohort-stacking construction
+#   (make_stacked_data() here vs. an equivalent function there) as a
+#   separate copy. A change to the donut window or cohort definition must
+#   currently be made in both files.
 # =============================================================================
 
 source("C:/Repositories/white-bowblis-nhmc/regressions/_setup.R")
@@ -39,7 +73,9 @@ options(scipen = 999, digits = 4)
 out_dir <- out_tables_dir
 dir.create(out_dir, showWarnings = FALSE, recursive = TRUE)
 
-# ------------------------------ Load current panel ------------------------------
+# =============================================================================
+# Load panel
+# =============================================================================
 keep_cols <- c(
   "cms_certification_number", "year_month", "time", "time_treated",
   "government", "non_profit", "chain", "beds",
@@ -62,7 +98,12 @@ outs_lvl <- c("rn_hprd", "lpn_hprd", "cna_hprd", "total_hprd")
 outs_log <- c(rn_hprd = "ln_rn", lpn_hprd = "ln_lpn", cna_hprd = "ln_cna", total_hprd = "ln_total")
 nice_out <- c(rn_hprd = "RN", lpn_hprd = "LPN", cna_hprd = "CNA", total_hprd = "Total")
 
-# ------------------------------ Cohort g_i ------------------------------
+# =============================================================================
+# Cohort assignment
+# =============================================================================
+# Each facility's cohort g is its treatment month (time_treated), assumed
+# constant within a facility. Facilities with no treatment month (never-
+# treated) get g = NA and serve as controls for every cohort.
 g_df <- df %>%
   group_by(cms_certification_number) %>%
   summarise(
@@ -77,7 +118,49 @@ df <- df %>% left_join(g_df, by = "cms_certification_number")
 cohorts <- sort(unique(df$g[!is.na(df$g)]))
 cat("Unique cohorts (treated months):", length(cohorts), "\n")
 
-# ------------------------------ Build stacked data (baseline donut) ------------------------------
+# =============================================================================
+# Stacked dataset construction
+# =============================================================================
+
+# -----------------------------------------------------------------------------
+# make_stacked_data()
+#
+# Builds the cohort-stacked estimation sample. For each cohort g0, keeps
+# facility-months within [g0 - L, g0 + R] of that cohort's treatment month,
+# restricted to facilities that are either never-treated or treated no
+# earlier than g0 (so a facility already treated before g0 does not appear
+# in g0's comparison group). Within each cohort's sample, treated
+# observations in the donut window (relative time in drop_set) are
+# dropped, and a post indicator is constructed for relative time >= 0. All
+# cohort samples are then row-bound into a single stacked dataset.
+#
+# Arguments:
+#   data        -- Panel data frame with columns time, time_treated (via
+#                   g, joined on beforehand), and the outcome/control
+#                   columns to retain.
+#   cohorts_vec -- Integer vector of cohort (treatment-month) values to
+#                   build stacks for.
+#   L           -- Integer: number of periods before g0 to include.
+#                   Defaults to 24L.
+#   R           -- Integer: number of periods after g0 to include.
+#                   Defaults to 24L.
+#   drop_set    -- Integer vector of relative-time values to exclude for
+#                   treated observations (the donut window). Defaults to
+#                   -3:-1.
+#
+# Returns:
+#   A single stacked data frame (row-bound across cohorts) with columns:
+#     cohort        -- The cohort (g0) this row belongs to.
+#     rel           -- Relative time to g0.
+#     treated_stack -- 1 if this facility is the treated cohort for this
+#                        stack, 0 if serving as a control.
+#     stack_id      -- Facility-by-cohort identifier (a facility appearing
+#                        in multiple cohort stacks is a distinct unit in
+#                        each).
+#     post          -- 1 if treated_stack == 1 and rel >= 0, else 0.
+#   plus the outcome and control columns selected at the end of the
+#   function.
+# -----------------------------------------------------------------------------
 make_stacked_data <- function(data, cohorts_vec, L = 24L, R = 24L, drop_set = -3:-1) {
 
   stacked <- lapply(cohorts_vec, function(g0) {
@@ -91,11 +174,10 @@ make_stacked_data <- function(data, cohorts_vec, L = 24L, R = 24L, drop_set = -3
         treated_stack = as.integer(!is.na(g) & g == g0),
         stack_id = interaction(cms_certification_number, cohort, drop = TRUE)
       ) %>%
-      # baseline donut: drop treated obs at -3,-2,-1
+      # Donut: drop treated observations in the anticipation window.
       dplyr::filter(treated_stack == 0L | !(rel %in% drop_set)) %>%
-      # post for TWFE DiD on stacked
       dplyr::mutate(post = as.integer(treated_stack == 1L & rel >= 0L)) %>%
-      # trim columns HARD to keep RAM down
+      # Trim columns to control memory use across many cohort stacks.
       dplyr::select(
         cms_certification_number, year_month,
         cohort, stack_id, post,
@@ -118,17 +200,47 @@ stack <- make_stacked_data(df, cohorts, L = L, R = R, drop_set = -3:-1)
 rm(df); gc()
 cat("Stacked rows (baseline donut):", nrow(stack), "\n")
 
-# ------------------------------ Fit TWFE DiD on stacked ------------------------------
+# =============================================================================
+# Estimation
+# =============================================================================
+
+# -----------------------------------------------------------------------------
+# make_fml()
+#
+# Builds the post-only TWFE formula for a given outcome, on the stacked
+# sample's fixed-effect structure.
+#
+# Arguments:
+#   lhs -- Character scalar: the outcome variable name.
+#
+# Returns:
+#   A formula object: "lhs ~ post + controls_rhs | stack_id + year_month + cohort".
+# -----------------------------------------------------------------------------
 make_fml <- function(lhs) as.formula(paste0(
   lhs, " ~ post + ", controls_rhs, " | stack_id + year_month + cohort"
 ))
 
-# Two-way clustering (facility + calendar month) -- meaningfully more
-# expensive than facility-only on a ~24M row stacked dataset; matches the
-# fix just applied in stacked_event_study.R.
+# Two-way clustering (facility + calendar month) is meaningfully more
+# expensive to compute than facility-only clustering on this dataset's
+# size, but matches the clustering used in stacked_event_study.R.
 vc <- ~ cms_certification_number + year_month
 
-# Extract post info without keeping giant model objects around
+# -----------------------------------------------------------------------------
+# extract_post()
+#
+# Extracts the coefficient, standard error, and significance stars for a
+# single term from a fitted model, without retaining a reference to the
+# model object itself.
+#
+# Arguments:
+#   mod  -- A fixest model object.
+#   term -- Character scalar: the coefficient name to extract. Defaults
+#           to "post".
+#
+# Returns:
+#   A list with elements b (coefficient), se (standard error), and stars
+#   (character: "", "*", "**", or "***" based on the p-value).
+# -----------------------------------------------------------------------------
 extract_post <- function(mod, term = "post") {
   b  <- unname(coef(mod)[term])
   se <- unname(se(mod)[term])
@@ -137,7 +249,7 @@ extract_post <- function(mod, term = "post") {
   list(b = b, se = se, stars = stars)
 }
 
-# Fit LEVELS one-by-one
+# Fit levels one outcome at a time.
 res_lvl <- list()
 for (y in outs_lvl) {
   cat("[fit levels]", y, "\n")
@@ -146,7 +258,7 @@ for (y in outs_lvl) {
   rm(m); gc()
 }
 
-# Fit LOGS one-by-one
+# Fit logs one outcome at a time.
 res_log <- list()
 for (y in outs_lvl) {
   ly <- outs_log[[y]]
@@ -156,7 +268,25 @@ for (y in outs_lvl) {
   rm(m); gc()
 }
 
-# ------------------------------ LaTeX helpers ------------------------------
+# =============================================================================
+# LaTeX table construction
+# =============================================================================
+
+# -----------------------------------------------------------------------------
+# fmt_est()
+#
+# Formats a coefficient, standard error, and significance stars into the
+# project's \est{}{}{} LaTeX macro (coefficient over standard error, in one
+# cell).
+#
+# Arguments:
+#   b     -- Numeric: the coefficient.
+#   se    -- Numeric: the standard error.
+#   stars -- Character: significance stars ("", "*", "**", or "***").
+#
+# Returns:
+#   Character scalar: a \est{...}{...}{...} macro call.
+# -----------------------------------------------------------------------------
 fmt_est <- function(b, se, stars) {
   bstr <- sprintf("%.3f", b)
   if (b > 0) bstr <- paste0("\\phantom{-}", bstr)
@@ -164,6 +294,19 @@ fmt_est <- function(b, se, stars) {
   sprintf("\\est{$%s$}{$%s$}{%s}", bstr, sestr, stars)
 }
 
+# -----------------------------------------------------------------------------
+# row_from_res()
+#
+# Builds one LaTeX table row (four outcome columns) from a named list of
+# extract_post() results.
+#
+# Arguments:
+#   reslist -- Named list keyed by outcome variable name, with each entry
+#              being an extract_post() result (b, se, stars).
+#
+# Returns:
+#   Character scalar: the four formatted cells joined with " & ".
+# -----------------------------------------------------------------------------
 row_from_res <- function(reslist) {
   paste(vapply(outs_lvl, function(y) {
     fmt_est(reslist[[y]]$b, reslist[[y]]$se, reslist[[y]]$stars)
@@ -176,7 +319,6 @@ row_LOG  <- row_from_res(res_log)
 N_levels <- format(nrow(stack), big.mark = ",")
 N_logs <- format(sum(complete.cases(stack[, c("ln_rn", "ln_lpn", "ln_cna", "ln_total")])), big.mark = ",")
 
-# ------------------------------ Write LaTeX table ------------------------------
 tab <- c(
   "\\begingroup",
   "\\begin{table}[!ht]",
