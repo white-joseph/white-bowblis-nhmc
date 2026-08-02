@@ -77,4 +77,39 @@ Log(HPRD) & \makecell[t]{$-0.0803^{***}$ \\ $(0.0304)$} & \makecell[t]{$-0.0161$
 
 \end{threeparttable}
 \end{table}
+\clearpage
+\begin{table}[!ht]
+\centering
+\begin{threeparttable}
+\caption{Effect of Ownership Change on Business-Model Outcomes by Baseline Occupancy Bin}
+\label{tab:het-occupancy-bin}
+\small
+\setlength{\tabcolsep}{6pt}
+
+\begin{tabularx}{\textwidth}{@{} l Y Y Y Y Y Y @{}}
+\toprule
+Outcome & $<$70\% & 70--80\% & 80--90\% & 90--95\% & $>$95\% & Pooled \\
+\midrule
+Facilities (treated) & 544 & 299 & 315 & 141 & 39 & 1,338 \\
+\addlinespace[0.4em]
+Occupancy rate & $\phantom{-}4.5778^{***}$ $(0.6370)$ & $-1.9986^{**}$ $(0.9170)$ & $-3.5394^{***}$ $(0.8375)$ & $-4.2561^{***}$ $(0.9561)$ & $-4.7778^{***}$ $(1.2445)$ & $\phantom{-}2.7129^{***}$ $(0.3503)$ \\
+\addlinespace[0.4em]
+Medicare share & $\phantom{-}1.1430^{***}$ $(0.3874)$ & $\phantom{-}0.6201$ $(0.5227)$ & $\phantom{-}0.7832$ $(0.5037)$ & $\phantom{-}0.9998^{*}$ $(0.5736)$ & $\phantom{-}1.4734^{*}$ $(0.8487)$ & $\phantom{-}1.6127^{***}$ $(0.2176)$ \\
+\addlinespace[0.4em]
+Medicaid share & $-3.0728^{***}$ $(0.9251)$ & $\phantom{-}3.2994^{**}$ $(1.3546)$ & $\phantom{-}3.8835^{**}$ $(1.5884)$ & $\phantom{-}2.8035$ $(1.9593)$ & $-1.5934$ $(2.8066)$ & $-1.1350^{*}$ $(0.5987)$ \\
+\addlinespace[0.4em]
+Average length of stay & $-5.4342$ $(5.8510)$ & $-7.4510$ $(9.7961)$ & $-10.7864$ $(9.2237)$ & $-25.8434$ $(24.3878)$ & $-38.5415$ $(41.1157)$ & $-13.3482^{***}$ $(4.3677)$ \\
+\bottomrule
+\end{tabularx}
+
+\begin{tablenotes}[flushleft]
+\footnotesize
+\item \textit{Notes:} Each cell reports the coefficient on \textit{post}, with standard errors in parentheses. All specifications include facility and calendar-month fixed effects and control for the number of certified beds. Standard errors are two-way clustered by facility and calendar month. The sample excludes facilities government-owned at any point during the study period. The anticipation window ($\tau = -3, -2, -1$) is excluded.
+\item Sample includes ALL facilities (treated and never-treated). Treated facilities are classified by baseline occupancy rate, averaged over $\tau \in [-12,-4]$. Never-treated facilities ($N = 5,454$) are assigned a placeholder bin ($<$70\%), which is mathematically inert since \textit{post} $= 0$ for them always -- they enter the sample only to help identify the calendar fixed effects.
+\item The reference bin ($<$70\%) reports its own total effect (the bare \textit{post} coefficient). Every other bin reports its raw difference from the reference bin (the \textit{post} $\times$ bin interaction), which supports formal cross-bin comparison. "Pooled" is the non-binned \textit{post} effect on the same sample, for direct comparison to the bin-specific estimates.
+\item Statistical significance: $^{***}p<0.01$, $^{**}p<0.05$, $^{*}p<0.10$.
+\end{tablenotes}
+
+\end{threeparttable}
+\end{table}
 \end{document}
