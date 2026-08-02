@@ -58,7 +58,6 @@
 #   outputs/tables/post_heterogeneity_prepandemic_table.tex  (tab:het-prepandemic)
 #   outputs/tables/post_heterogeneity_chain_table.tex          (tab:het-chain)
 #   outputs/tables/post_heterogeneity_occupancy_bin_table.tex   (tab:het-occupancy-bin)
-#   outputs/tables/occupancy_bin_classification_summary.csv    (baseline bin assignments)
 #   outputs/tables/post_heterogeneity_preview.tex              (standalone preview doc)
 # =============================================================================
 
@@ -68,7 +67,6 @@ suppressPackageStartupMessages({
   library(dplyr)
   library(fixest)
   library(tibble)
-  library(readr)
 })
 
 options(scipen = 999, digits = 4)
@@ -362,7 +360,14 @@ baseline_treated <- df_occ_raw %>%
   dplyr::filter(n_baseline_months > 0, is.finite(baseline_occupancy)) %>%
   dplyr::mutate(occ_bin_treated = assign_occ_bin(baseline_occupancy))
 
-write_csv(baseline_treated, file.path(out_dir, "occupancy_bin_classification_summary.csv"))
+# CSV export removed (2026-08-02) -- was writing facility-level bin
+# assignments to occupancy_bin_classification_summary.csv, but the only
+# thing actually consumed downstream is the aggregate bin COUNT, which
+# already lives in the console output below and in the table's own
+# "Facilities (treated)" row. Facility-level detail (which CCN got which
+# bin) has no current consumer. If Table 9 Panel B ends up needing
+# facility-level detail rather than just counts, regenerate from
+# baseline_treated rather than reintroducing this as a standing write.
 
 n_nevertreated_total <- dplyr::n_distinct(df_occ_raw$cms_certification_number[df_occ_raw$treated == 0])
 
