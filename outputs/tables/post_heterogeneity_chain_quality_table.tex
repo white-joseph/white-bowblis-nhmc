@@ -1,0 +1,41 @@
+\begin{table}[!ht]
+\centering
+\begin{threeparttable}
+\caption{Effect of Ownership Change on Quality Measures: Chain vs. Non-Chain Facilities}
+\label{tab:het-chain-quality}
+\small
+\setlength{\tabcolsep}{6pt}
+
+\begin{tabularx}{\textwidth}{@{} l Y Y @{}}
+\toprule
+Outcome & Chain & Non-chain \\
+\midrule
+\multicolumn{3}{@{}l}{\textbf{Panel A: Long-stay labor-saving mechanism measures}} \\[2pt]
+Catheter use & \makecell[t]{$-0.0742$ \\ $(0.0558)$} & \makecell[t]{$-0.3393^{***}$ \\ $(0.0867)$} \\
+Anti-psychotic medication use & \makecell[t]{$-0.1557$ \\ $(0.2684)$} & \makecell[t]{$-0.7330^{*}$ \\ $(0.3717)$} \\
+Anti-anxiety/hypnotic medication use & \makecell[t]{$-0.3438$ \\ $(0.2507)$} & \makecell[t]{$\phantom{-}0.0499$ \\ $(0.3478)$} \\
+\addlinespace[0.6em]
+\multicolumn{3}{@{}l}{\textbf{Panel B: Long-stay resident outcome measures}} \\[2pt]
+Pressure injuries & \makecell[t]{$\phantom{-}0.3500$ \\ $(0.2135)$} & \makecell[t]{$\phantom{-}0.0489$ \\ $(0.2480)$} \\
+Falls with major injury & \makecell[t]{$\phantom{-}0.0487$ \\ $(0.0782)$} & \makecell[t]{$-0.0684$ \\ $(0.1160)$} \\
+Weight loss & \makecell[t]{$\phantom{-}0.0111$ \\ $(0.1280)$} & \makecell[t]{$\phantom{-}0.5783^{***}$ \\ $(0.1906)$} \\
+Decline in physical functioning & \makecell[t]{$\phantom{-}0.5098^{*}$ \\ $(0.2932)$} & \makecell[t]{$-0.0020$ \\ $(0.4252)$} \\
+Urinary tract infections & \makecell[t]{$-0.2544^{***}$ \\ $(0.0903)$} & \makecell[t]{$-0.4555^{***}$ \\ $(0.1269)$} \\
+\addlinespace[0.6em]
+\multicolumn{3}{@{}l}{\textbf{Panel C: Short-stay measures}} \\[2pt]
+New antipsychotic medication & \makecell[t]{$-0.0470$ \\ $(0.0518)$} & \makecell[t]{$\phantom{-}0.0444$ \\ $(0.0957)$} \\
+Improved function & \makecell[t]{$-0.2525$ \\ $(0.5659)$} & \makecell[t]{$\phantom{-}0.0974$ \\ $(1.0001)$} \\
+\bottomrule
+\end{tabularx}
+
+\begin{tablenotes}[flushleft]
+\footnotesize
+\item \textit{Notes:} Each cell reports the coefficient on \textit{post}, with standard errors in parentheses. All specifications include facility and calendar-quarter fixed effects and control for the number of certified beds. Standard errors are two-way clustered by facility and calendar quarter. The sample excludes facilities government-owned at any point during the study period. The transition quarter ($\tau = 0$) is excluded.
+\item Long-stay measures (Panels A-B) and short-stay measures (Panel C) are constructed from different resident populations and are not directly comparable to one another. For every measure, lower values indicate better measured quality.
+\item Pressure injuries is estimated on 2018--2023 only; improved function is estimated on 2017--2022 only. Vaccination measures are excluded, matching the main quality table. Chain sample: N = 104,485 facility-quarters. Non-chain sample: N = 78,316 facility-quarters (before per-measure reporting-window trims).
+\item Chain status is each facility's baseline classification (\textit{chain\_at\_start}): chain status in January 2017, falling back to the facility's own earliest observed value if absent from the panel that month. Facilities with no available chain classification are excluded from every split in this script.
+\item Statistical significance: $^{***}p<0.01$, $^{**}p<0.05$, $^{*}p<0.10$.
+\end{tablenotes}
+
+\end{threeparttable}
+\end{table}

@@ -1,0 +1,119 @@
+\documentclass[11pt]{article}
+\usepackage[margin=1in]{geometry}
+\usepackage{booktabs}
+\usepackage{tabularx}
+\usepackage{threeparttable}
+\usepackage{makecell}
+\usepackage{array}
+\usepackage{amsmath}
+\usepackage{caption}
+\captionsetup{labelfont=bf, font=small}
+\newcolumntype{Y}{>{\centering\arraybackslash}X}
+
+\begin{document}
+\begin{table}[!ht]
+\centering
+\begin{threeparttable}
+\caption{Effect of Ownership Change on Nursing Staffing: Chain vs. Non-Chain Facilities}
+\label{tab:het-chain}
+\small
+\setlength{\tabcolsep}{6pt}
+
+\begin{tabularx}{\textwidth}{@{} l Y Y Y Y @{}}
+\toprule
+Outcome & RN & LPN & CNA & Total \\
+\midrule
+\multicolumn{5}{@{}l}{\textbf{Chain (baseline) (N = 314,227 facility-months)}} \\[2pt]
+HPRD & \makecell[t]{$-0.0349^{***}$ \\ $(0.0067)$} & \makecell[t]{$\phantom{-}0.0063$ \\ $(0.0074)$} & \makecell[t]{$-0.0259^{**}$ \\ $(0.0110)$} & \makecell[t]{$-0.0545^{***}$ \\ $(0.0153)$} \\
+\addlinespace[0.4em]
+Log(HPRD) & \makecell[t]{$-0.1302^{***}$ \\ $(0.0199)$} & \makecell[t]{$\phantom{-}0.0062$ \\ $(0.0116)$} & \makecell[t]{$-0.0146^{**}$ \\ $(0.0056)$} & \makecell[t]{$-0.0189^{***}$ \\ $(0.0048)$} \\
+\addlinespace[0.7em]
+\multicolumn{5}{@{}l}{\textbf{Non-chain (baseline) (N = 236,107 facility-months)}} \\[2pt]
+HPRD & \makecell[t]{$-0.0360^{***}$ \\ $(0.0097)$} & \makecell[t]{$-0.0213^{*}$ \\ $(0.0109)$} & \makecell[t]{$-0.0980^{***}$ \\ $(0.0181)$} & \makecell[t]{$-0.1553^{***}$ \\ $(0.0254)$} \\
+\addlinespace[0.4em]
+Log(HPRD) & \makecell[t]{$-0.0803^{***}$ \\ $(0.0304)$} & \makecell[t]{$-0.0161$ \\ $(0.0165)$} & \makecell[t]{$-0.0470^{***}$ \\ $(0.0092)$} & \makecell[t]{$-0.0449^{***}$ \\ $(0.0076)$} \\
+\bottomrule
+\end{tabularx}
+
+\begin{tablenotes}[flushleft]
+\footnotesize
+\item \textit{Notes:} Each cell reports the coefficient on \textit{post}, with standard errors in parentheses. All specifications include facility and calendar-month fixed effects and control for the number of certified beds. Standard errors are two-way clustered by facility and calendar month. The sample excludes facilities government-owned at any point during the study period. The anticipation window ($\tau = -3, -2, -1$) is excluded.
+\item Chain status is each facility's baseline classification (\textit{chain\_at\_start}): chain status in January 2017, falling back to the facility's own earliest observed value if absent from the panel that month. Facilities with no available chain classification are excluded from every split in this script.
+\item Statistical significance: $^{***}p<0.01$, $^{**}p<0.05$, $^{*}p<0.10$.
+\end{tablenotes}
+
+\end{threeparttable}
+\end{table}
+\clearpage
+\begin{table}[!ht]
+\centering
+\begin{threeparttable}
+\caption{Effect of Ownership Change on Business-Model Outcomes: Chain vs. Non-Chain Facilities}
+\label{tab:het-chain-business}
+\small
+\setlength{\tabcolsep}{6pt}
+
+\begin{tabularx}{\textwidth}{@{} l Y Y @{}}
+\toprule
+Outcome & Chain & Non-chain \\
+\midrule
+Occupancy rate & \makecell[t]{$\phantom{-}2.0323^{***}$ \\ $(0.4183)$} & \makecell[t]{$\phantom{-}3.8652^{***}$ \\ $(0.6009)$} \\
+Medicare share & \makecell[t]{$\phantom{-}1.7674^{***}$ \\ $(0.2309)$} & \makecell[t]{$\phantom{-}1.5532^{***}$ \\ $(0.4195)$} \\
+Medicaid share & \makecell[t]{$\phantom{-}0.1444$ \\ $(0.7331)$} & \makecell[t]{$-3.6300^{***}$ \\ $(0.9690)$} \\
+Average length of stay & \makecell[t]{$-8.3079$ \\ $(5.1823)$} & \makecell[t]{$-23.7048^{***}$ \\ $(8.4841)$} \\
+\bottomrule
+\end{tabularx}
+
+\begin{tablenotes}[flushleft]
+\footnotesize
+\item \textit{Notes:} Each cell reports the coefficient on \textit{post}, with standard errors in parentheses. All specifications include facility and calendar-month fixed effects and control for the number of certified beds. Standard errors are two-way clustered by facility and calendar month. The sample excludes facilities government-owned at any point during the study period. The anticipation window ($\tau = -3, -2, -1$) is excluded.
+\item Occupancy rate is residents as a share of available bed-days. Payer shares are shares of patient days. Chain sample: N = 314,227 facility-months. Non-chain sample: N = 236,107 facility-months.
+\item Chain status is each facility's baseline classification (\textit{chain\_at\_start}): chain status in January 2017, falling back to the facility's own earliest observed value if absent from the panel that month. Facilities with no available chain classification are excluded from every split in this script.
+\item Statistical significance: $^{***}p<0.01$, $^{**}p<0.05$, $^{*}p<0.10$.
+\end{tablenotes}
+
+\end{threeparttable}
+\end{table}
+\clearpage
+\begin{table}[!ht]
+\centering
+\begin{threeparttable}
+\caption{Effect of Ownership Change on Quality Measures: Chain vs. Non-Chain Facilities}
+\label{tab:het-chain-quality}
+\small
+\setlength{\tabcolsep}{6pt}
+
+\begin{tabularx}{\textwidth}{@{} l Y Y @{}}
+\toprule
+Outcome & Chain & Non-chain \\
+\midrule
+\multicolumn{3}{@{}l}{\textbf{Panel A: Long-stay labor-saving mechanism measures}} \\[2pt]
+Catheter use & \makecell[t]{$-0.0742$ \\ $(0.0558)$} & \makecell[t]{$-0.3393^{***}$ \\ $(0.0867)$} \\
+Anti-psychotic medication use & \makecell[t]{$-0.1557$ \\ $(0.2684)$} & \makecell[t]{$-0.7330^{*}$ \\ $(0.3717)$} \\
+Anti-anxiety/hypnotic medication use & \makecell[t]{$-0.3438$ \\ $(0.2507)$} & \makecell[t]{$\phantom{-}0.0499$ \\ $(0.3478)$} \\
+\addlinespace[0.6em]
+\multicolumn{3}{@{}l}{\textbf{Panel B: Long-stay resident outcome measures}} \\[2pt]
+Pressure injuries & \makecell[t]{$\phantom{-}0.3500$ \\ $(0.2135)$} & \makecell[t]{$\phantom{-}0.0489$ \\ $(0.2480)$} \\
+Falls with major injury & \makecell[t]{$\phantom{-}0.0487$ \\ $(0.0782)$} & \makecell[t]{$-0.0684$ \\ $(0.1160)$} \\
+Weight loss & \makecell[t]{$\phantom{-}0.0111$ \\ $(0.1280)$} & \makecell[t]{$\phantom{-}0.5783^{***}$ \\ $(0.1906)$} \\
+Decline in physical functioning & \makecell[t]{$\phantom{-}0.5098^{*}$ \\ $(0.2932)$} & \makecell[t]{$-0.0020$ \\ $(0.4252)$} \\
+Urinary tract infections & \makecell[t]{$-0.2544^{***}$ \\ $(0.0903)$} & \makecell[t]{$-0.4555^{***}$ \\ $(0.1269)$} \\
+\addlinespace[0.6em]
+\multicolumn{3}{@{}l}{\textbf{Panel C: Short-stay measures}} \\[2pt]
+New antipsychotic medication & \makecell[t]{$-0.0470$ \\ $(0.0518)$} & \makecell[t]{$\phantom{-}0.0444$ \\ $(0.0957)$} \\
+Improved function & \makecell[t]{$-0.2525$ \\ $(0.5659)$} & \makecell[t]{$\phantom{-}0.0974$ \\ $(1.0001)$} \\
+\bottomrule
+\end{tabularx}
+
+\begin{tablenotes}[flushleft]
+\footnotesize
+\item \textit{Notes:} Each cell reports the coefficient on \textit{post}, with standard errors in parentheses. All specifications include facility and calendar-quarter fixed effects and control for the number of certified beds. Standard errors are two-way clustered by facility and calendar quarter. The sample excludes facilities government-owned at any point during the study period. The transition quarter ($\tau = 0$) is excluded.
+\item Long-stay measures (Panels A-B) and short-stay measures (Panel C) are constructed from different resident populations and are not directly comparable to one another. For every measure, lower values indicate better measured quality.
+\item Pressure injuries is estimated on 2018--2023 only; improved function is estimated on 2017--2022 only. Vaccination measures are excluded, matching the main quality table. Chain sample: N = 104,485 facility-quarters. Non-chain sample: N = 78,316 facility-quarters (before per-measure reporting-window trims).
+\item Chain status is each facility's baseline classification (\textit{chain\_at\_start}): chain status in January 2017, falling back to the facility's own earliest observed value if absent from the panel that month. Facilities with no available chain classification are excluded from every split in this script.
+\item Statistical significance: $^{***}p<0.01$, $^{**}p<0.05$, $^{*}p<0.10$.
+\end{tablenotes}
+
+\end{threeparttable}
+\end{table}
+\end{document}

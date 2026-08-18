@@ -652,6 +652,7 @@ load_staffing_panel <- function(fp = panel_fp) {
   numeric_candidates <- c(
     staffing_outcomes,
     raw_hours_outcomes,
+    "resident_days",
     "beds",
     "occupancy_rate",
     "pct_medicare",

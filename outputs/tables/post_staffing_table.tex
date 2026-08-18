@@ -10,20 +10,22 @@
 \toprule
 Outcome & RN & LPN & CNA & Total \\
 \midrule
+\multicolumn{5}{@{}l}{\textbf{Panel A: Hours per resident day (HPRD)}} \\[2pt]
 HPRD & \makecell[t]{$-0.0368^{***}$ \\ $(0.0055)$} & \makecell[t]{$-0.0039$ \\ $(0.0062)$} & \makecell[t]{$-0.0532^{***}$ \\ $(0.0096)$} & \makecell[t]{$-0.0940^{***}$ \\ $(0.0134)$} \\
 \addlinespace[0.4em]
 Log(HPRD) & \makecell[t]{$-0.1174^{***}$ \\ $(0.0168)$} & \makecell[t]{$-0.0022$ \\ $(0.0095)$} & \makecell[t]{$-0.0270^{***}$ \\ $(0.0049)$} & \makecell[t]{$-0.0293^{***}$ \\ $(0.0041)$} \\
-\addlinespace[0.4em]
+\addlinespace[0.7em]
+\multicolumn{5}{@{}l}{\textbf{Panel B: Decomposition -- raw hours and resident days}} \\[2pt]
 Hours & \makecell[t]{$-80.0180^{***}$ \\ $(15.3077)$} & \makecell[t]{$\phantom{-}68.4756^{***}$ \\ $(17.8010)$} & \makecell[t]{$\phantom{-}64.8807^{*}$ \\ $(34.9039)$} & \makecell[t]{$\phantom{-}53.3383$ \\ $(49.9070)$} \\
 \addlinespace[0.4em]
-Log(hours) & \makecell[t]{$-0.0767^{***}$ \\ $(0.0173)$} & \makecell[t]{$\phantom{-}0.0384^{***}$ \\ $(0.0103)$} & \makecell[t]{$\phantom{-}0.0133^{*}$ \\ $(0.0068)$} & \makecell[t]{$\phantom{-}0.0110^{*}$ \\ $(0.0060)$} \\
+Resident days & \multicolumn{4}{c}{\makecell[t]{$\phantom{-}88.5909^{***}$ \\ $(12.1359)$}} \\
 \bottomrule
 \end{tabularx}
 
 \begin{tablenotes}[flushleft]
 \footnotesize
 \item \textit{Notes:} Each cell reports the coefficient on \textit{post}, with standard errors in parentheses. All specifications include facility and calendar-period fixed effects and control for the number of certified beds. Standard errors are two-way clustered by facility and calendar period. The sample excludes facilities government-owned at any point during the study period.
-\item HPRD is hours per resident day; hours are the HPRD numerator, reported to test whether the HPRD decline is mechanically driven by the occupancy-rate increase in the denominator.
+\item Panel A reports the preferred HPRD specification. Panel B decomposes each staffing measure into its numerator (raw monthly hours, the total quantity of nursing labor purchased) and denominator (resident days, i.e. facility census), to test whether the HPRD result is mechanically driven by the occupancy-rate increase in the denominator rather than by a reduction in labor purchased. Resident days is a single facility-level census measure -- identical across staff types by construction -- so it is reported once, spanning all four outcome columns, rather than separately per staff type.
 \item The anticipation window ($\tau = -3, -2, -1$) is excluded.
 \item Statistical significance: $^{***}p<0.01$, $^{**}p<0.05$, $^{*}p<0.10$.
 \end{tablenotes}

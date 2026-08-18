@@ -17,11 +17,16 @@
 # measures (qm_430, qm_472) remain excluded per the earlier CM/Bowblis
 # decision -- that decision is untouched by this change.
 #
-# NOTE: an earlier version of this script derived a resident-days row
-# (total_hours / total_hprd) to make the HPRD/hours decomposition identity
-# estimable on the page. Dropped per Joe -- not something advisors have asked
-# for, and staffing_panel.csv has no native resident-days column, so it would
-# have been a derived quantity rather than a directly measured one.
+# TABLE 1 RESTRUCTURED (per Joe/advisors): Panel A is the preferred HPRD
+# specification (levels + logs). Panel B decomposes it into raw hours (the
+# HPRD numerator) and resident days (the HPRD denominator, i.e. facility
+# census). Log raw hours is dropped -- the earlier 4-row grid (HPRD /
+# Log(HPRD) / Hours / Log(hours)) is now a 2-panel, 3-row table. Resident
+# days was previously treated as unavailable and, when wanted, would have
+# been derived as total_hours / total_hprd; it turned out to already exist
+# in the PBJ pipeline (pbj_nurse.csv) but was dropped before reaching
+# staffing_panel.csv. Fixed upstream in 06_panel.py rather than derived here,
+# so it's now a directly measured column like everything else in this table.
 #
 # Partially replaces composition_checks.R (its business-model block; short-stay
 # quality is now folded directly into Table 3 above, so composition_checks.R's
@@ -219,8 +224,8 @@ keep_monthly <- c(
   "beds", "chain_at_start",
   "rn_hprd", "lpn_hprd", "cna_hprd", "total_hprd",
   "rn_hours_month", "lpn_hours_month", "cna_hours_month", "total_hours",
+  "resident_days",
   "ln_rn", "ln_lpn", "ln_cna", "ln_total",
-  "ln_rn_hours", "ln_lpn_hours", "ln_cna_hours", "ln_total_hours",
   "occupancy_rate", "pct_medicare", "pct_medicaid", "avg_los_total"
 )
 
@@ -235,18 +240,24 @@ vc_month <- ~ cms_certification_number + year_month
 fe_month <- "cms_certification_number + year_month"
 
 # =============================================================================
-# TABLE 1: Staffing (4x4 grid)
+# TABLE 1: Staffing -- Panel A (HPRD), Panel B (decomposition)
 # =============================================================================
-staff_cols <- c("rn", "lpn", "cna", "total")
 staff_labels <- c("RN", "LPN", "CNA", "Total")
 
-# All four row-types report at 4 digits for consistency.
-staffing_rows <- list(
-  list(label = "HPRD",       vars = c("rn_hprd", "lpn_hprd", "cna_hprd", "total_hprd"),                       digits = 4),
-  list(label = "Log(HPRD)",  vars = c("ln_rn", "ln_lpn", "ln_cna", "ln_total"),                               digits = 4),
-  list(label = "Hours",      vars = c("rn_hours_month", "lpn_hours_month", "cna_hours_month", "total_hours"),  digits = 4),
-  list(label = "Log(hours)", vars = c("ln_rn_hours", "ln_lpn_hours", "ln_cna_hours", "ln_total_hours"),        digits = 4)
+# Panel A: the preferred HPRD specification, levels and logs.
+panel_a_rows <- list(
+  list(label = "HPRD",      vars = c("rn_hprd", "lpn_hprd", "cna_hprd", "total_hprd"), digits = 4),
+  list(label = "Log(HPRD)", vars = c("ln_rn", "ln_lpn", "ln_cna", "ln_total"),          digits = 4)
 )
+
+# Panel B: the decomposition. "Hours" is the HPRD numerator, reported per
+# staff type like Panel A. "Resident days" is the HPRD denominator -- a
+# single facility-level census measure, identical across staff types by
+# construction (HPRD = hours / resident-days uses the same resident-days
+# figure regardless of staff type), so it is fit once and reported once,
+# spanning all four outcome columns via \multicolumn rather than repeating
+# an identical estimate under each staff-type header.
+panel_b_hours_row <- list(label = "Hours", vars = c("rn_hours_month", "lpn_hours_month", "cna_hours_month", "total_hours"), digits = 4)
 
 # NOTE: an observations row (per outcome row) was tried and pulled per Joe --
 # not something advisors have asked for yet. Revisit if CM/Bowblis want it.
@@ -254,8 +265,9 @@ staffing_rows <- list(
 # still open -- see the console message below.
 staffing_body <- character(0)
 
-for (i in seq_along(staffing_rows)) {
-  r <- staffing_rows[[i]]
+staffing_body <- c(staffing_body, panel_header("Panel A: Hours per resident day (HPRD)", 5))
+for (i in seq_along(panel_a_rows)) {
+  r <- panel_a_rows[[i]]
   cells <- character(4)
   for (j in seq_along(r$vars)) {
     v <- r$vars[j]
@@ -264,10 +276,28 @@ for (i in seq_along(staffing_rows)) {
     rm(mod); gc(verbose = FALSE)
   }
   staffing_body <- c(staffing_body, paste0(paste(c(r$label, cells), collapse = " & "), " \\\\"))
-  if (i < length(staffing_rows)) {
+  if (i < length(panel_a_rows)) {
     staffing_body <- c(staffing_body, "\\addlinespace[0.4em]")
   }
 }
+
+staffing_body <- c(staffing_body, "\\addlinespace[0.7em]")
+staffing_body <- c(staffing_body, panel_header("Panel B: Decomposition -- raw hours and resident days", 5))
+
+hours_cells <- character(4)
+for (j in seq_along(panel_b_hours_row$vars)) {
+  v <- panel_b_hours_row$vars[j]
+  mod <- safe_fit(df_m_wo, v, vc_month, fe_month, label = paste(panel_b_hours_row$label, v))
+  hours_cells[j] <- fmt_est(mod, digits = panel_b_hours_row$digits)
+  rm(mod); gc(verbose = FALSE)
+}
+staffing_body <- c(staffing_body, paste0(paste(c(panel_b_hours_row$label, hours_cells), collapse = " & "), " \\\\"))
+staffing_body <- c(staffing_body, "\\addlinespace[0.4em]")
+
+mod_rd <- safe_fit(df_m_wo, "resident_days", vc_month, fe_month, label = "Resident days")
+rd_cell <- fmt_est(mod_rd, digits = 4)
+staffing_body <- c(staffing_body, paste0("Resident days & \\multicolumn{4}{c}{", rd_cell, "} \\\\"))
+rm(mod_rd); gc(verbose = FALSE)
 
 # Diagnostic only, not printed in the table: HPRD and raw hours are built
 # from the same source row (HPRD = hours / resident-days), so HPRD should
@@ -291,9 +321,14 @@ staffing_tex <- wrap_table(
   notes = c(
     spec_note,
     paste0(
-      "\\item HPRD is hours per resident day; hours are the HPRD numerator, ",
-      "reported to test whether the HPRD decline is mechanically driven by the ",
-      "occupancy-rate increase in the denominator."
+      "\\item Panel A reports the preferred HPRD specification. Panel B decomposes ",
+      "each staffing measure into its numerator (raw monthly hours, the total ",
+      "quantity of nursing labor purchased) and denominator (resident days, i.e. ",
+      "facility census), to test whether the HPRD result is mechanically driven by ",
+      "the occupancy-rate increase in the denominator rather than by a reduction in ",
+      "labor purchased. Resident days is a single facility-level census measure -- ",
+      "identical across staff types by construction -- so it is reported once, ",
+      "spanning all four outcome columns, rather than separately per staff type."
     ),
     "\\item The anticipation window ($\\tau = -3, -2, -1$) is excluded.",
     sig_note
