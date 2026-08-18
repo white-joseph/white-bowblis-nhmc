@@ -11,8 +11,6 @@
 #   composition_checks.R           monthly mechanism block (business-model table);
 #                                   short-stay quality block folded in below
 #
-#   twfe_post_non_nurse.R         non-nurse (therapy) staffing HPRD
-#
 # Quality table (Table 3) now covers long-stay AND short-stay measures in one
 # table, labeled by panel (per Joe -- specification isn't the priority right
 # now; get all quality results in one place, labeled clearly). Vaccination
@@ -79,7 +77,6 @@
 #   outputs/tables/post_staffing_table.tex        (label tab:post-staffing)
 #   outputs/tables/post_business_model_table.tex  (label tab:post-business)
 #   outputs/tables/post_quality_table.tex         (label tab:post-quality)
-#   outputs/tables/post_non_nurse_table.tex       (label tab:post-non-nurse)
 #   outputs/tables/post_tables_preview.tex        (standalone preview doc)
 # =============================================================================
 
@@ -98,12 +95,6 @@ dir.create(out_dir, recursive = TRUE, showWarnings = FALSE)
 
 SPEC <- "A"
 ALWAYS_EXCLUDE <- "chain_at_start"
-
-# Case mix as an OUTCOME is still undecided (flagged in the outline). Included
-# here with its measurement-break trim applied. Set to FALSE to drop the row.
-INCLUDE_CASE_MIX <- TRUE
-CASE_MIX_MIN <- "2017/10"
-CASE_MIX_MAX <- "2023/12"
 
 # -----------------------------------------------------------------------------
 # Estimation + formatting helpers
@@ -230,8 +221,7 @@ keep_monthly <- c(
   "rn_hours_month", "lpn_hours_month", "cna_hours_month", "total_hours",
   "ln_rn", "ln_lpn", "ln_cna", "ln_total",
   "ln_rn_hours", "ln_lpn_hours", "ln_cna_hours", "ln_total_hours",
-  "occupancy_rate", "spare_capacity", "pct_medicare", "pct_medicaid",
-  "avg_los_total", "case_mix_total"
+  "occupancy_rate", "pct_medicare", "pct_medicaid", "avg_los_total"
 )
 
 df_m_full <- load_staffing_panel()
@@ -318,7 +308,6 @@ write_fragment(staffing_tex, "post_staffing_table.tex")
 business_spec <- tibble::tribble(
   ~var,              ~label,                       ~digits,
   "occupancy_rate",  "Occupancy rate",             4,
-  "spare_capacity",  "Spare capacity",             4,
   "pct_medicare",    "Medicare share",             4,
   "pct_medicaid",    "Medicaid share",             4,
   "avg_los_total",   "Average length of stay",     4
@@ -336,27 +325,6 @@ for (i in seq_len(nrow(business_spec))) {
   rm(mod); gc(verbose = FALSE)
 }
 
-# Case mix carries a measurement-break trim (see nested_control_spec_all_outcomes.R
-# for the evidence: CMS methodology breaks at 2017/10 and 2024/01 shift both the
-# level and the cross-sectional spread).
-case_mix_note <- character(0)
-if (INCLUDE_CASE_MIX && "case_mix_total" %in% names(df_m_wo)) {
-  df_cm <- df_m_wo %>%
-    dplyr::filter(year_month >= CASE_MIX_MIN, year_month <= CASE_MIX_MAX)
-  mod_cm <- safe_fit(df_cm, "case_mix_total", vc_month, fe_month, label = "Case mix")
-  business_body <- c(
-    business_body,
-    paste0("Case mix & ", fmt_est(mod_cm, 4), " & ", fmt_n(mod_cm), " \\\\")
-  )
-  case_mix_note <- paste0(
-    "\\item Case mix is restricted to ", CASE_MIX_MIN, "--", CASE_MIX_MAX, ". ",
-    "CMS changed its case-mix methodology in October 2017 and January 2024; both ",
-    "breaks shift the level and the cross-sectional spread simultaneously across ",
-    "the whole sample, which facility and period fixed effects do not absorb."
-  )
-  rm(df_cm, mod_cm); gc(verbose = FALSE)
-}
-
 business_tex <- wrap_table(
   business_body,
   caption = "Effect of Ownership Change on Business-Model Outcomes",
@@ -366,11 +334,9 @@ business_tex <- wrap_table(
   notes = c(
     spec_note,
     paste0(
-      "\\item Occupancy rate is residents as a share of available bed-days; spare ",
-      "capacity is unused certified beds as a share of certified beds. Payer shares ",
+      "\\item Occupancy rate is residents as a share of available bed-days. Payer shares ",
       "are shares of patient days. The anticipation window ($\\tau = -3, -2, -1$) is excluded."
     ),
-    case_mix_note,
     sig_note
   )
 )
@@ -497,79 +463,6 @@ print(c(mech$n_with, outc$n_with, short$n_with))
 rm(df_q_post); gc(verbose = FALSE)
 
 # =============================================================================
-# TABLE 4: Non-nurse (therapy) staffing (single coefficient column)
-#
-# Superseded from twfe_post_non_nurse.R. Levels only, per that script's own
-# rationale (several categories -- PT aide, OT aide -- have a large share of
-# exact zeros, making logs and a raw-hours mechanism check less meaningful
-# here than for nursing). SPEC CHANGE: the original script used the full
-# control set (make_controls_rhs); this uses Spec A, matching every other
-# table in this script -- so these numbers will differ from what
-# twfe_post_non_nurse.R currently produces, the same shift that already
-# happened when robustness_checks.R moved to Spec A.
-# =============================================================================
-keep_non_nurse <- c(
-  "cms_certification_number", "year_month", "event_time", "post", "treated",
-  "beds", "chain_at_start",
-  "pt_hprd", "ptasst_hprd", "ptaide_hprd",
-  "ot_hprd", "otasst_hprd", "otaide_hprd",
-  "slp_hprd", "nonnurse_total_hprd"
-)
-
-df_nn_full <- load_staffing_panel()
-df_nn <- df_nn_full %>% dplyr::select(dplyr::any_of(keep_non_nurse))
-rm(df_nn_full); gc(verbose = FALSE)
-
-df_nn_wo <- drop_anticipation_window(df_nn)
-rm(df_nn); gc(verbose = FALSE)
-
-non_nurse_spec <- tibble::tribble(
-  ~var,                  ~label,
-  "pt_hprd",             "Physical Therapist (PT)",
-  "ptasst_hprd",         "PT Assistant",
-  "ptaide_hprd",         "PT Aide",
-  "ot_hprd",             "Occupational Therapist (OT)",
-  "otasst_hprd",         "OT Assistant",
-  "otaide_hprd",         "OT Aide",
-  "slp_hprd",            "Speech-Language Pathologist",
-  "nonnurse_total_hprd", "Total Non-Nurse"
-) %>% dplyr::filter(var %in% names(df_nn_wo))
-
-non_nurse_body <- character(0)
-for (i in seq_len(nrow(non_nurse_spec))) {
-  v <- non_nurse_spec$var[i]
-  mod <- safe_fit(df_nn_wo, v, vc_month, fe_month, label = non_nurse_spec$label[i])
-  non_nurse_body <- c(
-    non_nurse_body,
-    paste0(non_nurse_spec$label[i], " & ", fmt_est(mod, 4), " & ", fmt_n(mod), " \\\\")
-  )
-  rm(mod); gc(verbose = FALSE)
-}
-
-non_nurse_tex <- wrap_table(
-  non_nurse_body,
-  caption = "Effect of Ownership Change on Non-Nurse (Therapy) Staffing",
-  label = "tab:post-non-nurse",
-  colspec = "@{} l Y r @{}",
-  header_row = "Staff type & Coefficient (SE) & Observations \\\\",
-  notes = c(
-    spec_note,
-    paste0(
-      "\\item Outcomes are hours per resident day (HPRD) for each non-nurse staff ",
-      "type. Levels only are reported: several categories (PT Aide, OT Aide) have a ",
-      "large share of exact zeros, which makes log specifications and a raw-hours ",
-      "decomposition less informative here than for nursing staff."
-    ),
-    "\\item The anticipation window ($\\tau = -3, -2, -1$) is excluded.",
-    sig_note
-  )
-)
-
-write_fragment(non_nurse_tex, "post_non_nurse_table.tex")
-
-rm(df_nn_wo); gc(verbose = FALSE)
-
-# =============================================================================
 # Preview document
 # =============================================================================
 preview <- c(
@@ -591,11 +484,9 @@ preview <- c(
   business_tex,
   "\\clearpage",
   quality_tex,
-  "\\clearpage",
-  non_nurse_tex,
   "\\end{document}"
 )
 
 write_fragment(preview, "post_tables_preview.tex")
 
-cat("\nDone. Four post-only TWFE tables written.\n")
+cat("\nDone. Three post-only TWFE tables written.\n")
