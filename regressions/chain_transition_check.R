@@ -12,7 +12,8 @@
 # classify the facility into one of four transition categories: stayed
 # non-chain, became chain, stayed chain, or left chain.
 #
-# Pre and post windows mirror the spare_capacity baseline convention:
+# Pre- and post-event windows are defined symmetrically around the
+# anticipation window:
 #   pre  = event_time in [-12, -4]  (before the anticipation window)
 #   post = event_time in [+4, +12]  (after the anticipation window)
 # Within each window, a facility's chain status is taken as the mode

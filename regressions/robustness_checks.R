@@ -1,53 +1,49 @@
 # =============================================================================
 # regressions/robustness_checks.R
 #
-# TWFE robustness summary: does the `post` coefficient on staffing HPRD hold
-# up under alternative reasonable sample restrictions and case-mix control
-# choices? One table, Spec A anchored throughout.
+# Reports whether the estimated effect of ownership change on nursing staffing
+# is sensitive to the sample restriction used or to the choice of case-mix
+# control. Produces a single summary table of eleven specifications.
 #
-# REWRITE, not a patch -- the previous version of this script was broken
-# (read the deleted data/clean/panel.csv, used *_hppd column names,
-# depended on anticipation2/gap_from_prev_months from that old panel) and
-# used the pre-Spec-A full control set (government + non_profit + chain +
-# beds + occupancy_rate + pct_medicare + pct_medicaid + case-mix quartiles).
-# Per Joe (2026-08-01): anchor on Spec A (post + beds) instead, matching
-# post_tables.R and post_heterogeneity.R, rather than preserving the old
-# full-control standard.
+# -----------------------------------------------------------------------------
+# Specification
+# -----------------------------------------------------------------------------
+#   outcome ~ post + beds | facility + calendar month
 #
-# CONSOLIDATES robustness_case_mix_bins.R. That script tested case-mix
-# control granularity (state vs. national reference group, quartile vs.
-# decile bins) as a SEPARATE table with outcomes-as-rows, variants-as-
-# columns. Structurally that's the same question this table already asks
-# ("does post move under alternative reasonable choices"), just transposed
-# -- so the four case-mix variants become four additional ROWS here
-# instead, holding the sample fixed at the baseline (no-anticipation, no
-# gap restriction) and varying only the case-mix control set added on top
-# of Spec A. Same 16 numbers (4 outcomes x 4 variants), one table instead
-# of two. robustness_case_mix_bins.R is fully superseded by this and can
-# be retired once this table's rows 8-11 are confirmed against it.
+# Spec A as defined in _setup.R, matching the main tables in post_tables.R.
+# Standard errors are two-way clustered by facility and calendar month.
 #
-# Because rows 8-11 ADD case-mix controls on top of Spec A (Spec A itself
-# has no case-mix control at all), they are not bare Spec A -- they are
-# reported as "Spec A + case-mix [variant]" so the distinction from rows
-# 1-7 (bare Spec A under different samples) is visible in the row label,
-# not just implied.
+# Rows (1)-(7) hold the control set fixed and vary the sample: the baseline
+# anticipation-window exclusion, four alternative restrictions on gaps in
+# facility reporting, and two alternative anticipation-window widths.
 #
-# LEVELS ONLY, per Joe (2026-08-01): this is a robustness check on whether
-# the `post` coefficient's direction/significance survives alternative
-# samples and control choices, not a decomposition exercise -- log
-# specifications are assumed to move in the same direction as the level and
-# are not separately reported here. (The decomposition-style level-vs-log
-# comparison already lives in post_tables.R's staffing table.) Dropping
-# logs also halves the fitting time (44 models instead of 88) and keeps
-# this to one table instead of two.
+# Rows (8)-(11) hold the sample fixed at row (1) and add one case-mix control
+# set per row, varying the reference group (state or national) and the bin
+# granularity (quartiles or deciles). Spec A includes no case-mix control, so
+# these rows are not directly comparable to rows (1)-(7) and are labeled
+# accordingly.
 #
-# Output:
-#   outputs/tables/twfe_robustness_summary_code.tex  (fragment, label
-#                                                      tab:twfe-robustness-summary
-#                                                      -- unchanged, still
-#                                                      \input in ma_thesis.tex
-#                                                      as Table 13)
-#   outputs/tables/twfe_robustness_summary_preview.tex  (standalone preview doc)
+# Outcomes are reported in levels only. This table asks whether the sign and
+# significance of the post coefficient survive alternative sample and control
+# choices; the corresponding log specifications are reported in the staffing
+# table in post_tables.R.
+#
+# -----------------------------------------------------------------------------
+# Inputs
+# -----------------------------------------------------------------------------
+#   data/clean/staffing_panel.csv   via load_staffing_panel()
+#
+# -----------------------------------------------------------------------------
+# Outputs
+# -----------------------------------------------------------------------------
+#   outputs/tables/twfe_robustness_summary_code.tex     (label tab:twfe-robustness-summary)
+#   outputs/tables/twfe_robustness_summary_preview.tex  (standalone preview document)
+#
+# -----------------------------------------------------------------------------
+# Dependencies
+# -----------------------------------------------------------------------------
+#   regressions/_setup.R
+#   R packages: dplyr, fixest, tibble
 # =============================================================================
 
 source("C:/Repositories/white-bowblis-nhmc/regressions/_setup.R")
@@ -73,7 +69,7 @@ vc_month <- ~ cms_certification_number + year_month
 fe_month <- "cms_certification_number + year_month"
 
 # -----------------------------------------------------------------------------
-# Estimation + formatting helpers (same conventions as post_tables.R)
+# Estimation and formatting helpers
 # -----------------------------------------------------------------------------
 fit_one <- function(dat, lhs, extra_controls = character(0)) {
   rhs <- make_spec_rhs(dat, spec = SPEC, exclude = union(ALWAYS_EXCLUDE, lhs))
@@ -105,17 +101,11 @@ coef_se_star <- function(mod, term = "post") {
   )
 }
 
+# Formats a coefficient and its standard error side by side on a single line.
+# This table has many rows, so single-line cells are used here rather than the
+# stacked two-line cells used in the main tables.
 fmt_est <- function(mod, digits = 4) {
   s <- coef_se_star(mod)
-  # Single-line cell: coefficient and SE side by side, not stacked. The
-  # stacked 2-line \makecell version produced a vertical misalignment that
-  # survived two attempted fixes (padding the superscript, then removing
-  # makecell from the label/N cells) -- the remaining suspect is a mismatch
-  # between this table's plain "c" column (N) and tabularx's "Y" columns
-  # (RN/LPN/CNA/Total), which use different internal box mechanics that can
-  # disagree on vertical placement when cell heights vary by row. Single-line
-  # cells have no internal height variance to disagree about, which sidesteps
-  # the issue rather than continuing to chase its exact mechanism blind.
   if (is.na(s$coef) || is.na(s$se)) return("--")
   b <- formatC(s$coef, format = "f", digits = digits)
   if (s$coef > 0) b <- paste0("\\phantom{-}", b)
@@ -147,12 +137,12 @@ df <- df_full %>% dplyr::select(dplyr::any_of(keep_monthly))
 rm(df_full); gc(verbose = FALSE)
 
 # -----------------------------------------------------------------------------
-# Rows 1-7: sample-restriction variants (all Spec A, no case-mix controls)
+# Rows 1-7: sample-restriction variants, no case-mix controls
+#
+# Row (1) is the baseline sample used throughout the paper: the anticipation
+# window (event_time in -3, -2, -1) excluded, with no restriction on gaps in
+# facility reporting.
 # -----------------------------------------------------------------------------
-# (1) Baseline = the project's standard no-anticipation exclusion
-#     (drop_anticipation_window drops event_time in {-3,-2,-1}), no gap
-#     restriction. This matches the previous script's anticipation2 == 0
-#     baseline conceptually, using the current panel's event_time convention.
 df_baseline <- drop_anticipation_window(df)
 
 restriction_specs <- list(
@@ -172,11 +162,11 @@ restriction_specs <- list(
 )
 
 # -----------------------------------------------------------------------------
-# Rows 8-11: case-mix control granularity, sample held at baseline
+# Rows 8-11: case-mix control granularity, sample held at the row (1) baseline
 #
-# Superseded from robustness_case_mix_bins.R. Spec A itself has no case-mix
-# control, so each row here is Spec A + one case-mix variant added --
-# distinct from Spec A alone (row 1), not a repeat of it.
+# Spec A includes no case-mix control, so each row here is Spec A with one
+# case-mix control set added, and is distinct from row (1) rather than a
+# repeat of it.
 # -----------------------------------------------------------------------------
 case_mix_variants <- list(
   "State Quartile" = c("cm_q_state_2", "cm_q_state_3", "cm_q_state_4"),
@@ -204,7 +194,7 @@ case_mix_specs <- lapply(names(case_mix_variants), function(nm) {
 all_specs <- c(restriction_specs, case_mix_specs)
 
 # -----------------------------------------------------------------------------
-# Fit everything: levels only, all rows
+# Estimation
 # -----------------------------------------------------------------------------
 fit_spec_row <- function(spec) {
   extra <- if (!is.null(spec$extra_controls)) spec$extra_controls else character(0)
@@ -219,14 +209,7 @@ all_fits <- lapply(all_specs, function(spec) {
 })
 
 # -----------------------------------------------------------------------------
-# Build table
-#
-# ALIGNMENT: every cell in a row -- including the row label and N, not just
-# the coefficient cells -- is wrapped in \makecell[t]{...} so everything
-# top-aligns consistently. Plain-text label/N cells would otherwise be
-# vertically CENTERED by LaTeX's default within a row whose height is set
-# by the taller 2-line coefficient cells, producing a staggered look once
-# many rows are stacked.
+# Table construction
 # -----------------------------------------------------------------------------
 build_row_cells <- function(mods, digits = 4) {
   paste(sapply(mods, fmt_est, digits = digits), collapse = " & ")
@@ -239,14 +222,6 @@ panel_rows <- function() {
     fit  <- all_fits[[i]]
     n_fmt <- format(fit$n, big.mark = ",")
     cells <- build_row_cells(fit$level)
-    # Row label and N are plain text, matching every other table in the
-    # project (post_tables.R, post_heterogeneity.R) -- none of them wrap
-    # the label/N cells in \makecell. Wrapping them here was the actual
-    # cause of the misalignment: it put the label/N on their own line,
-    # separate from the coefficient block below, instead of sharing its
-    # top line the way plain text does by default. The earlier "unstarred
-    # columns are shorter" theory did not hold -- Table 4 has LPN unstarred
-    # in every row and shows no misalignment at all, which rules that out.
     rows <- c(rows, paste0(spec$label, " & ", n_fmt, " & ", cells, " \\\\"))
     if (i < length(all_specs)) rows <- c(rows, "\\addlinespace[0.35em]")
     if (i == length(restriction_specs)) rows <- c(rows, "\\addlinespace[3pt]")
@@ -290,8 +265,8 @@ rob_frag <- c(
     "\\item Rows (8)--(11) hold the sample fixed at row (1) and add one case-mix ",
     "control set on top of Spec A per row -- Spec A itself includes no case-mix ",
     "control, so these rows are not directly comparable to rows (1)--(7). ",
-    "``State Quartile'' is the project's default case-mix control elsewhere in the ",
-    "paper (see \\_setup.R's \\texttt{preferred\\_case\\_mix\\_controls}). Quartile bins ",
+    "``State Quartile'' is the default case-mix control used elsewhere in the ",
+    "paper. Quartile bins ",
     "use dummies for bins 2--4; decile bins use dummies for bins 2--10 (bin 1 omitted ",
     "as reference in both cases)."
   ),

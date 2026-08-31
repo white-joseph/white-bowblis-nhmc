@@ -1,36 +1,50 @@
-# C:/Repositories/white-bowblis-nhmc/regressions/quality_event_study.R
 # =============================================================================
-# Quality Event Study
+# regressions/quality_event_study.R
 #
-# Purpose:
-#   Estimate quarterly TWFE event-study models for CMS quality outcomes.
+# Estimates quarterly event-study models for CMS quality measures, tracing the
+# path of each measure in the quarters before and after an ownership change.
 #
-# Main specification:
-#   - Outcome: quarterly quality measure
-#   - Event time: quarters relative to ownership change
-#   - Drops tau = 0 from the estimation sample
-#   - Reference period: tau = -1
-#   - Fixed effects: facility and year-quarter
-#   - SEs clustered two ways by facility and year-quarter
+# -----------------------------------------------------------------------------
+# Specification
+# -----------------------------------------------------------------------------
+# Event time is measured in quarters relative to the ownership change. The
+# transition quarter (tau = 0) is excluded and tau = -1 is the reference
+# period. All models include facility and year-quarter fixed effects, with
+# standard errors two-way clustered by facility and year-quarter.
 #
-# Quality metric mapping follows quarterly_summary_stats.R:
-#   Routine-sensitive process measures:
-#     qm_406 = Catheter
-#     qm_419 = Antipsychotic
-#     qm_452 = Hypnotics / anti-anxiety or hypnotic medication use
+# -----------------------------------------------------------------------------
+# Quality measures
+# -----------------------------------------------------------------------------
+# Labor-saving mechanism measures:
+#   qm_406  Catheter use
+#   qm_419  Anti-psychotic medication use
+#   qm_452  Anti-anxiety or hypnotic medication use
 #
-#   Resident outcome measures:
-#     qm_453 = Pressure injuries
-#     qm_410 = Falls with major injury
-#     qm_404 = Weight Loss
-#     qm_401 = ADL Increase
-#     qm_407 = Urinary Tract Infections
+# Resident outcome measures:
+#   qm_453  Pressure injuries
+#   qm_410  Falls with major injury
+#   qm_404  Weight loss
+#   qm_401  Decline in physical functioning
+#   qm_407  Urinary tract infections
 #
-# Outputs:
-#   - Individual event-study plots for each quality outcome
-#   - 3-panel routine-sensitive process-measure figure
-#   - 5-panel resident-outcome figure
-#   - Plot index CSV
+# For every measure, lower values indicate better measured quality.
+#
+# -----------------------------------------------------------------------------
+# Inputs
+# -----------------------------------------------------------------------------
+#   data/clean/quality_panel.csv
+#
+# -----------------------------------------------------------------------------
+# Outputs
+# -----------------------------------------------------------------------------
+#   outputs/plots/  one event-study plot per quality measure, a three-panel
+#                   figure of the mechanism measures, a five-panel figure of
+#                   the resident outcome measures, and an index CSV
+#
+# -----------------------------------------------------------------------------
+# Dependencies
+# -----------------------------------------------------------------------------
+#   R packages: dplyr, readr, fixest, stringr, tibble
 # =============================================================================
 
 suppressPackageStartupMessages({

@@ -1,52 +1,47 @@
 # =============================================================================
 # regressions/sumstats.R
 #
-# Summary statistics for BOTH analysis panels, as a single combined table.
+# Summary statistics for both analysis panels, reported as a single table with
+# one panel per sample: Panel A for the facility-month staffing panel and
+# Panel B for the facility-quarter quality panel.
 #
-# Replaces:
-#   summary_statistics.R       -- read data/clean/panel.csv, which no longer
-#                                 exists, and used the old *_hppd column
-#                                 names. Could not run.
-#   quarterly_summary_stats.R  -- read quality_panel.csv directly, applying
-#                                 neither the government-ever exclusion nor
-#                                 chain_at_start, so the quality sample did
-#                                 not match any staffing table in the paper.
+# Both panels are loaded through the shared loaders in _setup.R, so the
+# government-ownership exclusion and the definition of baseline chain status
+# are identical across the two samples by construction. Any remaining
+# difference in facility counts between them reflects a difference in data
+# coverage rather than in sample definition; compare_panel_samples() reports
+# that difference directly.
 #
-# Both panels are loaded through _setup.R's loaders, which route through the
-# same facility-level lookups. The government exclusion set and
-# chain_at_start are therefore identical across the two samples by
-# construction. Any remaining difference in facility counts between the
-# panels is a real data difference rather than a definitional one --
-# compare_panel_samples() reports it directly.
+# -----------------------------------------------------------------------------
+# Table design
+# -----------------------------------------------------------------------------
+# Reported N is the per-variable count of non-missing observations and
+# therefore varies down the table, which makes per-measure reporting windows
+# and coverage gaps visible rather than obscuring them behind a single
+# sample-wide count. Facility counts are reported in the table notes.
 #
-# Output:
-#   outputs/tables/sumstats_combined.tex   fragment for \input (label tab:sumstats)
-#   outputs/tables/sumstats_preview.tex    standalone compilable doc
+# Two variables are deliberately omitted. The government-ownership indicator
+# is identically zero in both samples, since government-owned facilities are
+# excluded upstream. The time-varying chain indicator is omitted in favor of
+# baseline chain status, which is the chain measure used throughout the paper.
 #
-# PAPER WIRING: this script no longer writes summary_statistics_code.tex or
-# quality_summary_statistics_code.tex. Those files still exist on disk from
-# the old scripts, so ma_thesis.tex will still COMPILE if its \input{} lines
-# are left alone -- it will just silently render stale numbers. Repoint the
-# staffing \input{} at sumstats_combined.tex, delete the quality \input{}
-# line and its surrounding \ref{tab:quality_sumstats} sentence, then delete
-# the two stale .tex files.
+# -----------------------------------------------------------------------------
+# Inputs
+# -----------------------------------------------------------------------------
+#   data/clean/staffing_panel.csv   via load_staffing_panel()
+#   data/clean/quality_panel.csv    via load_quality_panel()
 #
-# TABLE DESIGN:
-#   - One exhibit, two panels (Health Economics allows 8 figures + tables
-#     total; two exhibits on descriptives is expensive).
-#   - N is per-variable non-missing count, so it varies down the table. This
-#     is deliberate: it surfaces the qm_471/qm_472 reporting-window trims and
-#     any coverage gaps in the raw-hours columns rather than hiding them
-#     behind a single sample-wide figure.
-#   - Facility counts stay in the notes, on a single compact line. A
-#     per-variable N cannot convey them, but hanging them off the
-#     \textbf{Panel A/B} header rows reads as clutter.
+# -----------------------------------------------------------------------------
+# Outputs
+# -----------------------------------------------------------------------------
+#   outputs/tables/sumstats_combined.tex  (label tab:sumstats)
+#   outputs/tables/sumstats_preview.tex   (standalone preview document)
 #
-# NOT reported, deliberately:
-#   government  -- every ever-government facility is excluded upstream, so
-#                  the dummy is identically zero in both samples.
-#   chain       -- the time-varying version is unreliable per Bowblis;
-#                  chain_at_start is the project's chain variable.
+# -----------------------------------------------------------------------------
+# Dependencies
+# -----------------------------------------------------------------------------
+#   regressions/_setup.R
+#   R packages: dplyr, purrr, tibble
 # =============================================================================
 
 source("C:/Repositories/white-bowblis-nhmc/regressions/_setup.R")
@@ -67,8 +62,8 @@ N_COLS <- 4  # Variable, Mean, SD, N
 # -----------------------------------------------------------------------------
 # Formatting helpers
 # -----------------------------------------------------------------------------
-# `kind` drives the number format so digit rules live with the variable
-# definition rather than in a lookup function that has to be kept in sync:
+# The `kind` field attached to each variable determines its number format, so
+# that formatting rules are stored alongside the variable definition:
 #   hprd   -> 3 decimals            (0.427)
 #   pct    -> 1 decimal             (82.4)
 #   count  -> 0 decimals, big.mark  (12,340)
@@ -104,9 +99,9 @@ mean_sd_n <- function(x) {
 # -----------------------------------------------------------------------------
 # Row builders
 # -----------------------------------------------------------------------------
-# `spec` is a tibble of (var, label, kind). Variables absent from the panel
-# are silently skipped -- the same tolerance used elsewhere in the project,
-# so this does not break on a panel rebuilt without an optional column.
+# `spec` is a tibble of (var, label, kind). Variables not present in the panel
+# are skipped, so the script tolerates a panel rebuilt without an optional
+# column.
 build_rows <- function(df, spec) {
   spec <- spec %>% dplyr::filter(var %in% names(df))
   if (!nrow(spec)) return(character(0))
@@ -149,9 +144,8 @@ staffing_hprd_spec <- tibble::tribble(
   "total_hprd",  "Total HPRD",  "hprd"
 )
 
-# Raw hours are the HPRD numerator. They belong here now that the paper
-# reports both -- a reader comparing the HPRD and raw-hours coefficient
-# columns needs both baselines to benchmark against.
+# Raw monthly hours are the HPRD numerator, and are summarized alongside HPRD
+# so that both baselines are available when reading the staffing table.
 staffing_hours_spec <- tibble::tribble(
   ~var,               ~label,                    ~kind,
   "rn_hours_month",   "RN hours (monthly)",      "count",
@@ -187,8 +181,8 @@ facility_spec_quarterly <- tibble::tribble(
   "cm_q_state_4",    "Acuity quartile 4",                   "binary"
 )
 
-# Quality measures pull labels and grouping from _setup.R, so this script
-# cannot drift from quality_event_study.R or the quality tables.
+# Quality-measure labels and groupings are taken from _setup.R so that they
+# remain consistent with the quality tables and figures.
 qm_spec <- function(codes) {
   tibble::tibble(
     var   = codes,
@@ -201,7 +195,7 @@ mechanism_spec <- qm_spec(quality_mechanism_measures)
 outcome_spec   <- qm_spec(quality_outcome_measures)
 
 # -----------------------------------------------------------------------------
-# Load panels (slimmed immediately -- only the columns summarized below)
+# Load panels, retaining only the columns summarized below
 # -----------------------------------------------------------------------------
 keep_monthly <- unique(c(
   "cms_certification_number", "year_month", "treated",
@@ -276,12 +270,10 @@ body <- c(
 )
 
 # -----------------------------------------------------------------------------
-# Notes
+# Table notes
 # -----------------------------------------------------------------------------
-# Facility and treated-facility counts live here rather than in the panel
-# header rows: a per-variable N column cannot convey them, but appending
-# them to the \textbf{Panel A/B} rows reads as clutter. Kept to a single
-# compact line covering both panels.
+# Facility and treated-facility counts are reported here, since the
+# per-variable N column cannot convey them.
 sample_note <- paste0(
   "\\item Panel A: ", fmt_int(ov_m$facilities), " facilities (",
   fmt_int(ov_m$treated), " with an ownership change), ",
@@ -335,7 +327,7 @@ fragment <- c(
 )
 
 # -----------------------------------------------------------------------------
-# Write
+# Write output
 # -----------------------------------------------------------------------------
 write_fragment <- function(lines, fname) {
   fp <- file.path(out_dir, fname)

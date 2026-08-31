@@ -1,59 +1,58 @@
 # =============================================================================
 # regressions/chain_heterogeneity.R
 #
-# Chain vs. non-chain heterogeneity, across staffing, business-model, and
-# quality outcomes -- one script, one sample split, three tables.
+# Estimates the effect of ownership change separately for chain-affiliated and
+# independent facilities, across staffing, business-model, and quality
+# outcomes. Heterogeneity is estimated by sample split rather than by
+# interacting treatment with chain status, so that fixed effects and control
+# coefficients are free to differ across the two groups.
 #
-# HISTORY: this file was regressions/post_heterogeneity.R. It originally also
-# held a pre-vs-post-pandemic staffing split and an occupancy-bin
-# heterogeneity table; both are dropped per Joe/advisor decision and are not
-# reproduced here. Renamed to reflect its narrowed scope.
-#   - Pre/post-pandemic split: dropped outright. Post-government-ownership-
-#     exclusion, the pre- and post-pandemic estimates were judged essentially
-#     the same, so the split wasn't earning its place against the exhibit cap.
-#   - Occupancy-bin heterogeneity: dropped after its "Pooled" column was
-#     found not to reconcile with the main business-model table. Diagnosis:
-#     the occupancy-bin sample restricted to treated facilities with a usable
-#     baseline occupancy reading over event_time in [-12,-4], silently
-#     dropping any treated facility without one -- a sample-composition
-#     artifact, not a real finding. Its facility-level classification
-#     (baseline_treated) and the occupancy_bin_classification_summary.csv
-#     export it once fed are gone with it -- if Table 9 Panel B's attrition
-#     accounting ends up needing that detail, it will need to be rebuilt.
+# -----------------------------------------------------------------------------
+# Specification
+# -----------------------------------------------------------------------------
+#   outcome ~ post + beds | facility + calendar period
 #
-# SCOPE: the chain split now covers all three outcome families:
-#   Table 1 (tab:het-chain)          Staffing: RN/LPN/CNA/Total, HPRD + logs
-#   Table 2 (tab:het-chain-business) Business model: occupancy, payer mix, LOS
-#   Table 3 (tab:het-chain-quality)  Quality: long-stay + short-stay measures
+# Spec A as defined in _setup.R, matching the main tables in post_tables.R.
+# chain_at_start is excluded from the right-hand side in every table here
+# because it is the sample-split variable and is constant within each
+# subsample by construction.
 #
-# LAYOUT: staffing keeps the original stacked-panel layout (Chain panel,
-# then Non-chain panel), because it already has 4 outcome columns
-# (RN/LPN/CNA/Total) per chain status -- an 8-column side-by-side layout
-# would be unreadable. Business-model and quality are one coefficient per
-# outcome, so they use a 2-column (Chain | Non-chain) layout instead --
-# more compact and reads more naturally for a single-coefficient list.
+# Monthly outcomes exclude the anticipation window (event_time in -3, -2, -1).
+# Quarterly outcomes exclude the transition quarter (event_time == 0).
 #
-# Business model excludes spare capacity and case mix entirely, per Joe --
-# matches the main business-model table (post_tables.R), not a chain-split-
-# specific choice.
+# -----------------------------------------------------------------------------
+# Tables
+# -----------------------------------------------------------------------------
+#   Table 1  Staffing: RN, LPN, CNA, and total HPRD in levels and logs.
+#            Reported as two stacked panels, one per chain status, since each
+#            panel already occupies four outcome columns.
+#   Table 2  Business-model outcomes: occupancy rate, Medicare and Medicaid
+#            shares, and average length of stay. Reported with chain and
+#            non-chain estimates side by side.
+#   Table 3  Quality measures, long-stay and short-stay, chain and non-chain
+#            side by side. Reported for the baseline specification only;
+#            the staffing-control variant used in the main quality table is
+#            not reproduced here. Vaccination measures are excluded.
 #
-# Quality reports ONE column per chain status (baseline Spec A only, no
-# staffing-control variant) -- mirrors how the staffing chain split only
-# ever reported the single preferred specification, not the with/without-
-# staffing-controls pair used in the main quality table (post_tables.R).
-# Vaccination measures (qm_430, qm_472) remain excluded per the standing
-# CM/Bowblis decision.
+# -----------------------------------------------------------------------------
+# Inputs
+# -----------------------------------------------------------------------------
+#   data/clean/staffing_panel.csv   via load_staffing_panel()
+#   data/clean/quality_panel.csv    via load_quality_panel()
 #
-# SPECIFICATION: Spec A (post + beds), matching every other post-only table
-# in this project. chain_at_start is excluded from controls in every table
-# here since it is the sample-split variable itself and is constant within
-# each subsample by construction.
-#
-# Output:
+# -----------------------------------------------------------------------------
+# Outputs
+# -----------------------------------------------------------------------------
 #   outputs/tables/post_heterogeneity_chain_table.tex          (tab:het-chain)
 #   outputs/tables/post_heterogeneity_chain_business_table.tex (tab:het-chain-business)
 #   outputs/tables/post_heterogeneity_chain_quality_table.tex  (tab:het-chain-quality)
-#   outputs/tables/chain_heterogeneity_preview.tex              (standalone preview doc)
+#   outputs/tables/chain_heterogeneity_preview.tex             (standalone preview document)
+#
+# -----------------------------------------------------------------------------
+# Dependencies
+# -----------------------------------------------------------------------------
+#   regressions/_setup.R
+#   R packages: dplyr, fixest, tibble
 # =============================================================================
 
 source("C:/Repositories/white-bowblis-nhmc/regressions/_setup.R")
@@ -73,7 +72,10 @@ SPEC <- "A"
 ALWAYS_EXCLUDE <- "chain_at_start"
 
 # -----------------------------------------------------------------------------
-# Estimation + formatting helpers (same conventions as post_tables.R)
+# Estimation and formatting helpers
+#
+# Follows the same conventions as post_tables.R so that estimates are
+# formatted identically across the main and heterogeneity tables.
 # -----------------------------------------------------------------------------
 fit_post <- function(dat, lhs, vc, fe_rhs) {
   rhs <- make_spec_rhs(dat, spec = SPEC, exclude = union(ALWAYS_EXCLUDE, lhs))
@@ -135,26 +137,20 @@ spec_note_monthly <- paste0(
   "\\item \\textit{Notes:} Each cell reports the coefficient on \\textit{post}, ",
   "with standard errors in parentheses. All specifications include facility and ",
   "calendar-month fixed effects and control for the number of certified beds. ",
-  "Standard errors are two-way clustered by facility and calendar month. The ",
-  "sample excludes facilities government-owned at any point during the study period. ",
-  "The anticipation window ($\\tau = -3, -2, -1$) is excluded."
+  "Standard errors are two-way clustered by facility and calendar month."
 )
 
 spec_note_quarterly <- paste0(
   "\\item \\textit{Notes:} Each cell reports the coefficient on \\textit{post}, ",
   "with standard errors in parentheses. All specifications include facility and ",
   "calendar-quarter fixed effects and control for the number of certified beds. ",
-  "Standard errors are two-way clustered by facility and calendar quarter. The ",
-  "sample excludes facilities government-owned at any point during the study period. ",
-  "The transition quarter ($\\tau = 0$) is excluded."
+  "Standard errors are two-way clustered by facility and calendar quarter."
 )
 
 chain_note <- paste0(
-  "\\item Chain status is each facility's baseline classification ",
-  "(\\textit{chain\\_at\\_start}): chain status in January 2017, falling back ",
-  "to the facility's own earliest observed value if absent from the panel ",
-  "that month. Facilities with no available chain classification are excluded ",
-  "from every split in this script."
+  "\\item Chain status is each facility's classification at their first ",
+  "observation in the panel. Facilities with no available chain classification ",
+  "are excluded from every split."
 )
 
 wrap_table <- function(body, caption, label, colspec, header_row, notes, size = "\\small") {
@@ -281,9 +277,7 @@ write_fragment(chain_tex, "post_heterogeneity_chain_table.tex")
 # =============================================================================
 # TABLE 2: Chain vs. non-chain -- Business model
 #
-# Same outcome set as post_tables.R's business-model table: occupancy rate,
-# Medicare share, Medicaid share, average length of stay. Spare capacity and
-# case mix are excluded entirely, matching that table.
+# Outcome set matches the business-model table in post_tables.R.
 # =============================================================================
 business_spec <- tibble::tribble(
   ~var,              ~label,
@@ -408,10 +402,10 @@ quality_tex <- wrap_table(
     ),
     paste0(
       "\\item Pressure injuries is estimated on 2018--2023 only; improved function ",
-      "is estimated on 2017--2022 only. Vaccination measures are excluded, matching ",
-      "the main quality table. Chain sample: N = ", format(nrow(df_q_chain), big.mark = ","),
+      "is estimated on 2017--2022 only.",
+      "Chain sample: N = ", format(nrow(df_q_chain), big.mark = ","),
       " facility-quarters. Non-chain sample: N = ", format(nrow(df_q_nonchain), big.mark = ","),
-      " facility-quarters (before per-measure reporting-window trims)."
+      " facility-quarters."
     ),
     chain_note,
     sig_note

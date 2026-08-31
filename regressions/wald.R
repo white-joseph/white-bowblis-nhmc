@@ -1,55 +1,62 @@
-# ==============================================================================
-# wald.R
+# =============================================================================
+# regressions/wald.R
 #
-# Joint Wald tests of pre-treatment event-time coefficients for:
-#   1) Monthly staffing outcomes
-#   2) Quarterly quality outcomes
+# Joint Wald tests of the pre-treatment event-time coefficients, used to assess
+# whether treated and control facilities were on parallel paths before the
+# ownership change. Reported separately for monthly staffing outcomes and
+# quarterly quality outcomes.
 #
-# Staffing outcomes:
-#   - RN HPRD
-#   - LPN HPRD
-#   - CNA HPRD
-#   - Total HPRD
-#   - Also estimates log(HPRD) versions
+# -----------------------------------------------------------------------------
+# Staffing specifications
+# -----------------------------------------------------------------------------
+# Outcomes are RN, LPN, CNA, and total hours per resident day, in levels and
+# logs. Three specifications are reported:
 #
-# Staffing specifications:
-#   1) 2 Year Full Pre-Window
-#      - event-time window: -24 to 24 months
-#      - reference period: tau = -1
-#      - tests pre-treatment coefficients tau = -24 to -2
+#   (1) Two-year window, full pre-period.
+#       Event window tau in [-24, 24], reference period tau = -1, pre-trend
+#       tested over tau = -24 to -2.
 #
-#   2) 2 Year Window, Excluding Immediate Pre-Transfer Months
-#      - event-time window: -24 to 24 months
-#      - excludes tau = -3, -2, -1
-#      - reference period: tau = -4
-#      - tests pre-treatment coefficients tau = -24 to -5
+#   (2) Two-year window, excluding the immediate pre-transfer months.
+#       Event window tau in [-24, 24], excluding tau = -3, -2, -1, reference
+#       period tau = -4, pre-trend tested over tau = -24 to -5.
 #
-#   3) 1 Year Window, Excluding Immediate Pre-Transfer Months
-#      - event-time window: -12 to 12 months
-#      - excludes tau = -3, -2, -1
-#      - reference period: tau = -4
-#      - tests pre-treatment coefficients tau = -12 to -5
+#   (3) One-year window, excluding the immediate pre-transfer months.
+#       Event window tau in [-12, 12], excluding tau = -3, -2, -1, reference
+#       period tau = -4, pre-trend tested over tau = -12 to -5.
 #
-# Quality outcomes:
-#   - Uses only the quality measures included in the paper
-#   - Estimates quarterly event-study specifications
-#   - Preferred specifications exclude the ownership-change quarter
-#     tau = 0 and use tau = -1 as the reference period
+# -----------------------------------------------------------------------------
+# Quality specifications
+# -----------------------------------------------------------------------------
+# Estimated on the quarterly panel for the quality measures reported in the
+# paper. The transition quarter (tau = 0) is excluded and tau = -1 is the
+# reference period.
 #
-# Outputs:
-#   - outputs/tables/wald-test-staffing.tex
-#   - outputs/tables/wald-test-quality.tex
+# Standard errors are two-way clustered by facility and calendar period
+# throughout.
 #
-# Notes:
-#   - Both outputs are inputtable LaTeX fragments that can be called
-#     directly in the paper using \input{...}.
-#   - Standard errors are two-way clustered by facility and calendar period.
-# ==============================================================================
+# -----------------------------------------------------------------------------
+# Inputs
+# -----------------------------------------------------------------------------
+#   data/clean/staffing_panel.csv   via load_staffing_panel()
+#   data/clean/quality_panel.csv    via load_quality_panel()
+#
+# -----------------------------------------------------------------------------
+# Outputs
+# -----------------------------------------------------------------------------
+#   outputs/tables/wald-test-staffing.tex
+#   outputs/tables/wald-test-quality.tex
+#
+# -----------------------------------------------------------------------------
+# Dependencies
+# -----------------------------------------------------------------------------
+#   regressions/_setup.R
+#   R packages: MASS
+# =============================================================================
 
 source("C:/Repositories/white-bowblis-nhmc/regressions/_setup.R")
 
 suppressPackageStartupMessages({
-  library(MASS)  # ginv
+  library(MASS)  # ginv(), for the generalized inverse in the Wald statistic
 })
 
 options(scipen = 999, digits = 4)

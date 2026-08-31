@@ -421,11 +421,11 @@ build_facility_lookups <- function(fp = panel_fp, refresh = FALSE) {
     character(0)
   }
 
-  # chain_at_start: January 2017 value if available, falling back to each
-  # facility's own earliest observed value otherwise. The fallback exists
-  # because early PBJ reporting was still ramping up in January 2017, so a
-  # strict January-2017-only rule would drop facilities that report
-  # reliably from a slightly later start date.
+  # chain_at_start: the January 2017 value where available, and otherwise the
+  # facility's earliest observed value. The fallback is used because PBJ
+  # reporting coverage was still incomplete in January 2017, so a strict
+  # January 2017 rule would drop facilities that report reliably from a
+  # slightly later date.
   chain_lookup <- if ("chain" %in% names(raw)) {
     raw %>%
       dplyr::arrange(cms_certification_number, ym_date) %>%
@@ -611,15 +611,12 @@ compare_panel_samples <- function() {
 #
 # Notes:
 #   guess_max = Inf overrides readr's default column-type inference, which
-#   samples only the first 1,000 rows of each column. The panel is sorted
-#   by CCN then year_month, so a column that happens to be blank for the
-#   first ~1,000 rows can be typed as logical instead of double, silently
-#   turning every real numeric value later in that column into NA on
-#   parse. This was confirmed to affect total_hours specifically: the
-#   rn/lpn/cna_hours_month columns typed correctly (inference is
-#   independent per column) while total_hours alone came back 100% NA.
-#   guess_max = Inf costs an additional pass over the file but removes the
-#   failure mode entirely rather than patching around one column.
+#   samples only the first 1,000 rows of each column. The panel is sorted by
+#   facility and then by month, so a column that is blank for the first
+#   thousand rows can be typed as logical rather than numeric, in which case
+#   every subsequent value in that column parses as missing. Reading the full
+#   file for type inference costs an additional pass but eliminates this
+#   failure mode.
 # -----------------------------------------------------------------------------
 load_staffing_panel <- function(fp = panel_fp) {
   if (!file.exists(fp)) {
@@ -743,12 +740,9 @@ load_staffing_panel <- function(fp = panel_fp) {
 #   load_staffing_panel() -- the quarterly panel is subject to the same
 #   readr type-inference behavior.
 #
-#   KNOWN GAP: quality_panel.csv has no avg_los_total column, so Spec C and
-#   Spec D controls for quality outcomes silently omit average length of
-#   stay via intersect_existing()'s tolerance, until a quarterly
-#   avg_los_total is merged in from the monthly panel. A message is
-#   emitted at load time so this is visible up front rather than
-#   discovered later from an unexpectedly short coefficient table.
+#   quality_panel.csv does not currently contain an avg_los_total column, so
+#   the Spec C and Spec D control sets for quality outcomes omit average
+#   length of stay. A message is emitted at load time to make this visible.
 # -----------------------------------------------------------------------------
 load_quality_panel <- function(fp = quality_panel_fp) {
   if (!file.exists(fp)) {

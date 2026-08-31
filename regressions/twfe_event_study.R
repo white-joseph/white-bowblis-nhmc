@@ -1,21 +1,50 @@
-# C:/Repositories/white-bowblis-nhmc/regressions/twfe_event_study.R
-# TWFE Event Study
-# Specs in this file:
-#   (A) WITH anticipation              (full sample)
-#   (B) WITHOUT anticipation (drop t in {-3,-2,-1})
-#   (C) Pre-pandemic (2017-01..2019-12) vs Pandemic (2020-04..2024-06),
-#       each WITH and WITHOUT anticipation
-#   (D) Robustness: change event-time window, change anticipation window
+# =============================================================================
+# regressions/twfe_event_study.R
 #
-# Outcomes: RN, LPN, CNA, Total — in levels and logs (logs only if > 0)
+# Estimates event-study models of nursing staffing on the facility-month panel,
+# tracing the path of each staffing measure in the months before and after an
+# ownership change.
+#
+# -----------------------------------------------------------------------------
+# Specification
+# -----------------------------------------------------------------------------
+# Event time is measured in months relative to the ownership change, capped at
+# plus or minus 24 months. All models include facility and calendar-month fixed
+# effects. Outcomes are RN, LPN, CNA, and total hours per resident day, in
+# levels and in logs.
+#
+# Four sets of estimates are produced:
+#   (A) Full sample, retaining the anticipation window.
+#   (B) Excluding the anticipation window (event_time in -3, -2, -1).
+#   (C) Pre-pandemic (2017-01 to 2019-12) and pandemic (2020-04 to 2024-06)
+#       subsamples, each with and without the anticipation window.
+#   (D) Robustness to the width of the event-time and anticipation windows.
+#
+# -----------------------------------------------------------------------------
+# Inputs
+# -----------------------------------------------------------------------------
+#   data/clean/staffing_panel.csv   via load_staffing_panel()
+#
+# -----------------------------------------------------------------------------
+# Outputs
+# -----------------------------------------------------------------------------
+#   outputs/plots/   event-study plots for each outcome and specification
+#   presentation/    copies of selected plots for the presentation deck
+#
+# -----------------------------------------------------------------------------
+# Dependencies
+# -----------------------------------------------------------------------------
+#   regressions/_setup.R
+#   R packages: MASS
+# =============================================================================
 
 source("C:/Repositories/white-bowblis-nhmc/regressions/_setup.R")
 
 suppressPackageStartupMessages({
-  library(MASS)   # for ginv() in pretrend tests if needed later
+  library(MASS)   # ginv(), used in the pre-trend tests
 })
 
-# ------------------------------ Plot font (Times / newtx-like) ------------------------------
+# ------------------------------ Plot font ------------------------------
 set_plot_font <- function() {
   fam <- "Helvetica"
   par(family = fam)
@@ -37,14 +66,15 @@ df <- load_staffing_panel() %>%
   ) %>%
   prepare_event_study_data(min_et = -24L, max_et = 24L)
 
-# ------------------------------ 1) Treated window + logs ------------------------------
-# load_staffing_panel() already created ln_rn, ln_lpn, ln_cna, ln_total where possible
-# prepare_event_study_data() already created ever_treated and event_time_capped
+# ------------------------------ 1) Derived variables ------------------------------
+# Log outcomes are constructed in load_staffing_panel(); ever_treated and
+# event_time_capped are constructed in prepare_event_study_data().
 
-# ------------------------------ 2) Controls (TWFE set) ------------------------------
+# ------------------------------ 2) Controls ------------------------------
 controls_rhs <- make_controls_rhs(df)
 
-# pick a valid ES reference (prefer -1, else -4, else nearest negative, else first)
+# Selects the omitted reference period, preferring tau = -1, then tau = -4,
+# then the latest available pre-period.
 pick_ref <- function(dat, desired = NULL) {
   ev <- sort(unique(dat$event_time_capped[dat$ever_treated == 1L]))
   ev <- ev[is.finite(ev) & ev != 9999L]

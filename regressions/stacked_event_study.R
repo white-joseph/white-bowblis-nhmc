@@ -1,45 +1,53 @@
 # =============================================================================
 # regressions/stacked_event_study.R
 #
-# Purpose:
-#   Stacked difference-in-differences event study for staffing HPRD outcomes,
-#   used as a robustness check against staggered-adoption TWFE concerns
-#   (Goodman-Bacon). Combines:
-#     - the cohort-stacking approach already used in stacked_twfe_post.R
-#       (each treated cohort g compared only to never-treated / not-yet-
-#       treated facilities within its own event window)
-#     - an actual EVENT-TIME specification (not just post/pre), so dynamics
-#       can be plotted and pre-trends can be tested
-#     - the joint Wald pretrend-test machinery already used in wald.R
+# Stacked difference-in-differences event study for nursing staffing outcomes.
+# Reported as a robustness check against the bias that two-way fixed effects
+# can exhibit under staggered treatment timing (Goodman-Bacon, 2021), since
+# stacking restricts each comparison to clean control units.
 #
-#   Built on the CURRENT staffing_panel.csv (not the old panel.csv used by
-#   stacked_twfe_post.R), so column names match the rest of the project
-#   (rn_hprd, not rn_hppd; etc.).
+# -----------------------------------------------------------------------------
+# Specification
+# -----------------------------------------------------------------------------
+# Each treated cohort is stacked into its own event window and compared only
+# with facilities that are never treated or not yet treated within that window.
+# Event time is included directly, so dynamics can be plotted and pre-trends
+# tested jointly by Wald test.
 #
-#   TWO windows are estimated, matching the old (panel.csv-based) Table 8:
-#     - 2 Year Window with Donut: event window +/-24 months, tests
-#       tau = -24..-5, reference tau = -4
-#     - 1 Year Window with Donut: event window +/-12 months, tests
-#       tau = -12..-5, reference tau = -4
-#   Both physically drop tau = -3,-2,-1 for treated units before fitting.
+# Two event windows are estimated, each excluding the anticipation window
+# (tau = -3, -2, -1) for treated units before estimation:
+#   Two-year window: tau in [-24, 24], pre-trend tested over tau = -24 to -5,
+#     reference period tau = -4.
+#   One-year window: tau in [-12, 12], pre-trend tested over tau = -12 to -5,
+#     reference period tau = -4.
 #
-# Plots:
-#   Built directly from extracted model coefficients (NOT fixest's iplot()),
-#   so only event-times that actually have a fitted coefficient are ever
-#   drawn -- donut months are explicitly filtered out a second time at the
-#   plotting stage as a safeguard, guaranteeing no stray points there.
-#   Plain sans-serif font throughout (ggplot2's default is already
-#   sans-serif; base_family is set explicitly for portability).
+# -----------------------------------------------------------------------------
+# Figures
+# -----------------------------------------------------------------------------
+# Plots are constructed from the extracted coefficients rather than from
+# fixest::iplot(), so that only estimated event times are drawn. Excluded
+# anticipation months are filtered again at the plotting stage.
 #
-# Output:
+# -----------------------------------------------------------------------------
+# Inputs
+# -----------------------------------------------------------------------------
+#   data/clean/staffing_panel.csv   via load_staffing_panel()
+#
+# -----------------------------------------------------------------------------
+# Outputs
+# -----------------------------------------------------------------------------
 #   outputs/tables/pretrend_wald_tests_stacked_levels_fragment.tex
-#     (inputtable LaTeX fragment -- matches the \input{} already present,
-#     commented out, in ma_thesis.tex)
 #   outputs/plots/stacked_es_rn_baseline.pdf
 #   outputs/plots/stacked_es_lpn_baseline.pdf
 #   outputs/plots/stacked_es_cna_baseline.pdf
 #   outputs/plots/stacked_es_total_baseline.pdf
-#     (from the 2-year window model, matching the paper's existing figure)
+#     (from the two-year window specification)
+#
+# -----------------------------------------------------------------------------
+# Dependencies
+# -----------------------------------------------------------------------------
+#   regressions/_setup.R
+#   R packages: dplyr, fixest, ggplot2, tibble, MASS
 # =============================================================================
 
 source("C:/Repositories/white-bowblis-nhmc/regressions/_setup.R")
