@@ -1,8 +1,9 @@
 # =============================================================================
 # regressions/post_tables.R
 #
-# Produces the paper's three main tables of static (post-only) difference-in-
-# differences estimates: staffing, business-model outcomes, and quality.
+# Produces the paper's four tables of static (post-only) difference-in-
+# differences estimates: staffing, business-model outcomes, quality, and
+# quality by baseline chain affiliation.
 #
 # -----------------------------------------------------------------------------
 # Specification
@@ -27,11 +28,18 @@
 #            raw monthly hours (the numerator) and resident days (the
 #            denominator, i.e. facility census). Reporting the components
 #            separately distinguishes a change in labor purchased from a change
-#            in the census over which those hours are spread.
+#            in the census over which those hours are spread. Panels C and D
+#            repeat Panel A separately for facilities chain-affiliated and
+#            independent at baseline.
 #   Table 2  Business-model outcomes: occupancy rate, Medicare and Medicaid
-#            shares of patient days, and average length of stay.
+#            shares of patient days, and average length of stay, reported
+#            pooled and separately by baseline chain affiliation.
 #   Table 3  Quality measures, long-stay and short-stay, with and without
 #            staffing controls. Vaccination measures are excluded.
+#   Table 4  Quality measures split by baseline chain affiliation. Reported
+#            separately from Table 3 rather than as additional columns,
+#            because Table 3 already uses its columns for the with- and
+#            without-staffing-controls pair.
 #
 # -----------------------------------------------------------------------------
 # Inputs
@@ -42,10 +50,11 @@
 # -----------------------------------------------------------------------------
 # Outputs
 # -----------------------------------------------------------------------------
-#   outputs/tables/post_staffing_table.tex        (label tab:post-staffing)
-#   outputs/tables/post_business_model_table.tex  (label tab:post-business)
-#   outputs/tables/post_quality_table.tex         (label tab:post-quality)
-#   outputs/tables/post_tables_preview.tex        (standalone preview document)
+#   outputs/tables/post_staffing_table.tex                     (tab:post-staffing)
+#   outputs/tables/post_business_model_table.tex               (tab:post-business)
+#   outputs/tables/post_quality_table.tex                      (tab:post-quality)
+#   outputs/tables/post_heterogeneity_chain_quality_table.tex  (tab:het-chain-quality)
+#   outputs/tables/post_tables_preview.tex                     (standalone preview document)
 #
 # -----------------------------------------------------------------------------
 # Dependencies
@@ -217,6 +226,24 @@ rm(df_m); gc(verbose = FALSE)
 vc_month <- ~ cms_certification_number + year_month
 fe_month <- "cms_certification_number + year_month"
 
+# Baseline chain subsamples. Heterogeneity is estimated by sample split
+# rather than by interacting treatment with chain status, so that fixed
+# effects and control coefficients are free to differ across the two groups.
+# chain_at_start is constant within each subsample by construction and is
+# excluded from the right-hand side throughout this script.
+df_chain    <- df_m_wo %>% dplyr::filter(chain_at_start == 1)
+df_nonchain <- df_m_wo %>% dplyr::filter(chain_at_start == 0)
+
+n_missing_chain <- dplyr::n_distinct(
+  df_m_wo$cms_certification_number[is.na(df_m_wo$chain_at_start)]
+)
+if (n_missing_chain > 0) {
+  message(sprintf(
+    "[chain] %d facilities have no chain_at_start and are excluded from the split panels",
+    n_missing_chain
+  ))
+}
+
 # =============================================================================
 # TABLE 1: Staffing -- Panel A (HPRD), Panel B (decomposition)
 # =============================================================================
@@ -270,6 +297,36 @@ rd_cell <- fmt_est(mod_rd, digits = 4)
 staffing_body <- c(staffing_body, paste0("Resident days & \\multicolumn{4}{c}{", rd_cell, "} \\\\"))
 rm(mod_rd); gc(verbose = FALSE)
 
+# ---------------------------------------------------------------------------
+# Panels C and D: the same HPRD specification estimated separately by baseline
+# chain affiliation. Reported as stacked panels rather than as a separate
+# table so that the pooled and split estimates share one set of outcome
+# columns and can be read against one another directly.
+# ---------------------------------------------------------------------------
+add_hprd_panel <- function(body, dat, panel_label) {
+  body <- c(body, "\\addlinespace[0.7em]")
+  body <- c(body, panel_header(
+    sprintf("%s (N = %s facility-months)", panel_label, format(nrow(dat), big.mark = ",")),
+    5
+  ))
+  for (i in seq_along(panel_a_rows)) {
+    r <- panel_a_rows[[i]]
+    cells <- character(4)
+    for (j in seq_along(r$vars)) {
+      mod <- safe_fit(dat, r$vars[j], vc_month, fe_month,
+                      label = paste(panel_label, r$label, r$vars[j]))
+      cells[j] <- fmt_est(mod, digits = r$digits)
+      rm(mod); gc(verbose = FALSE)
+    }
+    body <- c(body, paste0(paste(c(r$label, cells), collapse = " & "), " \\\\"))
+    if (i < length(panel_a_rows)) body <- c(body, "\\addlinespace[0.4em]")
+  }
+  body
+}
+
+staffing_body <- add_hprd_panel(staffing_body, df_chain,    "Panel C: Chain-affiliated at baseline")
+staffing_body <- add_hprd_panel(staffing_body, df_nonchain, "Panel D: Independent at baseline")
+
 # Consistency check, reported to the console only. HPRD is constructed as
 # hours divided by resident days, so it cannot have more non-missing
 # observations than its own numerator; a warning here indicates a problem in
@@ -297,6 +354,12 @@ staffing_tex <- wrap_table(
       "quantity of nursing labor purchased) and denominator (resident days, i.e. ",
       "facility census)."
     ),
+    paste0(
+      "\\item Panels C and D re-estimate Panel A separately by baseline chain ",
+      "affiliation. Chain status is each facility's classification at its first ",
+      "observation in the panel. Facilities with no available chain ",
+      "classification are excluded from both split panels."
+    ),
     sig_note
   )
 )
@@ -317,26 +380,37 @@ business_spec <- tibble::tribble(
 business_body <- character(0)
 for (i in seq_len(nrow(business_spec))) {
   v <- business_spec$var[i]
-  mod <- safe_fit(df_m_wo, v, vc_month, fe_month, label = business_spec$label[i])
+  d <- business_spec$digits[i]
+  m_pool <- safe_fit(df_m_wo,     v, vc_month, fe_month, label = paste("Pooled", business_spec$label[i]))
+  m_ch   <- safe_fit(df_chain,    v, vc_month, fe_month, label = paste("Chain", business_spec$label[i]))
+  m_nc   <- safe_fit(df_nonchain, v, vc_month, fe_month, label = paste("Non-chain", business_spec$label[i]))
   business_body <- c(
     business_body,
-    paste0(business_spec$label[i], " & ", fmt_est(mod, business_spec$digits[i]),
-           " & ", fmt_n(mod), " \\\\")
+    paste0(business_spec$label[i], " & ", fmt_est(m_pool, d),
+           " & ", fmt_est(m_ch, d), " & ", fmt_est(m_nc, d), " \\\\")
   )
-  rm(mod); gc(verbose = FALSE)
+  rm(m_pool, m_ch, m_nc); gc(verbose = FALSE)
 }
 
 business_tex <- wrap_table(
   business_body,
   caption = "Effect of Ownership Change on Business-Model Outcomes",
   label = "tab:post-business",
-  colspec = "@{} l Y r @{}",
-  header_row = "Outcome & Coefficient (SE) & Observations \\\\",
+  colspec = "@{} l Y Y Y @{}",
+  header_row = "Outcome & Pooled & Chain & Non-chain \\\\",
   notes = c(
     spec_note_trimmed,
     paste0(
       "\\item Occupancy rate is residents as a share of available bed-days. Payer shares ",
       "are shares of patient days."
+    ),
+    paste0(
+      "\\item The chain and non-chain columns re-estimate the pooled specification ",
+      "separately by baseline chain affiliation, defined as each facility's ",
+      "classification at its first observation in the panel. Pooled sample: N = ",
+      format(nrow(df_m_wo), big.mark = ","), " facility-months. Chain: N = ",
+      format(nrow(df_chain), big.mark = ","), ". Non-chain: N = ",
+      format(nrow(df_nonchain), big.mark = ","), "."
     ),
     sig_note
   )
@@ -344,7 +418,85 @@ business_tex <- wrap_table(
 
 write_fragment(business_tex, "post_business_model_table.tex")
 
-rm(df_m_wo); gc(verbose = FALSE)
+# =============================================================================
+# Interaction tests: are the chain and non-chain estimates different?
+#
+# The split panels and columns above report each subsample separately but do
+# not test whether the two differ. Comparing significance across separately
+# estimated models is not such a test.
+#
+# The specification below is the fully saturated interaction:
+#
+#   outcome ~ post + post:chain + beds + beds:chain
+#             | facility + period^chain
+#
+# Interacting every right-hand-side term and the calendar-period fixed effects
+# with the split variable reproduces the two separate regressions exactly, so
+# the point estimates implied here match the split tables. What it adds is the
+# coefficient on post:chain, which is the difference between the two groups
+# together with a standard error. chain_at_start itself is time-invariant and
+# absorbed by the facility fixed effects. Facilities with no chain
+# classification are dropped, matching the split samples.
+# =============================================================================
+fit_interaction <- function(dat, lhs, vc, time_var) {
+  if (!(lhs %in% names(dat))) return(NULL)
+  d <- dat %>% dplyr::filter(!is.na(chain_at_start))
+  if (nrow(d) == 0) return(NULL)
+
+  fml <- as.formula(paste0(
+    lhs, " ~ post + post:chain_at_start + beds + beds:chain_at_start",
+    " | cms_certification_number + ", time_var, "^chain_at_start"
+  ))
+
+  cat(sprintf("[interaction] %s (N = %s)\n", lhs, format(nrow(d), big.mark = ",")))
+  tryCatch(
+    feols(fml, data = d, vcov = vc, lean = TRUE),
+    error = function(e) {
+      message(sprintf("[warn] interaction %s failed: %s", lhs, e$message))
+      NULL
+    }
+  )
+}
+
+interaction_row <- function(dat, v, label, vc, time_var, digits = 4) {
+  mod <- fit_interaction(dat, v, vc, time_var)
+  cell <- "\\makecell[t]{-- \\\\ (--)}"
+  # fmt_est() reports the coefficient on post; the quantity of interest here
+  # is the interaction term, so the cell is formatted directly.
+  if (!is.null(mod)) {
+    s <- coef_se_star(mod, term = "post:chain_at_start")
+    if (!is.na(s$coef)) {
+      b <- formatC(s$coef, format = "f", digits = digits)
+      if (s$coef > 0) b <- paste0("\\phantom{-}", b)
+      se <- formatC(s$se, format = "f", digits = digits)
+      cell <- if (s$stars == "") {
+        paste0("\\makecell[t]{$", b, "$ \\\\ $(", se, ")$}")
+      } else {
+        paste0("\\makecell[t]{$", b, "^{", s$stars, "}$ \\\\ $(", se, ")$}")
+      }
+    }
+  }
+  rm(mod); gc(verbose = FALSE)
+  paste0(label, " & ", cell, " \\\\")
+}
+
+interaction_staffing_rows <- c(
+  interaction_row(df_m_wo, "rn_hprd",    "RN HPRD",    vc_month, "year_month"),
+  interaction_row(df_m_wo, "lpn_hprd",   "LPN HPRD",   vc_month, "year_month"),
+  interaction_row(df_m_wo, "cna_hprd",   "CNA HPRD",   vc_month, "year_month"),
+  interaction_row(df_m_wo, "total_hprd", "Total HPRD", vc_month, "year_month")
+)
+
+interaction_business_rows <- character(0)
+for (i in seq_len(nrow(business_spec))) {
+  interaction_business_rows <- c(
+    interaction_business_rows,
+    interaction_row(df_m_wo, business_spec$var[i], business_spec$label[i],
+                    vc_month, "year_month", business_spec$digits[i])
+  )
+}
+
+rm(df_m_wo, df_chain, df_nonchain); gc(verbose = FALSE)
 
 # =============================================================================
 # TABLE 3: Quality (with and without staffing controls)
@@ -456,7 +608,156 @@ write_fragment(quality_tex, "post_quality_table.tex")
 cat("\n=== Column (2) observation counts (staffing controls added) ===\n")
 print(c(mech$n_with, outc$n_with, short$n_with))
 
+# =============================================================================
+# TABLE 4: Quality by baseline chain affiliation
+#
+# Reported as a separate table rather than as additional columns of Table 3,
+# because that table already uses its columns for the with- and
+# without-staffing-controls pair. Only the baseline specification is split
+# here; the staffing-control variant is not reproduced.
+# =============================================================================
+df_q_chain    <- df_q_post %>% dplyr::filter(chain_at_start == 1)
+df_q_nonchain <- df_q_post %>% dplyr::filter(chain_at_start == 0)
+
+n_missing_chain_q <- dplyr::n_distinct(
+  df_q_post$cms_certification_number[is.na(df_q_post$chain_at_start)]
+)
+if (n_missing_chain_q > 0) {
+  message(sprintf(
+    "[chain] %d facilities have no chain_at_start and are excluded from the quality split",
+    n_missing_chain_q
+  ))
+}
+
+build_quality_chain_block <- function(codes, label_map) {
+  rows <- character(0)
+  for (v in codes) {
+    lab <- unname(label_map[[v]])
+    dat_chain    <- trim_quality_measure_window(df_q_chain, v)
+    dat_nonchain <- trim_quality_measure_window(df_q_nonchain, v)
+    m_chain    <- safe_fit(dat_chain,    v, vc_quarter, fe_quarter, label = paste("Chain", lab))
+    m_nonchain <- safe_fit(dat_nonchain, v, vc_quarter, fe_quarter, label = paste("Non-chain", lab))
+    rows <- c(rows, paste0(
+      lab, " & ", fmt_est(m_chain, 4), " & ", fmt_est(m_nonchain, 4), " \\\\"
+    ))
+    rm(dat_chain, dat_nonchain, m_chain, m_nonchain); gc(verbose = FALSE)
+  }
+  rows
+}
+
+quality_chain_body <- c(
+  panel_header("Panel A: Long-stay labor-saving mechanism measures", 3),
+  build_quality_chain_block(quality_mechanism_measures, long_stay_quality_measures),
+  "\\addlinespace[0.6em]",
+  panel_header("Panel B: Long-stay resident outcome measures", 3),
+  build_quality_chain_block(quality_outcome_measures, long_stay_quality_measures),
+  "\\addlinespace[0.6em]",
+  panel_header("Panel C: Short-stay measures", 3),
+  build_quality_chain_block(names(short_stay_quality_measures), short_stay_quality_measures)
+)
+
+quality_chain_tex <- wrap_table(
+  quality_chain_body,
+  caption = "Effect of Ownership Change on Quality Measures: Chain vs. Non-Chain Facilities",
+  label = "tab:het-chain-quality",
+  colspec = "@{} l Y Y @{}",
+  header_row = "Outcome & Chain & Non-chain \\\\",
+  notes = c(
+    spec_note,
+    paste0(
+      "\\item Long-stay measures (Panels A-B) and short-stay measures (Panel C) are ",
+      "constructed from different resident populations and are not directly ",
+      "comparable to one another. For every measure, lower values indicate better ",
+      "measured quality."
+    ),
+    paste0(
+      "\\item Chain status is each facility's classification at its first observation ",
+      "in the panel. Facilities with no available chain classification are excluded ",
+      "from both columns. Chain sample: N = ", format(nrow(df_q_chain), big.mark = ","),
+      " facility-quarters. Non-chain sample: N = ", format(nrow(df_q_nonchain), big.mark = ","),
+      " facility-quarters, before per-measure reporting-window trims."
+    ),
+    paste0(
+      "\\item Pressure injuries is estimated on 2018--2023 only; improved function ",
+      "is estimated on 2017--2022 only. Vaccination measures are excluded. The ",
+      "transition quarter ($\\tau = 0$) is excluded."
+    ),
+    sig_note
+  )
+)
+
+write_fragment(quality_chain_tex, "post_heterogeneity_chain_quality_table.tex")
+
+rm(df_q_chain, df_q_nonchain); gc(verbose = FALSE)
+
+# ---- interaction tests for quality outcomes ----
+build_interaction_quality_rows <- function(codes, label_map) {
+  rows <- character(0)
+  for (v in codes) {
+    lab <- unname(label_map[[v]])
+    dat <- trim_quality_measure_window(df_q_post, v)
+    rows <- c(rows, interaction_row(dat, v, lab, vc_quarter, "year_quarter"))
+    rm(dat); gc(verbose = FALSE)
+  }
+  rows
+}
+
+interaction_quality_rows <- c(
+  build_interaction_quality_rows(quality_mechanism_measures, long_stay_quality_measures),
+  build_interaction_quality_rows(quality_outcome_measures, long_stay_quality_measures),
+  build_interaction_quality_rows(names(short_stay_quality_measures), short_stay_quality_measures)
+)
+
 rm(df_q_post); gc(verbose = FALSE)
+
+# =============================================================================
+# TABLE 5: Chain vs. non-chain differences (appendix)
+# =============================================================================
+interaction_body <- c(
+  panel_header("Panel A: Staffing", 2),
+  interaction_staffing_rows,
+  "\\addlinespace[0.6em]",
+  panel_header("Panel B: Business model", 2),
+  interaction_business_rows,
+  "\\addlinespace[0.6em]",
+  panel_header("Panel C: Quality", 2),
+  interaction_quality_rows
+)
+
+interaction_tex <- wrap_table(
+  interaction_body,
+  caption = "Tests of Differences Between Chain-Affiliated and Independent Facilities",
+  label = "tab:chain-interaction",
+  colspec = "@{} l Y @{}",
+  header_row = "Outcome & Chain $-$ Non-chain \\\\",
+  notes = c(
+    paste0(
+      "\\item \\textit{Notes:} Each cell reports the coefficient on the ",
+      "interaction between \\textit{post} and baseline chain affiliation, with ",
+      "standard errors in parentheses. This coefficient is the difference ",
+      "between the chain and non-chain estimates reported elsewhere in the ",
+      "paper; a negative value indicates a smaller effect among chain-affiliated ",
+      "facilities."
+    ),
+    paste0(
+      "\\item Every right-hand-side term and the calendar-period fixed effects ",
+      "are interacted with chain affiliation, so the specification reproduces ",
+      "the separate subsample regressions exactly while yielding a standard ",
+      "error for their difference. All specifications include facility fixed ",
+      "effects and control for the number of certified beds. Standard errors ",
+      "are two-way clustered by facility and calendar period."
+    ),
+    paste0(
+      "\\item Panels A and B are estimated on the facility-month panel ",
+      "excluding the anticipation window ($\\tau = -3, -2, -1$); Panel C on the ",
+      "facility-quarter panel excluding the transition quarter ($\\tau = 0$). ",
+      "Facilities with no available chain classification are excluded."
+    ),
+    sig_note
+  )
+)
+
+write_fragment(interaction_tex, "chain_interaction_tests.tex")
 
 # =============================================================================
 # Preview document
@@ -480,9 +781,13 @@ preview <- c(
   business_tex,
   "\\clearpage",
   quality_tex,
+  "\\clearpage",
+  quality_chain_tex,
+  "\\clearpage",
+  interaction_tex,
   "\\end{document}"
 )
 
 write_fragment(preview, "post_tables_preview.tex")
 
-cat("\nDone. Three post-only TWFE tables written.\n")
+cat("\nDone. Five tables written.\n")

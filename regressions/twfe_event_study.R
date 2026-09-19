@@ -71,7 +71,17 @@ df <- load_staffing_panel() %>%
 # event_time_capped are constructed in prepare_event_study_data().
 
 # ------------------------------ 2) Controls ------------------------------
-controls_rhs <- make_controls_rhs(df)
+# Spec A covariates only. Treatment is identified by the i(event_time_capped,
+# ever_treated) interaction below rather than by a post dummy, so post is
+# excluded here; including it would be collinear with the event-time
+# indicators. chain_at_start is time-invariant and absorbed by the facility
+# fixed effects.
+#
+# The occupancy rate, payer shares, and case-mix controls used previously
+# are not included: they are outcomes of ownership change in their own
+# right, so conditioning on them would absorb part of the response being
+# estimated.
+controls_rhs <- make_spec_controls_rhs(df, spec = "A", exclude = "chain_at_start")
 
 # Selects the omitted reference period, preferring tau = -1, then tau = -4,
 # then the latest available pre-period.

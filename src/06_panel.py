@@ -546,6 +546,12 @@ want_cols = [
     "cna_hours_month",
     "total_hours",
     "resident_days",
+    "rndon_hours_month",
+    "rnadmin_hours_month",
+    "lpnadmin_hours_month",
+    "natrn_hours_month",
+    "medaide_hours_month",
+    "admin_hours_month",
     "pt_hprd",
     "ptasst_hprd",
     "ptaide_hprd",
@@ -725,6 +731,12 @@ for c in [
     "cna_hours_month",
     "total_hours",
     "resident_days",
+    "rndon_hours_month",
+    "rnadmin_hours_month",
+    "lpnadmin_hours_month",
+    "natrn_hours_month",
+    "medaide_hours_month",
+    "admin_hours_month",
     "pt_hprd",
     "ptasst_hprd",
     "ptaide_hprd",
@@ -811,6 +823,98 @@ if "provider_resides_in_hospital" in analytical.columns:
 
 # ============================== Final regression panel ========================
 final_panel = finalize_regression_panel(analytical)
+
+# ============================== Facility-level lookups ========================
+# ever_government (the exclusion set) and chain_at_start (a control used in
+# every specification) are computed here, from the completed monthly panel,
+# and written to a shared lookup file that quarterly_panel.py also reads.
+#
+# Computing them once from one source is what keeps the two panels from
+# disagreeing about the estimation sample. Recomputing separately can give
+# different answers for the same facility -- for example, a facility observed
+# as government-owned in a month that survives into this panel but whose
+# corresponding quarters are sparse or absent in the quality panel, or a
+# chain baseline anchored on 2017Q1 rather than on 2017/01.
+#
+# RUN ORDER: quarterly_panel.py reads the file written here, so this script
+# must run before it.
+LOOKUPS_FP = INTERIM / "facility_lookups.csv"
+
+_lk = final_panel[["cms_certification_number", "year_month", "government", "chain"]].copy()
+_lk["year_month"] = _lk["year_month"].astype(str)
+_lk = _lk.sort_values(["cms_certification_number", "year_month"], kind="mergesort")
+
+ever_gov = (
+    _lk.groupby("cms_certification_number")["government"]
+    .max()
+    .rename("ever_government")
+    .reset_index()
+)
+ever_gov["ever_government"] = (
+    pd.to_numeric(ever_gov["ever_government"], errors="coerce").fillna(0).astype("Int8")
+)
+
+# chain_at_start: the January 2017 value where available, and otherwise the
+# facility's earliest observed value. The fallback is used because PBJ
+# reporting coverage was still incomplete in January 2017, so a strict
+# January 2017 rule would drop facilities that report reliably from a
+# slightly later date.
+_jan = (
+    _lk.loc[_lk["year_month"] == "2017/01", ["cms_certification_number", "chain"]]
+    .dropna(subset=["chain"])
+    .drop_duplicates("cms_certification_number")
+    .rename(columns={"chain": "chain_jan2017"})
+)
+_earliest = (
+    _lk.loc[_lk["chain"].notna(), ["cms_certification_number", "chain"]]
+    .drop_duplicates("cms_certification_number")
+    .rename(columns={"chain": "chain_earliest"})
+)
+
+lookups = (
+    ever_gov
+    .merge(_jan, on="cms_certification_number", how="left")
+    .merge(_earliest, on="cms_certification_number", how="left")
+)
+lookups["chain_at_start"] = lookups["chain_jan2017"].fillna(lookups["chain_earliest"])
+
+n_fallback = int(
+    (lookups["chain_jan2017"].isna() & lookups["chain_earliest"].notna()).sum()
+)
+n_gov = int((lookups["ever_government"] == 1).sum())
+
+print(
+    f"[lookups] {len(lookups):,} facilities, {n_gov:,} ever government-owned, "
+    f"{n_fallback:,} chain_at_start fallbacks"
+)
+
+lookups = lookups[["cms_certification_number", "ever_government", "chain_at_start"]]
+cfg.atomic_overwrite_csv(lookups, LOOKUPS_FP, index=False)
+print(f"[lookups] saved → {LOOKUPS_FP}")
+
+# ---- apply: drop ever-government facilities, attach chain_at_start ----------
+gov_ccns = set(lookups.loc[lookups["ever_government"] == 1, "cms_certification_number"])
+
+n_fac_before = final_panel["cms_certification_number"].nunique()
+before = len(final_panel)
+final_panel = final_panel[~final_panel["cms_certification_number"].isin(gov_ccns)].copy()
+print(
+    f"[filter] drop ever-government facilities: {before:,} -> {len(final_panel):,} rows "
+    f"({n_fac_before:,} -> {final_panel['cms_certification_number'].nunique():,} facilities)"
+)
+
+final_panel = final_panel.merge(
+    lookups[["cms_certification_number", "chain_at_start"]],
+    on="cms_certification_number",
+    how="left",
+)
+final_panel["chain_at_start"] = pd.to_numeric(
+    final_panel["chain_at_start"], errors="coerce"
+).astype("Int8")
+
+final_panel = final_panel.sort_values(
+    ["cms_certification_number", "year_month"], kind="mergesort"
+).reset_index(drop=True)
 
 cfg.atomic_overwrite_csv(final_panel, OUT_FINAL_FP, index=False)
 print(

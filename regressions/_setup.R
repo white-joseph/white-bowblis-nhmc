@@ -132,6 +132,23 @@ log_outcome_map <- c(
 # the four HPRD variables is unaffected.
 raw_hours_outcomes <- c("rn_hours_month", "lpn_hours_month", "cna_hours_month", "total_hours")
 
+# Administrative and other nursing categories reported in PBJ but excluded
+# from the three core direct-care categories above. Carried as raw monthly
+# hours only. CMS's Five-Star RN definition is rn + rnadmin + rndon, and its
+# total nurse staffing definition additionally includes nurse aides in
+# training and medication aides, so these columns make the Five-Star-
+# consistent measures constructible without altering the core definitions.
+# admin_hours_month (facility administrator) originates in the non-nurse PBJ
+# file and may be absent depending on how the panel was built.
+admin_hours_outcomes <- c(
+  "rndon_hours_month",
+  "rnadmin_hours_month",
+  "lpnadmin_hours_month",
+  "natrn_hours_month",
+  "medaide_hours_month",
+  "admin_hours_month"
+)
+
 log_raw_hours_map <- c(
   rn_hours_month   = "ln_rn_hours",
   lpn_hours_month  = "ln_lpn_hours",
@@ -508,6 +525,12 @@ apply_facility_lookups <- function(df, panel_label = "panel") {
 
   n_before <- dplyr::n_distinct(df$cms_certification_number)
 
+  # The panel builders (src/06_panel.py and src/quarterly_panel.py) apply the
+  # government-ownership exclusion and attach chain_at_start before writing
+  # the panels, so both steps below are expected to be no-ops. They are kept
+  # as a verification layer: a non-zero drop count, or a panel arriving
+  # without chain_at_start, means the file on disk predates the current
+  # pipeline and should be rebuilt.
   if (length(lookups$ever_government) > 0) {
     df <- df %>%
       dplyr::filter(!(cms_certification_number %in% lookups$ever_government))
@@ -515,24 +538,40 @@ apply_facility_lookups <- function(df, panel_label = "panel") {
 
   n_after <- dplyr::n_distinct(df$cms_certification_number)
 
-  message(sprintf(
-    "[%s] dropped %d facilities ever government-owned (%d -> %d facilities)",
-    panel_label, n_before - n_after, n_before, n_after
-  ))
+  if (n_before != n_after) {
+    warning(sprintf(
+      paste0(
+        "[%s] dropped %d ever-government facilities at load time. The panel ",
+        "builders should already have removed these; rebuild the panel with ",
+        "src/06_panel.py (and src/quarterly_panel.py) to bring the file on ",
+        "disk up to date."
+      ),
+      panel_label, n_before - n_after
+    ), call. = FALSE)
+  }
 
-  if (nrow(lookups$chain_lookup) > 0) {
-    df <- df %>%
-      dplyr::left_join(lookups$chain_lookup, by = "cms_certification_number")
-
+  if ("chain_at_start" %in% names(df)) {
     n_missing <- dplyr::n_distinct(
       df$cms_certification_number[is.na(df$chain_at_start)]
     )
     if (n_missing > 0) {
       message(sprintf(
-        "[%s] %d facilities have no chain_at_start (present in this panel but not in the monthly panel)",
+        "[%s] %d facilities have no chain_at_start",
         panel_label, n_missing
       ))
     }
+  } else if (nrow(lookups$chain_lookup) > 0) {
+    warning(sprintf(
+      paste0(
+        "[%s] chain_at_start missing from the panel; joining it at load time. ",
+        "The panel builders should already have attached it -- rebuild the ",
+        "panel to bring the file on disk up to date."
+      ),
+      panel_label
+    ), call. = FALSE)
+
+    df <- df %>%
+      dplyr::left_join(lookups$chain_lookup, by = "cms_certification_number")
   }
 
   df %>%
@@ -649,6 +688,7 @@ load_staffing_panel <- function(fp = panel_fp) {
   numeric_candidates <- c(
     staffing_outcomes,
     raw_hours_outcomes,
+    admin_hours_outcomes,
     "resident_days",
     "beds",
     "occupancy_rate",
@@ -686,6 +726,72 @@ load_staffing_panel <- function(fp = panel_fp) {
   if (length(binary_candidates) > 0) {
     df <- df %>%
       mutate(across(all_of(binary_candidates), ~ suppressWarnings(as.integer(.x))))
+  }
+
+  # ---------------------------------------------------------------------------
+  # Staffing measure construction
+  #
+  # Staff types follow the PBJ job-code definitions given in the CMS Five-Star
+  # Technical Users' Guide (July 2026, p. 9):
+  #
+  #   RN         job codes 5, 6, 7    RN director of nursing, RNs with
+  #                                   administrative duties, RNs
+  #   LPN        job codes 8, 9       LPNs with administrative duties, LPNs
+  #   Nurse aide job codes 10, 11, 12 Certified nurse aides, aides in
+  #                                   training, medication aides/technicians
+  #
+  # Total nursing is the sum of the three. HPRD is reported hours divided by
+  # the MDS-derived resident census, aggregated over the period, which is the
+  # "reported" staffing measure in CMS terms. CMS additionally case-mix
+  # adjusts these ratios using PDPM nursing case-mix indexes before assigning
+  # star ratings; that adjustment is not applied here, so these are reported
+  # rather than adjusted hours.
+  #
+  # A facility-month with no reported hours in a job code is a genuine zero in
+  # PBJ rather than an unobserved value, so missing values are treated as zero
+  # when forming these sums.
+  # ---------------------------------------------------------------------------
+  component_cols <- c(
+    "rnadmin_hours_month", "rndon_hours_month",
+    "lpnadmin_hours_month",
+    "natrn_hours_month", "medaide_hours_month"
+  )
+
+  if (all(c(component_cols, "resident_days") %in% names(df))) {
+    zero_if_na <- function(x) ifelse(is.na(x), 0, x)
+
+    df <- df %>%
+      mutate(
+        rn_hours_month = rn_hours_month +
+          zero_if_na(rnadmin_hours_month) + zero_if_na(rndon_hours_month),
+        lpn_hours_month = lpn_hours_month + zero_if_na(lpnadmin_hours_month),
+        cna_hours_month = cna_hours_month +
+          zero_if_na(natrn_hours_month) + zero_if_na(medaide_hours_month),
+        total_hours = rn_hours_month + lpn_hours_month + cna_hours_month,
+        rn_hprd = dplyr::if_else(
+          !is.na(resident_days) & resident_days > 0,
+          rn_hours_month / resident_days, NA_real_
+        ),
+        lpn_hprd = dplyr::if_else(
+          !is.na(resident_days) & resident_days > 0,
+          lpn_hours_month / resident_days, NA_real_
+        ),
+        cna_hprd = dplyr::if_else(
+          !is.na(resident_days) & resident_days > 0,
+          cna_hours_month / resident_days, NA_real_
+        ),
+        total_hprd = dplyr::if_else(
+          !is.na(resident_days) & resident_days > 0,
+          total_hours / resident_days, NA_real_
+        )
+      )
+  } else {
+    message(
+      "[staffing] PBJ component job codes not available in this panel; ",
+      "staffing measures cover direct-care hours only and do not match the ",
+      "CMS job-code definitions. Rebuild the panel with src/06_panel.py to ",
+      "include them."
+    )
   }
 
   # Log-transformed staffing HPRD outcomes.
@@ -986,6 +1092,42 @@ make_spec_rhs <- function(df, spec = c("A", "B", "C", "D"), exclude = character(
   )
   ctrls <- setdiff(ctrls, exclude)
   paste(c("post", ctrls), collapse = " + ")
+}
+
+# -----------------------------------------------------------------------------
+# make_spec_controls_rhs()
+#
+# Builds the covariate portion of a nested specification, without the
+# "post" term. Event-study specifications identify treatment through
+# fixest's i() event-time interaction rather than through a post dummy, so
+# they need the same covariates as make_spec_rhs() but must not include
+# post: it is either absent from the estimation frame entirely (as in the
+# stacked design, which carries relative event time instead) or collinear
+# with the event-time dummies.
+#
+# Arguments:
+#   df      -- Data frame to check for available control columns.
+#   spec    -- Character scalar: one of "A", "B", "C", "D".
+#   exclude -- Character vector of variable names to remove from the
+#              control set after it is built. Defaults to an empty vector.
+#
+# Returns:
+#   Character scalar: "control1 + control2 + ...", or "1" when no controls
+#   in the specification are available in df.
+# -----------------------------------------------------------------------------
+make_spec_controls_rhs <- function(df, spec = c("A", "B", "C", "D"), exclude = character(0)) {
+  spec <- match.arg(spec)
+  ctrls <- switch(spec,
+    A = controls_A(df),
+    B = controls_B(df),
+    C = controls_C(df),
+    D = controls_D(df)
+  )
+  ctrls <- setdiff(ctrls, exclude)
+  if (length(ctrls) == 0) {
+    return("1")
+  }
+  paste(ctrls, collapse = " + ")
 }
 
 # -----------------------------------------------------------------------------

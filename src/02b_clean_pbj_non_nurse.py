@@ -64,6 +64,13 @@ CATEGORIES = [
 RAW_HRS_COLS = [f"hrs_{suffix}" for suffix, _ in CATEGORIES]
 OUT_PREFIXES = [prefix for _, prefix in CATEGORIES]
 
+# Facility administrator hours, carried through as a separate raw-hour column.
+# Administrators are not patient-care staff, so hrs_admin is deliberately kept
+# out of RAW_HRS_COLS and therefore out of total_hours and the therapy HPRD
+# measures; adding it there would change the meaning of those aggregates.
+ADMIN_HRS_COL = "hrs_admin"
+ALL_HRS_COLS = RAW_HRS_COLS + [ADMIN_HRS_COL]
+
 # Run flags
 RUN_BUILD_MONTHLY = True
 RUN_BUILD_QUARTERLY = True
@@ -132,7 +139,7 @@ def normalize_needed_columns(df_raw: pd.DataFrame) -> pd.DataFrame:
 
     # Defensive: fill any missing category column with 0.0 (handles any
     # quarter-to-quarter naming drift in the raw files).
-    for col in RAW_HRS_COLS:
+    for col in ALL_HRS_COLS:
         if col not in df.columns:
             df[col] = 0.0
 
@@ -147,7 +154,7 @@ def normalize_needed_columns(df_raw: pd.DataFrame) -> pd.DataFrame:
     else:
         df["workdate"] = pd.to_datetime(df["workdate"], errors="coerce")
 
-    for c in RAW_HRS_COLS:
+    for c in ALL_HRS_COLS:
         df[c] = pd.to_numeric(df[c], errors="coerce").astype("float32").fillna(0.0)
 
     if "mds_census" not in df.columns:
@@ -161,7 +168,7 @@ def normalize_needed_columns(df_raw: pd.DataFrame) -> pd.DataFrame:
         [
             "cms_certification_number",
             "workdate",
-            *RAW_HRS_COLS,
+            *ALL_HRS_COLS,
             "mds_census",
             "cy_qtr",
         ]
@@ -174,7 +181,7 @@ def process_file_monthly(fp: Path) -> pd.DataFrame:
     df["quarter_row"] = normalize_cy_qtr(df["cy_qtr"], df["workdate"])
 
     # Daily
-    daily_agg = {c: (c, "sum") for c in RAW_HRS_COLS}
+    daily_agg = {c: (c, "sum") for c in ALL_HRS_COLS}
     daily = (
         df.groupby(["cms_certification_number", "workdate"], as_index=False)
         .agg(
@@ -190,6 +197,7 @@ def process_file_monthly(fp: Path) -> pd.DataFrame:
 
     # Monthly
     monthly_agg = {f"{prefix}_hours_month": (f"hrs_{suffix}", "sum") for suffix, prefix in CATEGORIES}
+    monthly_agg["admin_hours_month"] = (ADMIN_HRS_COL, "sum")
     monthly = (
         daily.groupby(["cms_certification_number", "year_month_p"], as_index=False)
         .agg(
@@ -221,6 +229,7 @@ def process_file_monthly(fp: Path) -> pd.DataFrame:
     # Casts
     numeric_out_cols = (
         [f"{prefix}_hours_month" for prefix in OUT_PREFIXES]
+        + ["admin_hours_month"]
         + ["total_hours", "resident_days", "avg_daily_census"]
         + [f"{prefix}_hprd" for prefix in OUT_PREFIXES]
         + ["total_hprd", "coverage_ratio"]
@@ -266,7 +275,7 @@ def build_monthly_from_raw():
         print(f"[saved] pbj non-nurse panel → {OUT_FP} (rows=0)")
         return
 
-    hours_cols = [f"{prefix}_hours_month" for prefix in OUT_PREFIXES] + ["total_hours"]
+    hours_cols = [f"{prefix}_hours_month" for prefix in OUT_PREFIXES] + ["admin_hours_month", "total_hours"]
     hprd_cols = [f"{prefix}_hprd" for prefix in OUT_PREFIXES] + ["total_hprd"]
 
     cols = [
@@ -340,7 +349,7 @@ def build_quarterly_from_monthly():
 
     monthly = monthly.dropna(subset=["cms_certification_number", "year_month", "_ord"]).copy()
 
-    hours_cols = [f"{prefix}_hours_month" for prefix in OUT_PREFIXES] + ["total_hours"]
+    hours_cols = [f"{prefix}_hours_month" for prefix in OUT_PREFIXES] + ["admin_hours_month", "total_hours"]
     hprd_cols = [f"{prefix}_hprd" for prefix in OUT_PREFIXES] + ["total_hprd"]
 
     # ---------------- Light monthly validity cleaning BEFORE quarterly aggregation
@@ -406,6 +415,7 @@ def build_quarterly_from_monthly():
     grp = ["cms_certification_number", "year", "quarter"]
 
     quarter_hours_agg = {f"{prefix}_hours_quarter": (f"{prefix}_hours_month", "sum") for prefix in OUT_PREFIXES}
+    quarter_hours_agg["admin_hours_quarter"] = ("admin_hours_month", "sum")
     qtr = (
         monthly.groupby(grp, sort=False)
         .agg(
@@ -463,7 +473,7 @@ def build_quarterly_from_monthly():
     ).astype("Int8")
 
     # Final ordering / casts
-    hours_quarter_cols = [f"{prefix}_hours_quarter" for prefix in OUT_PREFIXES] + ["total_hours_quarter"]
+    hours_quarter_cols = [f"{prefix}_hours_quarter" for prefix in OUT_PREFIXES] + ["admin_hours_quarter", "total_hours_quarter"]
     hprd_quarter_cols = [f"{prefix}_hprd" for prefix in OUT_PREFIXES] + ["total_hprd"]
 
     float_cols = hours_quarter_cols + [

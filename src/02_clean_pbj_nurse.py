@@ -35,8 +35,45 @@ OUT_FP_QUARTERLY = INTERIM_DIR / "pbj_nurse_quarterly.csv"
 
 KEEP_HOUR_TOTALS = True
 
+# --------------------------- Raw hour columns --------------------------------
+# CMS's PBJ nurse header is not stable across the sample period. The 2017
+# files use lowercase headers and several variant spellings; 2018 onward use a
+# consistent TitleCase schema. 2017 Q1 has no hrs_rndon column at all (only
+# hrs_rn_donadmin), and 2017 Q2 contains both. Headers are lowercased on read,
+# so all aliases below are lowercase.
+#
+# Keys are the canonical names used downstream; values list acceptable source
+# columns in order of preference, canonical first.
+HOUR_COL_ALIASES = {
+    "hrs_rn":       ["hrs_rn"],
+    "hrs_lpn":      ["hrs_lpn"],
+    "hrs_cna":      ["hrs_cna"],
+    "hrs_rndon":    ["hrs_rndon", "hrs_rn_donadmin"],
+    "hrs_rnadmin":  ["hrs_rnadmin"],
+    "hrs_lpnadmin": ["hrs_lpnadmin", "hrs_lpn_admin"],
+    "hrs_natrn":    ["hrs_natrn", "hrs_na_trn"],
+    "hrs_medaide":  ["hrs_medaide"],
+}
+
+# Core direct-care categories. These three define total_hours and every HPRD
+# measure used in the paper. Do not extend this list without revisiting all
+# downstream staffing results.
+CORE_HOUR_COLS = ["hrs_rn", "hrs_lpn", "hrs_cna"]
+
+# Administrative nursing roles, carried through as separate raw-hour columns.
+# CMS's Five-Star RN definition is hrs_rn + hrs_rnadmin + hrs_rndon; keeping
+# these separate preserves the core definition above while making the
+# Five-Star-consistent measure constructible downstream.
+ADMIN_HOUR_COLS = ["hrs_rndon", "hrs_rnadmin", "hrs_lpnadmin"]
+
+# Remaining nursing categories that CMS counts toward total nurse staffing but
+# that the core three exclude. Carried separately for the same reason.
+OTHER_NURSE_HOUR_COLS = ["hrs_natrn", "hrs_medaide"]
+
+ALL_HOUR_COLS = CORE_HOUR_COLS + ADMIN_HOUR_COLS + OTHER_NURSE_HOUR_COLS
+
 # Run flags
-RUN_BUILD_MONTHLY = False
+RUN_BUILD_MONTHLY = True
 RUN_BUILD_QUARTERLY = True
 
 print(f"[paths] PBJ_DIR={PBJ_DIR}")
@@ -92,7 +129,36 @@ def read_pbj_csv(fp: Path) -> pd.DataFrame:
 
 
 # ============================== Normalization =================================
-def normalize_needed_columns(df_raw: pd.DataFrame) -> pd.DataFrame:
+def resolve_hour_columns(df: pd.DataFrame, fp_name: str = "") -> pd.DataFrame:
+    """Map variant PBJ hour-column spellings onto canonical names.
+
+    Emits a warning rather than failing when a column is absent, so a schema
+    change in a single quarter does not abort the build. Warnings are printed
+    per file and should be checked after a full rebuild: a column that is
+    absent everywhere will otherwise appear as a legitimate column of zeros.
+    """
+    for canon, aliases in HOUR_COL_ALIASES.items():
+        present = [a for a in aliases if a in df.columns]
+
+        if not present:
+            print(f"[warn] {fp_name}: no source column for {canon}; filled with 0.0")
+            df[canon] = 0.0
+            continue
+
+        if len(present) > 1:
+            print(
+                f"[warn] {fp_name}: multiple source columns for {canon} "
+                f"({present}); using {present[0]}"
+            )
+
+        if present[0] != canon:
+            print(f"[alias] {fp_name}: {present[0]} -> {canon}")
+            df[canon] = df[present[0]]
+
+    return df
+
+
+def normalize_needed_columns(df_raw: pd.DataFrame, fp_name: str = "") -> pd.DataFrame:
     df = df_raw.copy()
     df.columns = [c.strip().lower() for c in df.columns]
 
@@ -101,9 +167,7 @@ def normalize_needed_columns(df_raw: pd.DataFrame) -> pd.DataFrame:
     if "mdscensus" in df.columns and "mds_census" not in df.columns:
         df.rename(columns={"mdscensus": "mds_census"}, inplace=True)
 
-    for col in ["hrs_rn", "hrs_lpn", "hrs_cna"]:
-        if col not in df.columns:
-            df[col] = 0.0
+    df = resolve_hour_columns(df, fp_name)
 
     if "cms_certification_number" not in df.columns:
         raise ValueError("Missing cms_certification_number/provnum")
@@ -116,7 +180,7 @@ def normalize_needed_columns(df_raw: pd.DataFrame) -> pd.DataFrame:
     else:
         df["workdate"] = pd.to_datetime(df["workdate"], errors="coerce")
 
-    for c in ["hrs_rn", "hrs_lpn", "hrs_cna"]:
+    for c in ALL_HOUR_COLS:
         df[c] = pd.to_numeric(df[c], errors="coerce").astype("float32").fillna(0.0)
 
     if "mds_census" not in df.columns:
@@ -130,9 +194,7 @@ def normalize_needed_columns(df_raw: pd.DataFrame) -> pd.DataFrame:
         [
             "cms_certification_number",
             "workdate",
-            "hrs_rn",
-            "hrs_lpn",
-            "hrs_cna",
+            *ALL_HOUR_COLS,
             "mds_census",
             "cy_qtr",
         ]
@@ -141,22 +203,24 @@ def normalize_needed_columns(df_raw: pd.DataFrame) -> pd.DataFrame:
 
 # ====================== File -> Monthly Aggregation ============================
 def process_file_monthly(fp: Path) -> pd.DataFrame:
-    df = normalize_needed_columns(read_pbj_csv(fp))
+    df = normalize_needed_columns(read_pbj_csv(fp), fp.name)
     df["quarter_row"] = normalize_cy_qtr(df["cy_qtr"], df["workdate"])
 
     # Daily
+    daily_hours_agg = {c: (c, "sum") for c in ALL_HOUR_COLS}
     daily = (
         df.groupby(["cms_certification_number", "workdate"], as_index=False)
         .agg(
-            hrs_rn=("hrs_rn", "sum"),
-            hrs_lpn=("hrs_lpn", "sum"),
-            hrs_cna=("hrs_cna", "sum"),
+            **daily_hours_agg,
             mds_census=("mds_census", "mean"),
             quarter=("quarter_row", "first"),
         )
     )
 
-    daily["total_hours"] = daily[["hrs_rn", "hrs_lpn", "hrs_cna"]].sum(axis=1).astype("float32")
+    # total_hours is the sum of the three core direct-care categories only.
+    # Administrative nursing hours are carried separately and deliberately not
+    # added here, so existing staffing estimates are unchanged by their addition.
+    daily["total_hours"] = daily[CORE_HOUR_COLS].sum(axis=1).astype("float32")
     daily["year_month_p"] = daily["workdate"].dt.to_period("M")
     daily["days_in_mo"] = daily["workdate"].dt.days_in_month
 
@@ -167,6 +231,11 @@ def process_file_monthly(fp: Path) -> pd.DataFrame:
             rn_hours_month=("hrs_rn", "sum"),
             lpn_hours_month=("hrs_lpn", "sum"),
             cna_hours_month=("hrs_cna", "sum"),
+            rndon_hours_month=("hrs_rndon", "sum"),
+            rnadmin_hours_month=("hrs_rnadmin", "sum"),
+            lpnadmin_hours_month=("hrs_lpnadmin", "sum"),
+            natrn_hours_month=("hrs_natrn", "sum"),
+            medaide_hours_month=("hrs_medaide", "sum"),
             total_hours=("total_hours", "sum"),
             resident_days=("mds_census", "sum"),
             avg_daily_census=("mds_census", "mean"),
@@ -197,6 +266,11 @@ def process_file_monthly(fp: Path) -> pd.DataFrame:
         "rn_hours_month",
         "lpn_hours_month",
         "cna_hours_month",
+        "rndon_hours_month",
+        "rnadmin_hours_month",
+        "lpnadmin_hours_month",
+        "natrn_hours_month",
+        "medaide_hours_month",
         "total_hours",
         "resident_days",
         "avg_daily_census",
@@ -250,7 +324,17 @@ def build_monthly_from_raw():
         "cms_certification_number",
         "quarter",
         "year_month",
-        *(["rn_hours_month", "lpn_hours_month", "cna_hours_month", "total_hours"] if KEEP_HOUR_TOTALS else []),
+        *([
+            "rn_hours_month",
+            "lpn_hours_month",
+            "cna_hours_month",
+            "rndon_hours_month",
+            "rnadmin_hours_month",
+            "lpnadmin_hours_month",
+            "natrn_hours_month",
+            "medaide_hours_month",
+            "total_hours",
+        ] if KEEP_HOUR_TOTALS else []),
         "resident_days",
         "avg_daily_census",
         "rn_hprd",
@@ -323,7 +407,10 @@ def build_quarterly_from_monthly():
     # ---------------- Light monthly validity cleaning BEFORE quarterly aggregation
     # Drop only mechanically impossible monthly rows, not the full monthly HPRD filter
     for col in [
-        "rn_hours_month", "lpn_hours_month", "cna_hours_month", "total_hours",
+        "rn_hours_month", "lpn_hours_month", "cna_hours_month",
+        "rndon_hours_month", "rnadmin_hours_month", "lpnadmin_hours_month",
+        "natrn_hours_month", "medaide_hours_month",
+        "total_hours",
         "resident_days", "avg_daily_census", "days_reported", "days_in_month",
         "coverage_ratio", "gap_from_prev_months"
     ]:
@@ -340,7 +427,10 @@ def build_quarterly_from_monthly():
     valid_mask &= monthly["_ord"].notna()
 
     # nonnegative monthly quantities
-    for col in ["rn_hours_month", "lpn_hours_month", "cna_hours_month", "total_hours", "resident_days", "days_reported"]:
+    for col in ["rn_hours_month", "lpn_hours_month", "cna_hours_month",
+                "rndon_hours_month", "rnadmin_hours_month", "lpnadmin_hours_month",
+                "natrn_hours_month", "medaide_hours_month",
+                "total_hours", "resident_days", "days_reported"]:
         if col in monthly.columns:
             valid_mask &= (monthly[col].isna() | (monthly[col] >= 0))
 
@@ -369,6 +459,11 @@ def build_quarterly_from_monthly():
         "rn_hours_month",
         "lpn_hours_month",
         "cna_hours_month",
+        "rndon_hours_month",
+        "rnadmin_hours_month",
+        "lpnadmin_hours_month",
+        "natrn_hours_month",
+        "medaide_hours_month",
         "total_hours",
         "resident_days",
         "avg_daily_census",
@@ -398,6 +493,11 @@ def build_quarterly_from_monthly():
             rn_hours_quarter=("rn_hours_month", "sum"),
             lpn_hours_quarter=("lpn_hours_month", "sum"),
             cna_hours_quarter=("cna_hours_month", "sum"),
+            rndon_hours_quarter=("rndon_hours_month", "sum"),
+            rnadmin_hours_quarter=("rnadmin_hours_month", "sum"),
+            lpnadmin_hours_quarter=("lpnadmin_hours_month", "sum"),
+            natrn_hours_quarter=("natrn_hours_month", "sum"),
+            medaide_hours_quarter=("medaide_hours_month", "sum"),
             total_hours_quarter=("total_hours", "sum"),
             resident_days_quarter=("resident_days", "sum"),
             days_reported_quarter=("days_reported", "sum"),
@@ -463,6 +563,11 @@ def build_quarterly_from_monthly():
         "rn_hours_quarter",
         "lpn_hours_quarter",
         "cna_hours_quarter",
+        "rndon_hours_quarter",
+        "rnadmin_hours_quarter",
+        "lpnadmin_hours_quarter",
+        "natrn_hours_quarter",
+        "medaide_hours_quarter",
         "total_hours_quarter",
         "resident_days_quarter",
         "avg_daily_census",

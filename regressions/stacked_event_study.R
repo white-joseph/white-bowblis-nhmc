@@ -14,6 +14,12 @@
 # Event time is included directly, so dynamics can be plotted and pre-trends
 # tested jointly by Wald test.
 #
+# Controls follow Spec A (post + beds), matching post_tables.R and every
+# other estimate in the paper. Occupancy, payer shares, and case mix are not
+# included as controls: they are outcomes of ownership change in their own
+# right, so conditioning on them would absorb part of the response being
+# estimated.
+#
 # Two event windows are estimated, each excluding the anticipation window
 # (tau = -3, -2, -1) for treated units before estimation:
 #   Two-year window: tau in [-24, 24], pre-trend tested over tau = -24 to -5,
@@ -74,9 +80,7 @@ wald_frag_path <- file.path(out_dir, "pretrend_wald_tests_stacked_levels_fragmen
 # -----------------------------------------------------------------------------
 keep_cols <- c(
   "cms_certification_number", "year_month", "time", "time_treated",
-  "government", "non_profit", "chain", "beds",
-  "occupancy_rate", "pct_medicare", "pct_medicaid",
-  "cm_q_state_2", "cm_q_state_3", "cm_q_state_4",
+  "beds",
   "rn_hprd", "lpn_hprd", "cna_hprd", "total_hprd"
 )
 
@@ -87,7 +91,10 @@ df0 <- load_staffing_panel() %>%
     year_month = as.factor(year_month)
   )
 
-controls_rhs <- make_controls_rhs(df0)
+# Covariates only: treatment is identified by the i(rel, treated_stack)
+# event-time interaction below, not by a post dummy, which the stacked
+# frame does not carry.
+controls_rhs <- make_spec_controls_rhs(df0, spec = "A", exclude = "chain_at_start")
 
 outs_lvl <- c("rn_hprd", "lpn_hprd", "cna_hprd", "total_hprd")
 nice_out <- c(rn_hprd = "RN", lpn_hprd = "LPN", cna_hprd = "CNA", total_hprd = "Total")
@@ -133,9 +140,7 @@ make_stacked_event_data <- function(data, cohorts_vec, L, R, donut_set) {
       dplyr::select(
         cms_certification_number, year_month,
         cohort, stack_id, rel, treated_stack,
-        government, non_profit, chain, beds,
-        occupancy_rate, pct_medicare, pct_medicaid,
-        cm_q_state_2, cm_q_state_3, cm_q_state_4,
+        beds,
         rn_hprd, lpn_hprd, cna_hprd, total_hprd
       )
     d
@@ -265,7 +270,7 @@ wald_tab <- c(
   sprintf("\\item Tested windows and reference periods: 2 Year Window with Donut tests $\\tau=-24$ to $\\tau=-5$ with reference $\\tau=%d$ (dropping $\\tau=-3,-2,-1$); 1 Year Window with Donut tests $\\tau=-12$ to $\\tau=-5$ with reference $\\tau=%d$ (dropping $\\tau=-3,-2,-1$).", REF, REF),
   sprintf("\\item Sample sizes (stacked rows): 2 Year Window with Donut ($N=%s$); 1 Year Window with Donut ($N=%s$).", N_24, N_12),
   "\\item Stacked design: each treated cohort is compared only to never-treated and not-yet-treated facilities within its own event window; the donut excludes $\\tau=-3,-2,-1$ (physically dropped from the estimation sample for treated units).",
-  "\\item All specifications include facility-by-cohort fixed effects (stack\\_id), calendar-month fixed effects, cohort fixed effects, and covariates: \\textit{government}, \\textit{non-profit}, \\textit{chain}, \\textit{beds}, \\textit{occupancy rate}, \\textit{percent Medicare}, \\textit{percent Medicaid}, and state case-mix quartile indicators. Standard errors are clustered by facility.",
+  "\\item All specifications include facility-by-cohort fixed effects (stack\\_id), calendar-month fixed effects, cohort fixed effects, and control for the number of certified beds. Standard errors are two-way clustered by facility and calendar month.",
   "\\end{tablenotes}",
   "\\end{threeparttable}",
   "\\end{table}",

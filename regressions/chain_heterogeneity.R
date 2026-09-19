@@ -1,50 +1,41 @@
 # =============================================================================
 # regressions/chain_heterogeneity.R
 #
-# Estimates the effect of ownership change separately for chain-affiliated and
-# independent facilities, across staffing, business-model, and quality
-# outcomes. Heterogeneity is estimated by sample split rather than by
-# interacting treatment with chain status, so that fixed effects and control
-# coefficients are free to differ across the two groups.
+# Estimates the effect of ownership change on quality measures separately for
+# chain-affiliated and independent facilities. Heterogeneity is estimated by
+# sample split rather than by interacting treatment with chain status, so that
+# fixed effects and control coefficients are free to differ across the two
+# groups.
+#
+# The staffing and business-model chain splits are produced by post_tables.R,
+# where they are reported as additional panels and columns of the main
+# staffing and business-model tables rather than as separate exhibits. Only
+# the quality split is produced here, because the main quality table already
+# uses its columns for the with- and without-staffing-controls pair and
+# cannot absorb a third and fourth column.
 #
 # -----------------------------------------------------------------------------
 # Specification
 # -----------------------------------------------------------------------------
-#   outcome ~ post + beds | facility + calendar period
+#   outcome ~ post + beds | facility + calendar quarter
 #
 # Spec A as defined in _setup.R, matching the main tables in post_tables.R.
-# chain_at_start is excluded from the right-hand side in every table here
-# because it is the sample-split variable and is constant within each
-# subsample by construction.
+# chain_at_start is excluded from the right-hand side because it is the
+# sample-split variable and is constant within each subsample by construction.
+# The transition quarter (event_time == 0) is excluded.
 #
-# Monthly outcomes exclude the anticipation window (event_time in -3, -2, -1).
-# Quarterly outcomes exclude the transition quarter (event_time == 0).
-#
-# -----------------------------------------------------------------------------
-# Tables
-# -----------------------------------------------------------------------------
-#   Table 1  Staffing: RN, LPN, CNA, and total HPRD in levels and logs.
-#            Reported as two stacked panels, one per chain status, since each
-#            panel already occupies four outcome columns.
-#   Table 2  Business-model outcomes: occupancy rate, Medicare and Medicaid
-#            shares, and average length of stay. Reported with chain and
-#            non-chain estimates side by side.
-#   Table 3  Quality measures, long-stay and short-stay, chain and non-chain
-#            side by side. Reported for the baseline specification only;
-#            the staffing-control variant used in the main quality table is
-#            not reproduced here. Vaccination measures are excluded.
+# Reported for the baseline specification only; the staffing-control variant
+# used in the main quality table is not reproduced here. Vaccination measures
+# are excluded.
 #
 # -----------------------------------------------------------------------------
 # Inputs
 # -----------------------------------------------------------------------------
-#   data/clean/staffing_panel.csv   via load_staffing_panel()
 #   data/clean/quality_panel.csv    via load_quality_panel()
 #
 # -----------------------------------------------------------------------------
 # Outputs
 # -----------------------------------------------------------------------------
-#   outputs/tables/post_heterogeneity_chain_table.tex          (tab:het-chain)
-#   outputs/tables/post_heterogeneity_chain_business_table.tex (tab:het-chain-business)
 #   outputs/tables/post_heterogeneity_chain_quality_table.tex  (tab:het-chain-quality)
 #   outputs/tables/chain_heterogeneity_preview.tex             (standalone preview document)
 #
@@ -133,13 +124,6 @@ panel_header <- function(label, ncols) {
 
 sig_note <- "\\item Statistical significance: $^{***}p<0.01$, $^{**}p<0.05$, $^{*}p<0.10$."
 
-spec_note_monthly <- paste0(
-  "\\item \\textit{Notes:} Each cell reports the coefficient on \\textit{post}, ",
-  "with standard errors in parentheses. All specifications include facility and ",
-  "calendar-month fixed effects and control for the number of certified beds. ",
-  "Standard errors are two-way clustered by facility and calendar month."
-)
-
 spec_note_quarterly <- paste0(
   "\\item \\textit{Notes:} Each cell reports the coefficient on \\textit{post}, ",
   "with standard errors in parentheses. All specifications include facility and ",
@@ -188,141 +172,7 @@ write_fragment <- function(lines, fname) {
 }
 
 # =============================================================================
-# TABLE 1: Chain vs. non-chain -- Staffing
-# =============================================================================
-staff_labels <- c("RN", "LPN", "CNA", "Total")
-staffing_rows <- list(
-  list(label = "HPRD",      vars = c("rn_hprd", "lpn_hprd", "cna_hprd", "total_hprd"), digits = 4),
-  list(label = "Log(HPRD)", vars = c("ln_rn", "ln_lpn", "ln_cna", "ln_total"),          digits = 4)
-)
-
-build_split_table <- function(panel_a_label, panel_a_data, panel_b_label, panel_b_data,
-                               vc, fe_rhs) {
-  make_panel_rows <- function(label, dat) {
-    rows <- character(0)
-    for (i in seq_along(staffing_rows)) {
-      r <- staffing_rows[[i]]
-      cells <- character(4)
-      for (j in seq_along(r$vars)) {
-        mod <- safe_fit(dat, r$vars[j], vc, fe_rhs,
-                         label = paste(label, r$label, r$vars[j]))
-        cells[j] <- fmt_est(mod, digits = r$digits)
-        rm(mod); gc(verbose = FALSE)
-      }
-      rows <- c(rows, paste0(paste(c(r$label, cells), collapse = " & "), " \\\\"))
-      if (i < length(staffing_rows)) rows <- c(rows, "\\addlinespace[0.4em]")
-    }
-    rows
-  }
-
-  c(
-    panel_header(sprintf("%s (N = %s facility-months)", panel_a_label,
-                          format(nrow(panel_a_data), big.mark = ",")), 5),
-    make_panel_rows(panel_a_label, panel_a_data),
-    "\\addlinespace[0.7em]",
-    panel_header(sprintf("%s (N = %s facility-months)", panel_b_label,
-                          format(nrow(panel_b_data), big.mark = ",")), 5),
-    make_panel_rows(panel_b_label, panel_b_data)
-  )
-}
-
-keep_monthly <- c(
-  "cms_certification_number", "year_month", "ym_date", "event_time", "post", "treated",
-  "beds", "chain_at_start",
-  "rn_hprd", "lpn_hprd", "cna_hprd", "total_hprd",
-  "ln_rn", "ln_lpn", "ln_cna", "ln_total",
-  "occupancy_rate", "pct_medicare", "pct_medicaid", "avg_los_total"
-)
-
-df_full <- load_staffing_panel()
-df <- df_full %>% dplyr::select(dplyr::any_of(keep_monthly))
-rm(df_full); gc(verbose = FALSE)
-
-df_wo <- drop_anticipation_window(df)
-rm(df); gc(verbose = FALSE)
-
-vc_month <- ~ cms_certification_number + year_month
-fe_month <- "cms_certification_number + year_month"
-
-df_chain    <- df_wo %>% dplyr::filter(chain_at_start == 1)
-df_nonchain <- df_wo %>% dplyr::filter(chain_at_start == 0)
-
-n_missing_chain <- dplyr::n_distinct(
-  df_wo$cms_certification_number[is.na(df_wo$chain_at_start)]
-)
-if (n_missing_chain > 0) {
-  message(sprintf(
-    "[chain-het] %d facilities have no chain_at_start and are excluded from every split table",
-    n_missing_chain
-  ))
-}
-
-chain_body <- build_split_table(
-  "Chain (baseline)", df_chain,
-  "Non-chain (baseline)", df_nonchain,
-  vc_month, fe_month
-)
-
-chain_tex <- wrap_table(
-  chain_body,
-  caption = "Effect of Ownership Change on Nursing Staffing: Chain vs. Non-Chain Facilities",
-  label = "tab:het-chain",
-  colspec = "@{} l Y Y Y Y @{}",
-  header_row = paste0("Outcome & ", paste(staff_labels, collapse = " & "), " \\\\"),
-  notes = c(spec_note_monthly, chain_note, sig_note)
-)
-
-write_fragment(chain_tex, "post_heterogeneity_chain_table.tex")
-
-# =============================================================================
-# TABLE 2: Chain vs. non-chain -- Business model
-#
-# Outcome set matches the business-model table in post_tables.R.
-# =============================================================================
-business_spec <- tibble::tribble(
-  ~var,              ~label,
-  "occupancy_rate",  "Occupancy rate",
-  "pct_medicare",    "Medicare share",
-  "pct_medicaid",    "Medicaid share",
-  "avg_los_total",   "Average length of stay"
-) %>% dplyr::filter(var %in% names(df_wo))
-
-business_body <- character(0)
-for (i in seq_len(nrow(business_spec))) {
-  v <- business_spec$var[i]
-  mod_chain    <- safe_fit(df_chain,    v, vc_month, fe_month, label = paste("Chain", business_spec$label[i]))
-  mod_nonchain <- safe_fit(df_nonchain, v, vc_month, fe_month, label = paste("Non-chain", business_spec$label[i]))
-  business_body <- c(
-    business_body,
-    paste0(business_spec$label[i], " & ", fmt_est(mod_chain, 4), " & ", fmt_est(mod_nonchain, 4), " \\\\")
-  )
-  rm(mod_chain, mod_nonchain); gc(verbose = FALSE)
-}
-
-business_tex <- wrap_table(
-  business_body,
-  caption = "Effect of Ownership Change on Business-Model Outcomes: Chain vs. Non-Chain Facilities",
-  label = "tab:het-chain-business",
-  colspec = "@{} l Y Y @{}",
-  header_row = "Outcome & Chain & Non-chain \\\\",
-  notes = c(
-    spec_note_monthly,
-    paste0(
-      "\\item Occupancy rate is residents as a share of available bed-days. Payer ",
-      "shares are shares of patient days. Chain sample: N = ", format(nrow(df_chain), big.mark = ","),
-      " facility-months. Non-chain sample: N = ", format(nrow(df_nonchain), big.mark = ","), " facility-months."
-    ),
-    chain_note,
-    sig_note
-  )
-)
-
-write_fragment(business_tex, "post_heterogeneity_chain_business_table.tex")
-
-rm(df_wo, df_chain, df_nonchain); gc(verbose = FALSE)
-
-# =============================================================================
-# TABLE 3: Chain vs. non-chain -- Quality
+# Chain vs. non-chain -- Quality
 # =============================================================================
 keep_quarterly <- c(
   "cms_certification_number", "year", "quarter", "year_quarter",
@@ -433,14 +283,10 @@ preview <- c(
   "\\newcolumntype{Y}{>{\\centering\\arraybackslash}X}",
   "",
   "\\begin{document}",
-  chain_tex,
-  "\\clearpage",
-  business_tex,
-  "\\clearpage",
   quality_tex,
   "\\end{document}"
 )
 
 write_fragment(preview, "chain_heterogeneity_preview.tex")
 
-cat("\nDone. Three chain-split heterogeneity tables written.\n")
+cat("\nDone. Chain-split quality table written.\n")

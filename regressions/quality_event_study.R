@@ -44,8 +44,11 @@
 # -----------------------------------------------------------------------------
 # Dependencies
 # -----------------------------------------------------------------------------
+#   regressions/_setup.R
 #   R packages: dplyr, readr, fixest, stringr, tibble
 # =============================================================================
+
+source("C:/Repositories/white-bowblis-nhmc/regressions/_setup.R")
 
 suppressPackageStartupMessages({
   library(dplyr)
@@ -61,50 +64,20 @@ options(scipen = 999, digits = 4)
 # 0) Paths
 # -----------------------------------------------------------------------------
 
-project_root <- "C:/Repositories/white-bowblis-nhmc"
-
-panel_fp  <- file.path(project_root, "data", "clean", "quality_panel.csv")
-plots_dir <- file.path(project_root, "outputs", "plots")
+plots_dir <- out_plots_dir
 
 dir.create(plots_dir, recursive = TRUE, showWarnings = FALSE)
 
 # -----------------------------------------------------------------------------
 # 1) Helpers
 # -----------------------------------------------------------------------------
-
-assert_has_cols <- function(df, cols, df_name = "data") {
-  miss <- setdiff(cols, names(df))
-  if (length(miss) > 0) {
-    stop(
-      sprintf("[%s] missing required columns: %s",
-              df_name, paste(miss, collapse = ", ")),
-      call. = FALSE
-    )
-  }
-  invisible(TRUE)
-}
-
-intersect_existing <- function(x, df) {
-  intersect(x, names(df))
-}
+# assert_has_cols(), intersect_existing(), make_spec_rhs(), and the quality
+# measure maps come from _setup.R. Only the quarterly-specific helpers are
+# defined here.
 
 quarter_num <- function(x) {
   x <- toupper(trimws(as.character(x)))
   suppressWarnings(as.integer(str_extract(x, "[1-4]")))
-}
-
-year_quarter_index <- function(year, quarter) {
-  yr <- suppressWarnings(as.integer(year))
-  qn <- quarter_num(quarter)
-  yr * 4L + qn
-}
-
-subset_window <- function(df, start_year, start_quarter, end_year, end_quarter) {
-  start_idx <- start_year * 4L + start_quarter
-  end_idx   <- end_year * 4L + end_quarter
-  idx <- year_quarter_index(df$year, df$quarter)
-  
-  df[idx >= start_idx & idx <= end_idx, , drop = FALSE]
 }
 
 drop_tau_zero <- function(df) {
@@ -136,62 +109,15 @@ prepare_event_study_data_quarterly <- function(df, min_et, max_et) {
     )
 }
 
-get_case_mix_controls <- function(df) {
-  preferred <- intersect_existing(
-    c("cm_q_state_2", "cm_q_state_3", "cm_q_state_4"),
-    df
-  )
-  
-  if (length(preferred) > 0) {
-    return(preferred)
-  }
-  
-  fallback <- intersect_existing(
-    c("cm_q_nat_2", "cm_q_nat_3", "cm_q_nat_4"),
-    df
-  )
-  
-  fallback
-}
-
-get_controls <- function(df, include_staffing_controls = FALSE) {
-  base_controls <- c(
-    "government",
-    "non_profit",
-    "chain",
-    "beds",
-    "occupancy_rate",
-    "pct_medicare",
-    "pct_medicaid"
-  )
-  
-  controls <- c(
-    intersect_existing(base_controls, df),
-    get_case_mix_controls(df)
-  )
-  
-  # Main quality event-study plots should usually keep this FALSE because
-  # staffing is a post-treatment mechanism.
-  if (isTRUE(include_staffing_controls)) {
-    staffing_controls <- c("rn_hprd", "lpn_hprd", "cna_hprd")
-    controls <- c(controls, intersect_existing(staffing_controls, df))
-  }
-  
-  unique(controls)
-}
-
-make_controls_rhs <- function(df, include_staffing_controls = FALSE) {
-  ctrls <- get_controls(
-    df,
-    include_staffing_controls = include_staffing_controls
-  )
-  
-  if (length(ctrls) == 0) {
-    return("1")
-  }
-  
-  paste(ctrls, collapse = " + ")
-}
+# Controls follow Spec A's covariates. Treatment is identified by the
+# event-time interaction rather than by a post dummy, so post is excluded;
+# it would be collinear with the event-time indicators. chain_at_start is
+# time-invariant and absorbed by the facility fixed effects.
+#
+# Occupancy, payer shares, and case mix are not included: they are outcomes
+# of ownership change in their own right, so conditioning on them would
+# absorb part of the response being estimated. Staffing is likewise a
+# post-treatment mechanism and is not controlled for in these figures.
 
 pick_ref <- function(dat, desired = -1L) {
   ev <- sort(unique(dat$event_time_capped[dat$ever_treated == 1L]))
@@ -235,7 +161,7 @@ run_es_twfe <- function(lhs, data, controls_rhs, ref_val, window = c(-8L, 8L)) {
 }
 
 set_plot_font <- function() {
-  par(family = "Times New Roman")
+  par(family = "sans")
 }
 
 save_es_plot <- function(model,
@@ -324,13 +250,17 @@ save_panel_plot <- function(models,
 # -----------------------------------------------------------------------------
 # 2) Load quality panel
 # -----------------------------------------------------------------------------
+# Loaded through load_quality_panel() rather than read directly, so that the
+# sample matches every other estimate in the paper. Reading the CSV directly
+# bypassed the shared facility lookups.
 
-df0 <- readr::read_csv(panel_fp, show_col_types = FALSE)
+df0 <- load_quality_panel()
 
 required_cols <- c(
   "cms_certification_number",
   "year",
   "quarter",
+  "year_quarter",
   "treated",
   "event_time"
 )
@@ -339,70 +269,30 @@ assert_has_cols(df0, required_cols, "quality_panel")
 
 df0 <- df0 %>%
   mutate(
-    cms_certification_number = as.factor(cms_certification_number),
-    year = suppressWarnings(as.integer(year)),
-    quarter = toupper(trimws(as.character(quarter))),
-    year_quarter = as.factor(paste0(year, "_", quarter)),
+    year_quarter = as.factor(year_quarter),
     event_time = suppressWarnings(as.integer(event_time))
   )
 
-numeric_candidates <- c(
-  "beds",
-  "occupancy_rate",
-  "pct_medicare",
-  "pct_medicaid",
-  "government",
-  "non_profit",
-  "chain",
-  "cm_q_state_2",
-  "cm_q_state_3",
-  "cm_q_state_4",
-  "cm_q_nat_2",
-  "cm_q_nat_3",
-  "cm_q_nat_4",
-  "rn_hprd",
-  "lpn_hprd",
-  "cna_hprd"
-)
-
-numeric_candidates <- intersect_existing(numeric_candidates, df0)
-
-if (length(numeric_candidates) > 0) {
-  df0 <- df0 %>%
-    mutate(across(all_of(numeric_candidates), ~ suppressWarnings(as.numeric(.x))))
-}
-
-# Main figure specification: do not control for staffing.
-include_staffing_controls <- FALSE
-
-controls_rhs <- make_controls_rhs(
-  df0,
-  include_staffing_controls = include_staffing_controls
-)
+controls_rhs <- make_spec_controls_rhs(df0, spec = "A", exclude = "chain_at_start")
 
 cat("\nControls used:\n", controls_rhs, "\n", sep = "")
 
 # -----------------------------------------------------------------------------
 # 3) Outcome definitions
 # -----------------------------------------------------------------------------
-# These mappings align with quarterly_summary_stats.R.
+# Measure codes, labels, and groupings are taken from _setup.R so that these
+# figures cannot drift from the quality tables. Reporting-window trims are
+# applied per measure by trim_quality_measure_window().
 # Lower values indicate better measured quality.
 
-quality_outcomes <- tibble::tribble(
-  ~outcome, ~label, ~group, ~start_year, ~start_quarter, ~end_year, ~end_quarter,
-  
-  # Routine-sensitive process measures
-  "qm_406", "Catheter Use",                              "routine_process", 2017L, 1L, 2024L, 2L,
-  "qm_419", "Antipsychotic Medication Use",              "routine_process", 2017L, 1L, 2024L, 2L,
-  "qm_452", "Anti-Anxiety or Hypnotic Medication Use",   "routine_process", 2017L, 1L, 2024L, 2L,
-  
-  # Resident outcome measures
-  "qm_453", "Pressure Injuries",                         "resident_outcome", 2018L, 1L, 2023L, 3L,
-  "qm_410", "Falls with Major Injury",                   "resident_outcome", 2017L, 1L, 2024L, 2L,
-  "qm_404", "Weight Loss",                               "resident_outcome", 2017L, 1L, 2024L, 2L,
-  "qm_401", "Decline in Physical Functioning",           "resident_outcome", 2017L, 1L, 2024L, 2L,
-  "qm_407", "Urinary Tract Infections",                  "resident_outcome", 2017L, 1L, 2024L, 2L
-)
+quality_outcomes <- tibble::tibble(
+  outcome = c(quality_mechanism_measures, quality_outcome_measures),
+  group = c(
+    rep("routine_process", length(quality_mechanism_measures)),
+    rep("resident_outcome", length(quality_outcome_measures))
+  )
+) %>%
+  mutate(label = unname(unlist(long_stay_quality_measures[outcome])))
 
 missing_outcomes <- setdiff(quality_outcomes$outcome, names(df0))
 
@@ -439,13 +329,7 @@ for (i in seq_len(nrow(quality_outcomes))) {
   cat("OUTCOME: ", outcome, " — ", label, "\n", sep = "")
   cat(strrep("=", 80), "\n", sep = "")
   
-  dat <- subset_window(
-    df0,
-    start_year    = quality_outcomes$start_year[[i]],
-    start_quarter = quality_outcomes$start_quarter[[i]],
-    end_year      = quality_outcomes$end_year[[i]],
-    end_quarter   = quality_outcomes$end_quarter[[i]]
-  )
+  dat <- trim_quality_measure_window(df0, outcome)
   
   if (isTRUE(drop_tau0)) {
     dat <- drop_tau_zero(dat)
@@ -543,10 +427,6 @@ model_index <- tibble::tibble(
   outcome = quality_outcomes$outcome,
   label = quality_outcomes$label,
   group = quality_outcomes$group,
-  start_year = quality_outcomes$start_year,
-  start_quarter = quality_outcomes$start_quarter,
-  end_year = quality_outcomes$end_year,
-  end_quarter = quality_outcomes$end_quarter,
   reference_tau = vapply(
     quality_outcomes$outcome,
     function(y) results[[y]]$ref,
@@ -572,14 +452,12 @@ readr::write_csv(
 cat("\nSaved individual quality event-study plots to:\n", plots_dir, "\n", sep = "")
 
 cat("\nIndividual plots:\n")
-cat("  - twfe_es_quality_qm_406_drop_tau0.pdf  [Catheter Use]\n")
-cat("  - twfe_es_quality_qm_419_drop_tau0.pdf  [Antipsychotic Medication Use]\n")
-cat("  - twfe_es_quality_qm_452_drop_tau0.pdf  [Anti-Anxiety or Hypnotic Medication Use]\n")
-cat("  - twfe_es_quality_qm_453_drop_tau0.pdf  [Pressure Injuries]\n")
-cat("  - twfe_es_quality_qm_410_drop_tau0.pdf  [Falls with Major Injury]\n")
-cat("  - twfe_es_quality_qm_404_drop_tau0.pdf  [Weight Loss]\n")
-cat("  - twfe_es_quality_qm_401_drop_tau0.pdf  [Decline in Physical Functioning]\n")
-cat("  - twfe_es_quality_qm_407_drop_tau0.pdf  [Urinary Tract Infections]\n")
+for (i in seq_len(nrow(quality_outcomes))) {
+  cat(sprintf(
+    "  - twfe_es_quality_%s_drop_tau0.pdf  [%s]\n",
+    quality_outcomes$outcome[[i]], quality_outcomes$label[[i]]
+  ))
+}
 
 cat("\nGrouped figures:\n")
 cat("  - twfe_es_quality_routine_process_drop_tau0.pdf\n")

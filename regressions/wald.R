@@ -68,9 +68,7 @@ dir.create(out_dir, showWarnings = FALSE, recursive = TRUE)
 # ------------------------------ Load ------------------------------
 keep_cols <- c(
   "cms_certification_number", "year_month", "event_time", "treated",
-  "government", "non_profit", "chain", "beds",
-  "occupancy_rate", "pct_medicare", "pct_medicaid",
-  "cm_q_state_2", "cm_q_state_3", "cm_q_state_4",
+  "beds", "chain_at_start",
   "rn_hprd", "lpn_hprd", "cna_hprd", "total_hprd"
 )
 
@@ -102,7 +100,14 @@ prep_df <- function(dat, WIN) {
     )
 }
 
-controls_rhs <- make_controls_rhs(df0)
+# Spec A covariates only. Treatment is identified by the event-time
+# interaction rather than by a post dummy, so post is excluded here; it
+# would be collinear with the event-time indicators. chain_at_start is
+# time-invariant and absorbed by the facility fixed effects. Occupancy,
+# payer shares, and case mix are not included: they are outcomes of
+# ownership change in their own right, so conditioning on them would
+# absorb part of the response being estimated.
+controls_rhs <- make_spec_controls_rhs(df0, spec = "A", exclude = "chain_at_start")
 
 pick_ref <- function(dat, desired = NULL) {
   ev <- sort(unique(dat$event_time_capped[dat$ever_treated == 1L]))
@@ -195,7 +200,7 @@ test_wo_12 <- c(-WIN_C, -5L)
 
 specs <- list(
   with_anticip = list(
-    row_label = "2 Year Full Pre-Window",
+    row_label = "(1)",
     dat = dat_with_24,
     WIN = WIN_A,
     ref = ref_with_24,
@@ -203,7 +208,7 @@ specs <- list(
     test_to   = test_with_24[2]
   ),
   wo_anticip_24 = list(
-    row_label = "2 Year Window with Donut",
+    row_label = "(2)",
     dat = dat_wo_24,
     WIN = WIN_A,
     ref = ref_wo_24,
@@ -211,7 +216,7 @@ specs <- list(
     test_to   = test_wo_24[2]
   ),
   wo_anticip_12 = list(
-    row_label = "1 Year Window with Donut",
+    row_label = "(3)",
     dat = dat_wo_12,
     WIN = WIN_C,
     ref = ref_wo_12,
@@ -268,21 +273,10 @@ mk_row <- function(rowlabel, reslist) {
 wald_caption <- "Joint Wald Tests of Pre-trends for Monthly Staffing"
 wald_label   <- "tab:wald-test-staffing"
 
-notes_windows <- paste0(
-  "\\item Tested windows and reference periods: ",
-  "2 Year Full Pre-Window tests $\\tau=", specs$with_anticip$test_from, "$ to $\\tau=", specs$with_anticip$test_to,
-  "$ with reference $\\tau=", specs$with_anticip$ref, "$; ",
-  "2 Year Window with Donut tests $\\tau=", specs$wo_anticip_24$test_from, "$ to $\\tau=", specs$wo_anticip_24$test_to,
-  "$ with reference $\\tau=", specs$wo_anticip_24$ref, "$ (dropping $\\tau=-3,-2,-1$); ",
-  "1 Year Window with Donut tests $\\tau=", specs$wo_anticip_12$test_from, "$ to $\\tau=", specs$wo_anticip_12$test_to,
-  "$ with reference $\\tau=", specs$wo_anticip_12$ref, "$ (dropping $\\tau=-3,-2,-1$)."
-)
-
-notes_N <- paste0(
-  "\\item Sample sizes (rows): ",
-  "2 Year Full Pre-Window ($N=", format(N_rows$with_anticip, big.mark = ","), "$); ",
-  "2 Year Window with Donut ($N=", format(N_rows$wo_anticip_24, big.mark = ","), "$); ",
-  "1 Year Window with Donut ($N=", format(N_rows$wo_anticip_12, big.mark = ","), "$)."
+notes_specs <- paste0(
+  "\\item Specifications: (1) two-year event window, full pre-period; ",
+  "(2) two-year event window excluding the three months preceding transfer; ",
+  "(3) one-year event window excluding the three months preceding transfer."
 )
 
 wald_tab <- c(
@@ -319,9 +313,8 @@ wald_tab <- c(
   "\\begin{tablenotes}[flushleft]",
   "\\footnotesize",
   "\\item \\textit{Notes:} Each cell reports the Wald $\\chi^2$ statistic for the joint null that all pre-treatment event-time coefficients equal zero, followed by degrees of freedom in parentheses and the p-value in brackets.",
-  notes_windows,
-  notes_N,
-  "\\item All specifications include facility and month fixed effects and covariates: \\textit{government}, \\textit{non-profit}, \\textit{chain}, \\textit{beds}, \\textit{occupancy rate}, \\textit{percent Medicare}, \\textit{percent Medicaid}, and state case-mix quartile indicators.",
+  notes_specs,
+  "\\item All specifications include facility and calendar-month fixed effects and control for the number of certified beds. Standard errors are two-way clustered by facility and calendar month.",
   "\\end{tablenotes}",
   "\\end{threeparttable}",
   "\\end{table}",
@@ -422,31 +415,11 @@ q_prepare_event_study_data <- function(df, min_et, max_et) {
     )
 }
 
-q_get_case_mix_controls <- function(df) {
-  preferred <- q_intersect_existing(c("cm_q_state_2", "cm_q_state_3", "cm_q_state_4"), df)
-  if (length(preferred) > 0) return(preferred)
-
-  fallback <- q_intersect_existing(c("cm_q_nat_2", "cm_q_nat_3", "cm_q_nat_4"), df)
-  fallback
-}
-
-q_get_controls <- function(df) {
-  base_controls <- c(
-    "government",
-    "non_profit",
-    "chain",
-    "beds",
-    "occupancy_rate",
-    "pct_medicare",
-    "pct_medicaid"
-  )
-  c(q_intersect_existing(base_controls, df), q_get_case_mix_controls(df))
-}
-
+# Controls follow Spec A, as in the staffing section above and in
+# post_tables.R. The private control helpers this script previously carried
+# reproduced the legacy full control set and are not used.
 q_make_controls_rhs <- function(df) {
-  ctrls <- q_get_controls(df)
-  if (length(ctrls) == 0) return("1")
-  paste(ctrls, collapse = " + ")
+  make_spec_controls_rhs(df, spec = "A", exclude = "chain_at_start")
 }
 
 q_pick_ref <- function(dat, desired = NULL) {
@@ -522,63 +495,31 @@ q_escape_latex <- function(x) {
 }
 
 # ------------------------------ Load quality panel ------------------------------
-q_df0 <- readr::read_csv(quality_panel_fp, show_col_types = FALSE)
+# Loaded through load_quality_panel() rather than read directly, so that the
+# sample matches every other estimate in the paper. Reading the CSV directly
+# bypassed the shared facility lookups.
+q_df0 <- load_quality_panel()
 
 q_required_cols <- c(
   "cms_certification_number",
   "year",
   "quarter",
+  "year_quarter",
   "treated",
   "event_time"
 )
 q_assert_has_cols(q_df0, q_required_cols, "quality_panel")
 
-q_df0 <- q_df0 %>%
-  mutate(
-    cms_certification_number = as.factor(cms_certification_number),
-    year = suppressWarnings(as.integer(year)),
-    quarter = toupper(trimws(as.character(quarter))),
-    year_quarter = paste0(year, "_", quarter)
-  )
-
-q_numeric_candidates <- c(
-  "beds", "occupancy_rate", "pct_medicare", "pct_medicaid",
-  "event_time", "government", "non_profit", "chain"
-)
-q_numeric_candidates <- q_intersect_existing(q_numeric_candidates, q_df0)
-
-if (length(q_numeric_candidates) > 0) {
-  q_df0 <- q_df0 %>%
-    mutate(across(all_of(q_numeric_candidates), ~ suppressWarnings(as.numeric(.x))))
-}
-
 q_controls_rhs <- q_make_controls_rhs(q_df0)
 
 # ------------------------------ Quality outcomes used in the paper ------------------------------
-# Confirm these QM mappings against the final data dictionary before publication.
-quality_outcome_windows <- list(
-  qm_401 = c(2017L, 1L, 2024L, 2L), # Catheter
-  qm_410 = c(2017L, 1L, 2024L, 2L), # Antipsychotic
-  qm_434 = c(2017L, 1L, 2024L, 2L), # Hypnotics / anti-anxiety or hypnotic medication
-  qm_453 = c(2018L, 1L, 2023L, 3L), # Pressure injuries
-  qm_419 = c(2017L, 1L, 2024L, 2L), # Falls with major injury
-  qm_406 = c(2017L, 1L, 2024L, 2L), # Weight loss
-  qm_407 = c(2017L, 1L, 2024L, 2L), # ADL increase / physical functioning decline
-  qm_404 = c(2017L, 1L, 2024L, 2L)  # Urinary tract infections
-)
-
-quality_nice_out <- c(
-  qm_401 = "Catheter",
-  qm_410 = "Antipsychotic",
-  qm_434 = "Hypnotics",
-  qm_453 = "Pressure injuries",
-  qm_419 = "Falls",
-  qm_406 = "Weight loss",
-  qm_407 = "ADL increase",
-  qm_404 = "UTI"
-)
-
-quality_outcomes <- names(quality_outcome_windows)
+# Measure codes, labels, and reporting windows are taken from _setup.R so
+# that this table cannot drift from the quality tables and figures. The
+# private map this script previously carried mislabeled most of its rows and
+# substituted a short-stay measure for one of the long-stay mechanism
+# measures.
+quality_outcomes <- c(quality_mechanism_measures, quality_outcome_measures)
+quality_nice_out <- unlist(long_stay_quality_measures[quality_outcomes])
 
 q_missing_outcomes <- setdiff(quality_outcomes, names(q_df0))
 if (length(q_missing_outcomes) > 0) {
@@ -624,8 +565,8 @@ for (outcome in quality_outcomes) {
   cat("QUALITY OUTCOME: ", outcome, "\n", sep = "")
   cat(strrep("=", 80), "\n", sep = "")
 
-  win <- quality_outcome_windows[[outcome]]
-  dat_base <- q_subset_window(q_df0, win[1], win[2], win[3], win[4])
+  win <- NULL
+  dat_base <- trim_quality_measure_window(q_df0, outcome)
 
   quality_results[[outcome]] <- list()
   quality_sample_sizes[[outcome]] <- list()
@@ -725,21 +666,6 @@ q_table_rows <- vapply(
   FUN.VALUE = character(1)
 )
 
-q_Ns_full <- paste(
-  vapply(quality_outcomes, function(y) paste0(quality_nice_out[[y]], "=", format(quality_sample_sizes[[y]][["full_8"]], big.mark = ",")), character(1)),
-  collapse = "; "
-)
-
-q_Ns_drop8 <- paste(
-  vapply(quality_outcomes, function(y) paste0(quality_nice_out[[y]], "=", format(quality_sample_sizes[[y]][["drop_q0_8"]], big.mark = ",")), character(1)),
-  collapse = "; "
-)
-
-q_Ns_drop4 <- paste(
-  vapply(quality_outcomes, function(y) paste0(quality_nice_out[[y]], "=", format(quality_sample_sizes[[y]][["drop_q0_4"]], big.mark = ",")), character(1)),
-  collapse = "; "
-)
-
 quality_wald_tab <- c(
   "\\begin{table}[!ht]",
   "\\centering",
@@ -751,7 +677,7 @@ quality_wald_tab <- c(
   "",
   "\\begin{tabular}{@{}lccc@{}}",
   "\\toprule",
-  "Outcome & \\textbf{2 Year Full Pre-Window} & \\textbf{2 Year, with Donut} & \\textbf{1 Year, with Donut} \\\\",
+  "Outcome & (1) & (2) & (3) \\\\",
   "\\midrule",
   q_table_rows,
   "\\bottomrule",
@@ -760,13 +686,9 @@ quality_wald_tab <- c(
   "\\begin{tablenotes}[flushleft]",
   "\\footnotesize",
   "\\item \\textit{Notes:} Each cell reports the Wald $\\chi^2$ statistic for the joint null that all pre-treatment event-time coefficients equal zero, followed by degrees of freedom in parentheses and the p-value in brackets.",
-  "\\item The 2 Year Full Pre-Window tests $\\tau=-8$ through $\\tau=-1$, with $\\tau=-1$ as the omitted reference period.",
-  "\\item The ownership-change-quarter-excluded specifications omit $\\tau=0$ because the quarter of ownership change may combine pre- and post-transfer care, assessment, and documentation.",
-  "\\item The 1 Year Window tests $\\tau=-4$ through $\\tau=-1$, with $\\tau=-1$ as the omitted reference period.",
-  paste0("\\item Sample sizes by outcome: 2 Year Full Pre-Window [", q_Ns_full, "]."),
-  paste0("\\item Sample sizes by outcome: 2 Year, with Donut [", q_Ns_drop8, "]."),
-  paste0("\\item Sample sizes by outcome: 1 Year, with Donut [", q_Ns_drop4, "]."),
-  paste0("\\item All specifications include facility and quarter fixed effects and covariates: ", q_escape_latex(q_controls_rhs), "."),
+  "\\item Specifications: (1) two-year event window, full pre-period; (2) two-year event window excluding the ownership-change quarter; (3) one-year event window excluding the ownership-change quarter. The ownership-change quarter is excluded because it may combine pre- and post-transfer care, assessment, and documentation. In all three, $\\tau=-1$ is the omitted reference period.",
+  "\\item All specifications include facility and calendar-quarter fixed effects and control for the number of certified beds. Standard errors are two-way clustered by facility and calendar quarter.",
+  "\\item Pressure injuries is estimated on 2018--2023 only. Other measures use the full sample window.",
   "\\end{tablenotes}",
   "\\end{threeparttable}",
   "\\end{table}",

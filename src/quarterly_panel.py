@@ -465,6 +465,57 @@ if (
     panel = panel.loc[~mask_bad].copy()
     print(f"[filter] fallback PBJ plausibility filter: {before:,} -> {len(panel):,}")
 
+# ============================== Shared facility lookups =======================
+# The government-ownership exclusion and chain_at_start are computed once,
+# from the monthly panel, by 06_panel.py and written to facility_lookups.csv.
+# They are read rather than recomputed here so that the two panels cannot
+# disagree about the estimation sample: recomputing from quarterly data can
+# give a different answer for the same facility, for example when a facility
+# is observed as government-owned in a month that survives into the monthly
+# panel but whose corresponding quarters are sparse or absent here.
+#
+# RUN ORDER: 06_panel.py must run before this script.
+LOOKUPS_FP = INTERIM / "facility_lookups.csv"
+
+if not LOOKUPS_FP.exists():
+    raise FileNotFoundError(
+        f"{LOOKUPS_FP} not found. It is written by 06_panel.py, which must be "
+        "run before quarterly_panel.py so that both panels apply the same "
+        "government-ownership exclusion and the same chain_at_start."
+    )
+
+lookups = pd.read_csv(LOOKUPS_FP)
+lookups["cms_certification_number"] = cfg.normalize_ccn_any(lookups["cms_certification_number"])
+
+gov_ccns = set(lookups.loc[lookups["ever_government"] == 1, "cms_certification_number"])
+
+n_fac_before = panel["cms_certification_number"].nunique()
+before = len(panel)
+panel = panel[~panel["cms_certification_number"].isin(gov_ccns)].copy()
+print(
+    f"[filter] drop ever-government facilities: {before:,} -> {len(panel):,} rows "
+    f"({n_fac_before:,} -> {panel['cms_certification_number'].nunique():,} facilities)"
+)
+
+panel = panel.merge(
+    lookups[["cms_certification_number", "chain_at_start"]],
+    on="cms_certification_number",
+    how="left",
+)
+panel["chain_at_start"] = pd.to_numeric(panel["chain_at_start"], errors="coerce").astype("Int8")
+
+# Facilities present here but absent from the monthly panel have no lookup
+# row and therefore no chain_at_start. Reported rather than silently dropped,
+# since it reflects a coverage difference between the two source panels.
+n_missing_chain = int(
+    panel.loc[panel["chain_at_start"].isna(), "cms_certification_number"].nunique()
+)
+if n_missing_chain > 0:
+    print(
+        f"[lookups] {n_missing_chain:,} facilities have no chain_at_start "
+        "(present in the quality panel but not the monthly panel)"
+    )
+
 # final ordering
 qord = quarter_num_from_label(panel["quarter"])
 panel = (

@@ -12,8 +12,8 @@
 \cmidrule(lr){2-5}
  & \textbf{RN} & \textbf{LPN} & \textbf{CNA} & \textbf{Total} \\
 \midrule
-2 Year Window with Donut & $34.45$ (20) [0.0233] & $20.65$ (20) [0.4178] & $20.06$ (20) [0.4539] & $25.86$ (20) [0.1706] \\
-1 Year Window with Donut & $8.62$ (8) [0.3752] & $11.90$ (8) [0.1558] & $5.48$ (8) [0.7048] & $11.83$ (8) [0.1588] \\
+2 Year Window with Donut & $53.28$ (20) [0.0001] & $32.70$ (20) [0.0363] & $17.73$ (20) [0.6053] & $22.55$ (20) [0.3114] \\
+1 Year Window with Donut & $16.24$ (8) [0.0391] & $9.44$ (8) [0.3068] & $5.90$ (8) [0.6588] & $9.44$ (8) [0.3065] \\
 \bottomrule
 \end{tabularx}
 
@@ -21,9 +21,9 @@
 \footnotesize
 \item \textit{Notes:} Each cell reports the Wald $\chi^2$ statistic for the joint null that all pre-treatment event-time coefficients equal zero, followed by degrees of freedom in parentheses and the p-value in brackets.
 \item Tested windows and reference periods: 2 Year Window with Donut tests $\tau=-24$ to $\tau=-5$ with reference $\tau=-4$ (dropping $\tau=-3,-2,-1$); 1 Year Window with Donut tests $\tau=-12$ to $\tau=-5$ with reference $\tau=-4$ (dropping $\tau=-3,-2,-1$).
-\item Sample sizes (stacked rows): 2 Year Window with Donut ($N=24,197,338$); 1 Year Window with Donut ($N=13,268,799$).
+\item Sample sizes (stacked rows): 2 Year Window with Donut ($N=21,332,744$); 1 Year Window with Donut ($N=11,699,147$).
 \item Stacked design: each treated cohort is compared only to never-treated and not-yet-treated facilities within its own event window; the donut excludes $\tau=-3,-2,-1$ (physically dropped from the estimation sample for treated units).
-\item All specifications include facility-by-cohort fixed effects (stack\_id), calendar-month fixed effects, cohort fixed effects, and covariates: \textit{government}, \textit{non-profit}, \textit{chain}, \textit{beds}, \textit{occupancy rate}, \textit{percent Medicare}, \textit{percent Medicaid}, and state case-mix quartile indicators. Standard errors are clustered by facility.
+\item All specifications include facility-by-cohort fixed effects (stack\_id), calendar-month fixed effects, cohort fixed effects, and control for the number of certified beds. Standard errors are two-way clustered by facility and calendar month.
 \end{tablenotes}
 \end{threeparttable}
 \end{table}
