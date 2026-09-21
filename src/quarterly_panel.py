@@ -13,6 +13,8 @@
 # - Applies lighter cleanup appropriate for quarterly quality regressions
 # - Renames overlapping quarterly metadata columns before merge
 # - Carries PBJ QA flags into the final panel
+# - Recomputes staffing HPRD on the CMS Five-Star PBJ job-code definitions,
+#   matching the monthly panel
 # -----------------------------------------------------------------------------
 
 from __future__ import annotations
@@ -193,6 +195,60 @@ quality = filter_to_window_quarter(quality)
 provider_q = filter_to_window_quarter(provider_q)
 pbj_q = filter_to_window_quarter(pbj_q)
 mcr_q = filter_to_window_quarter(mcr_q)
+
+# ============================== Staffing measure construction ================
+# Staff types follow the PBJ job-code definitions in the CMS Five-Star
+# Technical Users' Guide (July 2026, p. 9), matching load_staffing_panel() in
+# regressions/_setup.R, which applies the same definitions to the monthly
+# panel:
+#
+#   RN         job codes 5, 6, 7    RN director of nursing, RNs with
+#                                   administrative duties, RNs
+#   LPN        job codes 8, 9       LPNs with administrative duties, LPNs
+#   Nurse aide job codes 10, 11, 12 Certified nurse aides, aides in
+#                                   training, medication aides/technicians
+#
+# pbj_nurse_quarterly.csv stores HPRD built from the direct-care categories
+# only, so HPRD is recomputed here from the component hours. The upstream
+# plausibility flags (pbj_implausible_hprd, pbj_invalid_quarter) are left as
+# computed upstream, on the direct-care definitions, so that the sample is
+# defined the same way as in the monthly panel, where 06_panel.py filters on
+# direct-care HPRD and the definitions are applied afterward.
+#
+# A facility-quarter with no reported hours in a job code is a genuine zero in
+# PBJ rather than an unobserved value, so missing component hours are treated
+# as zero.
+component_hours = [
+    "rn_hours_quarter", "rndon_hours_quarter", "rnadmin_hours_quarter",
+    "lpn_hours_quarter", "lpnadmin_hours_quarter",
+    "cna_hours_quarter", "natrn_hours_quarter", "medaide_hours_quarter",
+    "resident_days_quarter",
+]
+missing_components = [c for c in component_hours if c not in pbj_q.columns]
+
+if missing_components:
+    print(
+        f"[staffing] missing {missing_components} in pbj_nurse_quarterly.csv; "
+        "HPRD left on direct-care definitions. Rebuild with "
+        "02_clean_pbj_nurse.py to include the component job codes."
+    )
+else:
+    def _z(col: str) -> pd.Series:
+        return pd.to_numeric(pbj_q[col], errors="coerce").fillna(0.0)
+
+    rn_hours = _z("rn_hours_quarter") + _z("rndon_hours_quarter") + _z("rnadmin_hours_quarter")
+    lpn_hours = _z("lpn_hours_quarter") + _z("lpnadmin_hours_quarter")
+    aide_hours = _z("cna_hours_quarter") + _z("natrn_hours_quarter") + _z("medaide_hours_quarter")
+
+    days = pd.to_numeric(pbj_q["resident_days_quarter"], errors="coerce")
+    days = days.where(days > 0)
+
+    pbj_q["rn_hprd"] = (rn_hours / days).astype("float32")
+    pbj_q["lpn_hprd"] = (lpn_hours / days).astype("float32")
+    pbj_q["cna_hprd"] = (aide_hours / days).astype("float32")
+    pbj_q["total_hprd"] = ((rn_hours + lpn_hours + aide_hours) / days).astype("float32")
+
+    print("[staffing] quarterly HPRD recomputed on CMS job-code definitions")
 
 # ============================== Rename overlapping metadata ====================
 provider_rename = {}

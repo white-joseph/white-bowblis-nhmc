@@ -170,4 +170,53 @@ Improved function & \makecell[t]{$-0.2525$ \\ $(0.5659)$} & \makecell[t]{$\phant
 
 \end{threeparttable}
 \end{table}
+\clearpage
+\begin{table}[!ht]
+\centering
+\begin{threeparttable}
+\caption{Tests of Differences Between Chain-Affiliated and Independent Facilities}
+\label{tab:chain-interaction}
+\small
+\setlength{\tabcolsep}{6pt}
+
+\begin{tabularx}{\textwidth}{@{} l Y @{}}
+\toprule
+Outcome & Chain $-$ Non-chain \\
+\midrule
+\multicolumn{2}{@{}l}{\textbf{Panel A: Staffing}} \\[2pt]
+RN HPRD & \makecell[t]{$-0.0016$ \\ $(0.0119)$} \\
+LPN HPRD & \makecell[t]{$\phantom{-}0.0252^{*}$ \\ $(0.0138)$} \\
+CNA HPRD & \makecell[t]{$\phantom{-}0.0464^{**}$ \\ $(0.0216)$} \\
+Total HPRD & \makecell[t]{$\phantom{-}0.0700^{**}$ \\ $(0.0310)$} \\
+\addlinespace[0.6em]
+\multicolumn{2}{@{}l}{\textbf{Panel B: Business model}} \\[2pt]
+Occupancy rate & \makecell[t]{$-1.8328^{**}$ \\ $(0.7213)$} \\
+Medicare share & \makecell[t]{$\phantom{-}0.2141$ \\ $(0.4681)$} \\
+Medicaid share & \makecell[t]{$\phantom{-}3.7744^{***}$ \\ $(1.2017)$} \\
+Average length of stay & \makecell[t]{$\phantom{-}15.3969$ \\ $(10.1913)$} \\
+\addlinespace[0.6em]
+\multicolumn{2}{@{}l}{\textbf{Panel C: Quality}} \\[2pt]
+Catheter use & \makecell[t]{$\phantom{-}0.2651^{**}$ \\ $(0.0994)$} \\
+Anti-psychotic medication use & \makecell[t]{$\phantom{-}0.5773$ \\ $(0.4484)$} \\
+Anti-anxiety/hypnotic medication use & \makecell[t]{$-0.3937$ \\ $(0.4286)$} \\
+Pressure injuries & \makecell[t]{$\phantom{-}0.3011$ \\ $(0.2999)$} \\
+Falls with major injury & \makecell[t]{$\phantom{-}0.1171$ \\ $(0.1424)$} \\
+Weight loss & \makecell[t]{$-0.5672^{**}$ \\ $(0.2357)$} \\
+Decline in physical functioning & \makecell[t]{$\phantom{-}0.5118$ \\ $(0.4676)$} \\
+Urinary tract infections & \makecell[t]{$\phantom{-}0.2011$ \\ $(0.1477)$} \\
+New antipsychotic medication & \makecell[t]{$-0.0914$ \\ $(0.1144)$} \\
+Improved function & \makecell[t]{$-0.3499$ \\ $(1.1494)$} \\
+\bottomrule
+\end{tabularx}
+
+\begin{tablenotes}[flushleft]
+\footnotesize
+\item \textit{Notes:} Each cell reports the coefficient on the interaction between \textit{post} and baseline chain affiliation, with standard errors in parentheses. This coefficient is the difference between the chain and non-chain estimates reported elsewhere in the paper; a negative value indicates a smaller effect among chain-affiliated facilities.
+\item Every right-hand-side term and the calendar-period fixed effects are interacted with chain affiliation, so the specification reproduces the separate subsample regressions exactly while yielding a standard error for their difference. All specifications include facility fixed effects and control for the number of certified beds. Standard errors are two-way clustered by facility and calendar period.
+\item Panels A and B are estimated on the facility-month panel excluding the anticipation window ($\tau = -3, -2, -1$); Panel C on the facility-quarter panel excluding the transition quarter ($\tau = 0$). Facilities with no available chain classification are excluded.
+\item Statistical significance: $^{***}p<0.01$, $^{**}p<0.05$, $^{*}p<0.10$.
+\end{tablenotes}
+
+\end{threeparttable}
+\end{table}
 \end{document}

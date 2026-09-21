@@ -1,9 +1,10 @@
 # =============================================================================
 # regressions/post_tables.R
 #
-# Produces the paper's four tables of static (post-only) difference-in-
-# differences estimates: staffing, business-model outcomes, quality, and
-# quality by baseline chain affiliation.
+# Produces the paper's post-only difference-in-differences tables: staffing,
+# business-model outcomes, and quality, each reported pooled and by baseline
+# chain affiliation, plus an appendix table testing whether the chain and
+# non-chain estimates differ.
 #
 # -----------------------------------------------------------------------------
 # Specification
@@ -34,12 +35,12 @@
 #   Table 2  Business-model outcomes: occupancy rate, Medicare and Medicaid
 #            shares of patient days, and average length of stay, reported
 #            pooled and separately by baseline chain affiliation.
-#   Table 3  Quality measures, long-stay and short-stay, with and without
-#            staffing controls. Vaccination measures are excluded.
-#   Table 4  Quality measures split by baseline chain affiliation. Reported
-#            separately from Table 3 rather than as additional columns,
-#            because Table 3 already uses its columns for the with- and
-#            without-staffing-controls pair.
+#   Table 3  Quality measures, long-stay and short-stay. Columns (1) and (2)
+#            report all facilities without and with staffing controls;
+#            columns (3) and (4) split the baseline specification by chain
+#            affiliation. Vaccination measures are excluded.
+#   Table 4  Appendix: saturated interaction tests of whether the chain and
+#            non-chain estimates in Tables 1-3 differ.
 #
 # -----------------------------------------------------------------------------
 # Inputs
@@ -50,11 +51,11 @@
 # -----------------------------------------------------------------------------
 # Outputs
 # -----------------------------------------------------------------------------
-#   outputs/tables/post_staffing_table.tex                     (tab:post-staffing)
-#   outputs/tables/post_business_model_table.tex               (tab:post-business)
-#   outputs/tables/post_quality_table.tex                      (tab:post-quality)
-#   outputs/tables/post_heterogeneity_chain_quality_table.tex  (tab:het-chain-quality)
-#   outputs/tables/post_tables_preview.tex                     (standalone preview document)
+#   outputs/tables/post_staffing_table.tex        (tab:post-staffing)
+#   outputs/tables/post_business_model_table.tex  (tab:post-business)
+#   outputs/tables/post_quality_table.tex         (tab:post-quality)
+#   outputs/tables/chain_interaction_tests.tex    (tab:chain-interaction)
+#   outputs/tables/post_tables_preview.tex        (standalone preview document)
 #
 # -----------------------------------------------------------------------------
 # Dependencies
@@ -522,100 +523,7 @@ fe_quarter <- "cms_certification_number + year_quarter"
 
 STAFFING_CONTROLS <- c("rn_hprd", "lpn_hprd", "cna_hprd")
 
-# Estimates one block of quality measures and returns formatted table rows.
-# The label_map argument allows the same function to serve the long-stay and
-# short-stay measure sets, whose labels are defined separately in _setup.R.
-#
-# Each measure is passed through trim_quality_measure_window() before
-# estimation, restricting measures with known reporting gaps to the years over
-# which they are actually reported.
-build_quality_block <- function(codes, label_map) {
-  rows <- character(0)
-  n_with <- integer(0)
-  for (v in codes) {
-    lab <- unname(label_map[[v]])
-    dat_v <- trim_quality_measure_window(df_q_post, v)
-    m1 <- safe_fit(dat_v, v, vc_quarter, fe_quarter, label = paste(lab, "(1)"))
-    m2 <- safe_fit(dat_v, v, vc_quarter, fe_quarter,
-                   extra_controls = STAFFING_CONTROLS, label = paste(lab, "(2)"))
-    rows <- c(rows, paste0(
-      lab, " & ", fmt_est(m1, 4), " & ", fmt_est(m2, 4), " & ", fmt_n(m1), " \\\\"
-    ))
-    if (!is.null(m2)) n_with <- c(n_with, nobs(m2))
-    rm(dat_v, m1, m2); gc(verbose = FALSE)
-  }
-  list(rows = rows, n_with = n_with)
-}
-
-mech <- build_quality_block(quality_mechanism_measures, long_stay_quality_measures)
-outc <- build_quality_block(quality_outcome_measures, long_stay_quality_measures)
-# Short-stay measures are reported in the same table as the long-stay measures
-# but under a separate panel header, since the two are constructed from
-# different resident populations.
-short <- build_quality_block(names(short_stay_quality_measures), short_stay_quality_measures)
-
-quality_body <- c(
-  panel_header("Panel A: Long-stay labor-saving mechanism measures", 4),
-  mech$rows,
-  "\\addlinespace[0.6em]",
-  panel_header("Panel B: Long-stay resident outcome measures", 4),
-  outc$rows,
-  "\\addlinespace[0.6em]",
-  panel_header("Panel C: Short-stay measures", 4),
-  short$rows
-)
-
-quality_tex <- wrap_table(
-  quality_body,
-  caption = "Effect of Ownership Change on Quality Measures",
-  label = "tab:post-quality",
-  colspec = "@{} l Y Y r @{}",
-  header_row = "Outcome & (1) & (2) & Observations \\\\",
-  notes = c(
-    spec_note,
-    paste0(
-      "\\item Column (1) is the baseline specification. Column (2) adds RN, LPN, ",
-      "and CNA hours per resident day as controls. Because staffing is itself ",
-      "affected by ownership change, column (2) is not a preferred estimate of the ",
-      "total effect; it is reported to show whether the quality response is ",
-      "attenuated after conditioning on measured staffing inputs."
-    ),
-    paste0(
-      "\\item Long-stay measures (Panels A-B) and short-stay measures (Panel C) are ",
-      "constructed from different resident populations and are not directly ",
-      "comparable to one another. For every measure, lower values indicate better ",
-      "measured quality."
-    ),
-    paste0(
-      "\\item Pressure injuries is estimated on 2018--2023 only; improved function ",
-      "is estimated on 2017--2022 only. Both measures show near-complete absence ",
-      "outside these windows and are trimmed to the years where they are actually ",
-      "reported rather than treated as full-panel outcomes. Vaccination measures ",
-      "are excluded from this table."
-    ),
-    paste0(
-      "\\item The transition quarter ($\\tau = 0$) is excluded. Observations are ",
-      "reported for column (1); column (2) drops facility-quarters with missing staffing."
-    ),
-    sig_note
-  )
-)
-
-write_fragment(quality_tex, "post_quality_table.tex")
-
-# Column (2) sample sizes are not printed in the table; they are reported to
-# the console so that any material divergence from column (1) is visible.
-cat("\n=== Column (2) observation counts (staffing controls added) ===\n")
-print(c(mech$n_with, outc$n_with, short$n_with))
-
-# =============================================================================
-# TABLE 4: Quality by baseline chain affiliation
-#
-# Reported as a separate table rather than as additional columns of Table 3,
-# because that table already uses its columns for the with- and
-# without-staffing-controls pair. Only the baseline specification is split
-# here; the staffing-control variant is not reproduced.
-# =============================================================================
+# Baseline chain subsamples for columns (3) and (4).
 df_q_chain    <- df_q_post %>% dplyr::filter(chain_at_start == 1)
 df_q_nonchain <- df_q_post %>% dplyr::filter(chain_at_start == 0)
 
@@ -629,41 +537,80 @@ if (n_missing_chain_q > 0) {
   ))
 }
 
-build_quality_chain_block <- function(codes, label_map) {
+# Estimates one block of quality measures and returns formatted table rows,
+# four columns per measure: (1) baseline, (2) with staffing controls, (3) the
+# baseline specification on chain-affiliated facilities, and (4) on
+# independent facilities. The label_map argument allows the same function to
+# serve the long-stay and short-stay measure sets, whose labels are defined
+# separately in _setup.R.
+#
+# Each measure is passed through trim_quality_measure_window() before
+# estimation, restricting measures with known reporting gaps to the years over
+# which they are actually reported.
+build_quality_block <- function(codes, label_map) {
   rows <- character(0)
+  n_with <- integer(0)
   for (v in codes) {
     lab <- unname(label_map[[v]])
-    dat_chain    <- trim_quality_measure_window(df_q_chain, v)
-    dat_nonchain <- trim_quality_measure_window(df_q_nonchain, v)
-    m_chain    <- safe_fit(dat_chain,    v, vc_quarter, fe_quarter, label = paste("Chain", lab))
-    m_nonchain <- safe_fit(dat_nonchain, v, vc_quarter, fe_quarter, label = paste("Non-chain", lab))
+    dat_v  <- trim_quality_measure_window(df_q_post, v)
+    dat_ch <- trim_quality_measure_window(df_q_chain, v)
+    dat_nc <- trim_quality_measure_window(df_q_nonchain, v)
+
+    m1 <- safe_fit(dat_v, v, vc_quarter, fe_quarter, label = paste(lab, "(1)"))
+    m2 <- safe_fit(dat_v, v, vc_quarter, fe_quarter,
+                   extra_controls = STAFFING_CONTROLS, label = paste(lab, "(2)"))
+    m3 <- safe_fit(dat_ch, v, vc_quarter, fe_quarter, label = paste(lab, "(3) chain"))
+    m4 <- safe_fit(dat_nc, v, vc_quarter, fe_quarter, label = paste(lab, "(4) non-chain"))
+
     rows <- c(rows, paste0(
-      lab, " & ", fmt_est(m_chain, 4), " & ", fmt_est(m_nonchain, 4), " \\\\"
+      lab, " & ", fmt_est(m1, 4), " & ", fmt_est(m2, 4),
+      " & ", fmt_est(m3, 4), " & ", fmt_est(m4, 4), " \\\\"
     ))
-    rm(dat_chain, dat_nonchain, m_chain, m_nonchain); gc(verbose = FALSE)
+    if (!is.null(m2)) n_with <- c(n_with, nobs(m2))
+    rm(dat_v, dat_ch, dat_nc, m1, m2, m3, m4); gc(verbose = FALSE)
   }
-  rows
+  list(rows = rows, n_with = n_with)
 }
 
-quality_chain_body <- c(
-  panel_header("Panel A: Long-stay labor-saving mechanism measures", 3),
-  build_quality_chain_block(quality_mechanism_measures, long_stay_quality_measures),
+mech <- build_quality_block(quality_mechanism_measures, long_stay_quality_measures)
+outc <- build_quality_block(quality_outcome_measures, long_stay_quality_measures)
+# Short-stay measures are reported in the same table as the long-stay measures
+# but under a separate panel header, since the two are constructed from
+# different resident populations.
+short <- build_quality_block(names(short_stay_quality_measures), short_stay_quality_measures)
+
+quality_body <- c(
+  panel_header("Panel A: Long-stay labor-saving mechanism measures", 5),
+  mech$rows,
   "\\addlinespace[0.6em]",
-  panel_header("Panel B: Long-stay resident outcome measures", 3),
-  build_quality_chain_block(quality_outcome_measures, long_stay_quality_measures),
+  panel_header("Panel B: Long-stay resident outcome measures", 5),
+  outc$rows,
   "\\addlinespace[0.6em]",
-  panel_header("Panel C: Short-stay measures", 3),
-  build_quality_chain_block(names(short_stay_quality_measures), short_stay_quality_measures)
+  panel_header("Panel C: Short-stay measures", 5),
+  short$rows
 )
 
-quality_chain_tex <- wrap_table(
-  quality_chain_body,
-  caption = "Effect of Ownership Change on Quality Measures: Chain vs. Non-Chain Facilities",
-  label = "tab:het-chain-quality",
-  colspec = "@{} l Y Y @{}",
-  header_row = "Outcome & Chain & Non-chain \\\\",
+quality_tex <- wrap_table(
+  quality_body,
+  caption = "Effect of Ownership Change on Quality Measures",
+  label = "tab:post-quality",
+  colspec = "@{} l Y Y Y Y @{}",
+  header_row = paste0(
+    " & \\multicolumn{2}{c}{All facilities} & \\multicolumn{2}{c}{By chain affiliation} \\\\\n",
+    "\\cmidrule(lr){2-3} \\cmidrule(lr){4-5}\n",
+    "Outcome & (1) & (2) & (3) Chain & (4) Non-chain \\\\"
+  ),
   notes = c(
     spec_note,
+    paste0(
+      "\\item Column (1) is the baseline specification. Column (2) adds RN, LPN, ",
+      "and nurse aide hours per resident day as controls. Because staffing is itself ",
+      "affected by ownership change, column (2) is not a preferred estimate of the ",
+      "total effect; it is reported to show whether the quality response is ",
+      "attenuated after conditioning on measured staffing inputs. Columns (3) and ",
+      "(4) re-estimate column (1) separately by baseline chain affiliation, defined ",
+      "as each facility's classification at its first observation in the panel."
+    ),
     paste0(
       "\\item Long-stay measures (Panels A-B) and short-stay measures (Panel C) are ",
       "constructed from different resident populations and are not directly ",
@@ -671,22 +618,24 @@ quality_chain_tex <- wrap_table(
       "measured quality."
     ),
     paste0(
-      "\\item Chain status is each facility's classification at its first observation ",
-      "in the panel. Facilities with no available chain classification are excluded ",
-      "from both columns. Chain sample: N = ", format(nrow(df_q_chain), big.mark = ","),
-      " facility-quarters. Non-chain sample: N = ", format(nrow(df_q_nonchain), big.mark = ","),
-      " facility-quarters, before per-measure reporting-window trims."
-    ),
-    paste0(
       "\\item Pressure injuries is estimated on 2018--2023 only; improved function ",
-      "is estimated on 2017--2022 only. Vaccination measures are excluded. The ",
-      "transition quarter ($\\tau = 0$) is excluded."
+      "is estimated on 2017--2022 only, the years in which each is reported. ",
+      "Vaccination measures are excluded. The transition quarter ($\\tau = 0$) is excluded."
     ),
     sig_note
   )
 )
 
-write_fragment(quality_chain_tex, "post_heterogeneity_chain_quality_table.tex")
+write_fragment(quality_tex, "post_quality_table.tex")
+
+# Sample sizes are not printed in the table; they are reported to the console
+# so that any material divergence across columns is visible.
+cat("\n=== Column (2) observation counts (staffing controls added) ===\n")
+print(c(mech$n_with, outc$n_with, short$n_with))
+cat(sprintf(
+  "\n=== Quality split samples: chain %s, non-chain %s facility-quarters ===\n",
+  format(nrow(df_q_chain), big.mark = ","), format(nrow(df_q_nonchain), big.mark = ",")
+))
 
 rm(df_q_chain, df_q_nonchain); gc(verbose = FALSE)
 
@@ -782,12 +731,10 @@ preview <- c(
   "\\clearpage",
   quality_tex,
   "\\clearpage",
-  quality_chain_tex,
-  "\\clearpage",
   interaction_tex,
   "\\end{document}"
 )
 
 write_fragment(preview, "post_tables_preview.tex")
 
-cat("\nDone. Five tables written.\n")
+cat("\nDone. Four tables written.\n")
