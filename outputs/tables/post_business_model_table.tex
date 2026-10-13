@@ -1,27 +1,27 @@
 \begin{table}[!ht]
 \centering
 \begin{threeparttable}
-\caption{Effect of Ownership Change on Business-Model Outcomes}
+\caption{Effect of Ownership Change on Operating-Model Outcomes}
 \label{tab:post-business}
 \small
 \setlength{\tabcolsep}{6pt}
 
 \begin{tabularx}{\textwidth}{@{} l Y Y Y @{}}
 \toprule
-Outcome & Pooled & Chain & Non-chain \\
+Outcome & Pooled & Chain & Independent \\
 \midrule
-Occupancy rate & \makecell[t]{$\phantom{-}2.6841^{***}$ \\ $(0.3497)$} & \makecell[t]{$\phantom{-}2.0323^{***}$ \\ $(0.4183)$} & \makecell[t]{$\phantom{-}3.8652^{***}$ \\ $(0.6009)$} \\
-Medicare share & \makecell[t]{$\phantom{-}1.6100^{***}$ \\ $(0.2159)$} & \makecell[t]{$\phantom{-}1.7674^{***}$ \\ $(0.2309)$} & \makecell[t]{$\phantom{-}1.5532^{***}$ \\ $(0.4195)$} \\
-Medicaid share & \makecell[t]{$-1.1710^{*}$ \\ $(0.5952)$} & \makecell[t]{$\phantom{-}0.1444$ \\ $(0.7331)$} & \makecell[t]{$-3.6300^{***}$ \\ $(0.9690)$} \\
-Average length of stay & \makecell[t]{$-13.3641^{***}$ \\ $(4.3491)$} & \makecell[t]{$-8.3079$ \\ $(5.1823)$} & \makecell[t]{$-23.7048^{***}$ \\ $(8.4841)$} \\
+Occupancy rate & \makecell[t]{$\phantom{-}2.7053^{***}$ \\ $(0.3506)$} & \makecell[t]{$\phantom{-}2.0236^{***}$ \\ $(0.4181)$} & \makecell[t]{$\phantom{-}3.9347^{***}$ \\ $(0.6030)$} \\
+Medicare share & \makecell[t]{$\phantom{-}1.5915^{***}$ \\ $(0.2160)$} & \makecell[t]{$\phantom{-}1.7716^{***}$ \\ $(0.2306)$} & \makecell[t]{$\phantom{-}1.4914^{***}$ \\ $(0.4204)$} \\
+Medicaid share & \makecell[t]{$-1.1789^{*}$ \\ $(0.5947)$} & \makecell[t]{$\phantom{-}0.1308$ \\ $(0.7349)$} & \makecell[t]{$-3.6001^{***}$ \\ $(0.9633)$} \\
+Average length of stay & \makecell[t]{$-13.0413^{***}$ \\ $(4.4632)$} & \makecell[t]{$-8.2674$ \\ $(5.1983)$} & \makecell[t]{$-22.7539^{**}$ \\ $(9.0237)$} \\
 \bottomrule
 \end{tabularx}
 
 \begin{tablenotes}[flushleft]
 \footnotesize
-\item \textit{Notes:} Each cell reports the coefficient on \textit{post}, with standard errors in parentheses. All specifications include facility and calendar-period fixed effects and control for the number of certified beds. Standard errors are two-way clustered by facility and calendar period.
-\item Occupancy rate is residents as a share of available bed-days. Payer shares are shares of patient days.
-\item The chain and non-chain columns re-estimate the pooled specification separately by baseline chain affiliation, defined as each facility's classification at its first observation in the panel. Pooled sample: N = 550,334 facility-months. Chain: N = 314,227. Non-chain: N = 236,107.
+\item \textit{Notes:} Each cell reports the coefficient on \textit{post}, with standard errors in parentheses. All specifications include facility and calendar-month fixed effects and control for the number of certified beds. Standard errors are two-way clustered by facility and calendar month. The three months before the ownership change ($\tau = -3, -2, -1$) are excluded.
+\item Occupancy rate is patient days as a percentage of available bed-days, and Medicare and Medicaid shares are percentages of patient days, so their coefficients are in percentage points; average length of stay is in days. All four outcomes come from annual cost reports assigned to each month of the reporting period.
+\item The chain and independent columns re-estimate the pooled specification separately by baseline chain affiliation. A facility is chain-affiliated if its cost report lists a home office. Baseline affiliation is measured in January 2017, or at the facility's first observation if it is not observed then. N = 553,013 facility-months (pooled), 315,111 (chain), and 237,902 (independent).
 \item Statistical significance: $^{***}p<0.01$, $^{**}p<0.05$, $^{*}p<0.10$.
 \end{tablenotes}
 
