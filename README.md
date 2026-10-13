@@ -13,7 +13,6 @@ The project identifies substantive ownership changes in U.S. skilled nursing fac
 | `data/` | `raw/` (not tracked), `interim/`, `clean/` |
 | `outputs/` | Generated tables (`.tex`) and figures (`.pdf`) |
 | `paper/` | Thesis and writing sample (LaTeX) |
-| `presentation/` | Slides and presentation figures |
 
 ## Data
 
