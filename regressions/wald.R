@@ -270,13 +270,14 @@ mk_row <- function(rowlabel, reslist) {
 }
 
 # ------------------------------ LaTeX table ------------------------------
-wald_caption <- "Joint Wald Tests of Pre-trends for Monthly Staffing"
+wald_caption <- "Joint Wald Tests of Pre-Trends for Monthly Staffing"
 wald_label   <- "tab:wald-test-staffing"
 
 notes_specs <- paste0(
   "\\item Specifications: (1) two-year event window, full pre-period; ",
   "(2) two-year event window excluding the three months preceding transfer; ",
-  "(3) one-year event window excluding the three months preceding transfer."
+  "(3) one-year event window excluding the three months preceding transfer. ",
+  "The reference period is $\\tau=-1$ in (1) and $\\tau=-4$ in (2) and (3)."
 )
 
 wald_tab <- c(
@@ -688,7 +689,7 @@ quality_wald_tab <- c(
   "\\item \\textit{Notes:} Each cell reports the Wald $\\chi^2$ statistic for the joint null that all pre-treatment event-time coefficients equal zero, followed by degrees of freedom in parentheses and the p-value in brackets.",
   "\\item Specifications: (1) two-year event window, full pre-period; (2) two-year event window excluding the ownership-change quarter; (3) one-year event window excluding the ownership-change quarter. The ownership-change quarter is excluded because it may combine pre- and post-transfer care, assessment, and documentation. In all three, $\\tau=-1$ is the omitted reference period.",
   "\\item All specifications include facility and calendar-quarter fixed effects and control for the number of certified beds. Standard errors are two-way clustered by facility and calendar quarter.",
-  "\\item Pressure injuries is estimated on 2018--2023 only. Other measures use the full sample window.",
+  "\\item Pressure injuries are estimated on 2018--2023 only. Other measures use the full sample window.",
   "\\end{tablenotes}",
   "\\end{threeparttable}",
   "\\end{table}",

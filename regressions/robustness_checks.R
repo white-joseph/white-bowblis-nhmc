@@ -146,18 +146,18 @@ rm(df_full); gc(verbose = FALSE)
 df_baseline <- drop_anticipation_window(df)
 
 restriction_specs <- list(
-  list(label = "(1) Baseline (no anticipation)", data = df_baseline),
-  list(label = "(2) Sample excludes \\textit{gap} $> 6$",
+  list(label = "(1) Baseline", data = df_baseline),
+  list(label = "(2) Drop months after PBJ gaps $> 6$ months",
        data = df_baseline %>% dplyr::filter(is.na(gap_from_prev_months) | gap_from_prev_months <= 6)),
-  list(label = "(3) Sample excludes \\textit{gap} $> 3$",
+  list(label = "(3) Drop months after PBJ gaps $> 3$ months",
        data = df_baseline %>% dplyr::filter(is.na(gap_from_prev_months) | gap_from_prev_months <= 3)),
-  list(label = "(4) Sample excludes \\textit{gap} $> 1$",
+  list(label = "(4) Drop months after PBJ gaps $> 1$ month",
        data = df_baseline %>% dplyr::filter(is.na(gap_from_prev_months) | gap_from_prev_months <= 1)),
-  list(label = "(5) Sample excludes \\textit{gap} $> 0$",
+  list(label = "(5) Drop months after any PBJ gap",
        data = df_baseline %>% dplyr::filter(is.na(gap_from_prev_months) | gap_from_prev_months == 0)),
-  list(label = "(6) Drop $t \\in \\{-4,-3,-2,-1\\}$",
+  list(label = "(6) Exclude $\\tau \\in \\{-4,-3,-2,-1\\}$",
        data = df %>% dplyr::filter(is.na(event_time) | !(event_time %in% -4:-1))),
-  list(label = "(7) Drop $t \\in \\{-2,-1\\}$ only",
+  list(label = "(7) Exclude $\\tau \\in \\{-2,-1\\}$ only",
        data = df %>% dplyr::filter(is.na(event_time) | !(event_time %in% c(-2, -1))))
 )
 
@@ -236,7 +236,7 @@ rob_frag <- c(
   "\\begin{table}[!ht]",
   "\\centering",
   "\\begin{threeparttable}",
-  "\\caption{TWFE estimates of \\textit{post} on staffing levels (HPRD): sample-restriction and case-mix robustness.}",
+  "\\caption{Robustness of Staffing Estimates to Sample Restrictions and Case-Mix Controls}",
   "\\label{tab:twfe-robustness-summary}",
   "\\small",
   "\\setlength{\\tabcolsep}{6pt}",
@@ -253,22 +253,20 @@ rob_frag <- c(
   "",
   "\\begin{tablenotes}[flushleft]",
   "\\footnotesize",
-  "\\item \\textit{Notes:} Each cell reports the \\textit{post} coefficient on staffing levels (HPRD), with two-way clustered standard errors (facility and calendar month) in parentheses.",
+  "\\item \\textit{Notes:} Each cell reports the \\textit{post} coefficient on staffing levels (HPRD), with two-way clustered standard errors (facility and calendar month) in parentheses. $N$ is the number of facility-months.",
   paste0(
-    "\\item Rows (1)--(7) hold the control set fixed at Spec A (post + number of ",
-    "certified beds, plus facility and calendar-month fixed effects) and vary the ",
-    "sample restriction or anticipation-window definition, as described in each row ",
-    "label. Row (1) is the project's standard sample: the anticipation window ",
-    "($\\tau = -3, -2, -1$) excluded, no additional gap restriction."
+    "\\item Rows (1)--(7) use the baseline specification (facility and calendar-month ",
+    "fixed effects and certified beds) and vary the sample. Row (1) is the ",
+    "baseline sample, which excludes $\\tau = -3, -2, -1$. Rows (2)--(5) also drop ",
+    "facility-months that follow a gap in PBJ reporting longer than the stated ",
+    "length. Rows (6) and (7) widen and narrow the excluded window before the ",
+    "ownership change."
   ),
   paste0(
-    "\\item Rows (8)--(11) hold the sample fixed at row (1) and add one case-mix ",
-    "control set on top of Spec A per row -- Spec A itself includes no case-mix ",
-    "control, so these rows are not directly comparable to rows (1)--(7). ",
-    "``State Quartile'' is the default case-mix control used elsewhere in the ",
-    "paper. Quartile bins ",
-    "use dummies for bins 2--4; decile bins use dummies for bins 2--10 (bin 1 omitted ",
-    "as reference in both cases)."
+    "\\item Rows (8)--(11) use the row (1) sample and add indicators for case-mix ",
+    "quartiles or deciles, defined within state or nationally, with the lowest ",
+    "bin omitted. The baseline specification includes no case-mix control because ",
+    "case mix may itself respond to ownership change."
   ),
   sig_note,
   "\\end{tablenotes}",

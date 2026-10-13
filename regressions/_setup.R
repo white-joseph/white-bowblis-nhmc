@@ -100,6 +100,16 @@ suppressPackageStartupMessages({
   library(tibble)
 })
 
+# Estimation runs single-threaded. fixest and data.table each maintain their
+# own OpenMP thread pools; on Windows these can conflict and abort the R
+# session outright rather than raising a catchable error. Single-threaded
+# estimation is slower but stable. Raise this only after confirming the
+# scripts run cleanly.
+fixest::setFixest_nthreads(1)
+if (requireNamespace("data.table", quietly = TRUE)) {
+  data.table::setDTthreads(1)
+}
+
 # =============================================================================
 # Paths
 # =============================================================================

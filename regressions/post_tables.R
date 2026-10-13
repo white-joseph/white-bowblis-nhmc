@@ -97,7 +97,7 @@ fit_post <- function(dat, lhs, vc, fe_rhs, extra_controls = character(0)) {
   }
   feols(
     as.formula(paste0(lhs, " ~ ", rhs, " | ", fe_rhs)),
-    data = dat, vcov = vc, lean = TRUE
+    data = dat, vcov = vc, lean = TRUE, mem.clean = TRUE
   )
 }
 
@@ -155,9 +155,15 @@ sig_note <- "\\item Statistical significance: $^{***}p<0.01$, $^{**}p<0.05$, $^{
 spec_note <- paste0(
   "\\item \\textit{Notes:} Each cell reports the coefficient on \\textit{post}, ",
   "with standard errors in parentheses. All specifications include facility and ",
-  "calendar-period fixed effects and control for the number of certified beds. ",
-  "Standard errors are two-way clustered by facility and calendar period. The ",
-  "sample excludes facilities government-owned at any point during the study period."
+  "calendar-quarter fixed effects and control for the number of certified beds. ",
+  "Standard errors are two-way clustered by facility and calendar quarter. The ",
+  "ownership-change quarter ($\\tau = 0$) is excluded."
+)
+
+chain_def <- paste0(
+  "A facility is chain-affiliated if its cost report lists a home office. Baseline ",
+  "affiliation is measured in January 2017, or at the facility's first observation ",
+  "if it is not observed then."
 )
 
 # Variant used by the staffing and business-model tables, which omits the
@@ -166,8 +172,9 @@ spec_note <- paste0(
 spec_note_trimmed <- paste0(
   "\\item \\textit{Notes:} Each cell reports the coefficient on \\textit{post}, ",
   "with standard errors in parentheses. All specifications include facility and ",
-  "calendar-period fixed effects and control for the number of certified beds. ",
-  "Standard errors are two-way clustered by facility and calendar period."
+  "calendar-month fixed effects and control for the number of certified beds. ",
+  "Standard errors are two-way clustered by facility and calendar month. The ",
+  "three months before the ownership change ($\\tau = -3, -2, -1$) are excluded."
 )
 
 wrap_table <- function(body, caption, label, colspec, header_row, notes, size = "\\small") {
@@ -350,16 +357,19 @@ staffing_tex <- wrap_table(
   notes = c(
     spec_note_trimmed,
     paste0(
-      "\\item Panel A reports staffing HPRD. Panel B decomposes ",
-      "each staffing measure into its numerator (raw monthly hours, the total ",
-      "quantity of nursing labor purchased) and denominator (resident days, i.e. ",
-      "facility census)."
+      "\\item Panel A reports hours per resident day (HPRD) in levels and logs. ",
+      "Panel B reports its numerator, monthly nursing hours, and its denominator, ",
+      "monthly resident days. RN includes RNs with administrative duties and ",
+      "directors of nursing; LPN includes LPNs with administrative duties; CNA ",
+      "includes certified nursing assistants, aides in training, and medication ",
+      "aides. N = ", format(n_hprd, big.mark = ","), " facility-months for the ",
+      "HPRD specifications; log specifications drop zero values."
     ),
     paste0(
-      "\\item Panels C and D re-estimate Panel A separately by baseline chain ",
-      "affiliation. Chain status is each facility's classification at its first ",
-      "observation in the panel. Facilities with no available chain ",
-      "classification are excluded from both split panels."
+      "\\item Panels C and D re-estimate Panel A separately for facilities that ",
+      "were chain-affiliated and independent at baseline. ", chain_def,
+      if (n_missing_chain > 0) paste0(" ", n_missing_chain, " facilities with ",
+        "no chain classification are excluded.") else ""
     ),
     sig_note
   )
@@ -395,23 +405,25 @@ for (i in seq_len(nrow(business_spec))) {
 
 business_tex <- wrap_table(
   business_body,
-  caption = "Effect of Ownership Change on Business-Model Outcomes",
+  caption = "Effect of Ownership Change on Operating-Model Outcomes",
   label = "tab:post-business",
   colspec = "@{} l Y Y Y @{}",
-  header_row = "Outcome & Pooled & Chain & Non-chain \\\\",
+  header_row = "Outcome & Pooled & Chain & Independent \\\\",
   notes = c(
     spec_note_trimmed,
     paste0(
-      "\\item Occupancy rate is residents as a share of available bed-days. Payer shares ",
-      "are shares of patient days."
+      "\\item Occupancy rate is patient days as a percentage of available bed-days, and ",
+      "Medicare and Medicaid shares are percentages of patient days, so their ",
+      "coefficients are in percentage points; average length of stay is in days. ",
+      "All four outcomes come from annual cost reports assigned to each month of ",
+      "the reporting period."
     ),
     paste0(
-      "\\item The chain and non-chain columns re-estimate the pooled specification ",
-      "separately by baseline chain affiliation, defined as each facility's ",
-      "classification at its first observation in the panel. Pooled sample: N = ",
-      format(nrow(df_m_wo), big.mark = ","), " facility-months. Chain: N = ",
-      format(nrow(df_chain), big.mark = ","), ". Non-chain: N = ",
-      format(nrow(df_nonchain), big.mark = ","), "."
+      "\\item The chain and independent columns re-estimate the pooled specification ",
+      "separately by baseline chain affiliation. ", chain_def, " N = ",
+      format(nrow(df_m_wo), big.mark = ","), " facility-months (pooled), ",
+      format(nrow(df_chain), big.mark = ","), " (chain), and ",
+      format(nrow(df_nonchain), big.mark = ","), " (independent)."
     ),
     sig_note
   )
@@ -441,22 +453,36 @@ write_fragment(business_tex, "post_business_model_table.tex")
 # =============================================================================
 fit_interaction <- function(dat, lhs, vc, time_var) {
   if (!(lhs %in% names(dat))) return(NULL)
-  d <- dat %>% dplyr::filter(!is.na(chain_at_start))
+
+  # Only the columns the regression needs, so the estimation frame is a small
+  # fraction of the size of the full panel.
+  keep <- c("cms_certification_number", time_var, "post", "beds", "chain_at_start", lhs)
+  d <- dat[!is.na(dat$chain_at_start) & !is.na(dat[[lhs]]), keep, drop = FALSE]
   if (nrow(d) == 0) return(NULL)
 
+  # The interaction terms and the chain-specific calendar-period fixed effect
+  # are built explicitly rather than through fixest's `:` and `^` operators.
+  # This is numerically identical but avoids constructing the interactions
+  # inside the estimation routine on the full panel.
+  d$post_chain   <- d$post * d$chain_at_start
+  d$beds_chain   <- d$beds * d$chain_at_start
+  d$period_chain <- interaction(d[[time_var]], d$chain_at_start, drop = TRUE)
+
   fml <- as.formula(paste0(
-    lhs, " ~ post + post:chain_at_start + beds + beds:chain_at_start",
-    " | cms_certification_number + ", time_var, "^chain_at_start"
+    lhs, " ~ post + post_chain + beds + beds_chain",
+    " | cms_certification_number + period_chain"
   ))
 
   cat(sprintf("[interaction] %s (N = %s)\n", lhs, format(nrow(d), big.mark = ",")))
-  tryCatch(
-    feols(fml, data = d, vcov = vc, lean = TRUE),
+  out <- tryCatch(
+    feols(fml, data = d, vcov = vc, lean = TRUE, mem.clean = TRUE),
     error = function(e) {
       message(sprintf("[warn] interaction %s failed: %s", lhs, e$message))
       NULL
     }
   )
+  rm(d); gc(verbose = FALSE)
+  out
 }
 
 interaction_row <- function(dat, v, label, vc, time_var, digits = 4) {
@@ -465,7 +491,7 @@ interaction_row <- function(dat, v, label, vc, time_var, digits = 4) {
   # fmt_est() reports the coefficient on post; the quantity of interest here
   # is the interaction term, so the cell is formatted directly.
   if (!is.null(mod)) {
-    s <- coef_se_star(mod, term = "post:chain_at_start")
+    s <- coef_se_star(mod, term = "post_chain")
     if (!is.na(s$coef)) {
       b <- formatC(s$coef, format = "f", digits = digits)
       if (s$coef > 0) b <- paste0("\\phantom{-}", b)
@@ -580,7 +606,7 @@ outc <- build_quality_block(quality_outcome_measures, long_stay_quality_measures
 short <- build_quality_block(names(short_stay_quality_measures), short_stay_quality_measures)
 
 quality_body <- c(
-  panel_header("Panel A: Long-stay labor-saving mechanism measures", 5),
+  panel_header("Panel A: Long-stay care routines that can substitute for staff time", 5),
   mech$rows,
   "\\addlinespace[0.6em]",
   panel_header("Panel B: Long-stay resident outcome measures", 5),
@@ -595,32 +621,27 @@ quality_tex <- wrap_table(
   caption = "Effect of Ownership Change on Quality Measures",
   label = "tab:post-quality",
   colspec = "@{} l Y Y Y Y @{}",
-  header_row = paste0(
-    " & \\multicolumn{2}{c}{All facilities} & \\multicolumn{2}{c}{By chain affiliation} \\\\\n",
-    "\\cmidrule(lr){2-3} \\cmidrule(lr){4-5}\n",
-    "Outcome & (1) & (2) & (3) Chain & (4) Non-chain \\\\"
-  ),
+  header_row = "Outcome & (1) Baseline & (2) Staffing controls & (3) Chain & (4) Independent \\\\",
   notes = c(
     spec_note,
     paste0(
       "\\item Column (1) is the baseline specification. Column (2) adds RN, LPN, ",
-      "and nurse aide hours per resident day as controls. Because staffing is itself ",
-      "affected by ownership change, column (2) is not a preferred estimate of the ",
-      "total effect; it is reported to show whether the quality response is ",
-      "attenuated after conditioning on measured staffing inputs. Columns (3) and ",
-      "(4) re-estimate column (1) separately by baseline chain affiliation, defined ",
-      "as each facility's classification at its first observation in the panel."
+      "and CNA hours per resident day as controls; because staffing is itself ",
+      "affected by ownership change, column (2) is descriptive rather than an ",
+      "estimate of the total effect. Columns (3) and (4) re-estimate column (1) ",
+      "separately for facilities that were chain-affiliated and independent at ",
+      "baseline. ", chain_def
     ),
     paste0(
-      "\\item Long-stay measures (Panels A-B) and short-stay measures (Panel C) are ",
-      "constructed from different resident populations and are not directly ",
-      "comparable to one another. For every measure, lower values indicate better ",
-      "measured quality."
+      "\\item Each measure is a percentage of residents, so coefficients are in ",
+      "percentage points. Long-stay measures (Panels A and B) and short-stay ",
+      "measures (Panel C) come from different resident populations. Lower values ",
+      "indicate better quality for every measure except improved function, for ",
+      "which higher values are better."
     ),
     paste0(
-      "\\item Pressure injuries is estimated on 2018--2023 only; improved function ",
-      "is estimated on 2017--2022 only, the years in which each is reported. ",
-      "Vaccination measures are excluded. The transition quarter ($\\tau = 0$) is excluded."
+      "\\item Pressure injuries are estimated on 2018--2023 and improved function ",
+      "on 2017--2022, the years in which each is reported."
     ),
     sig_note
   )
@@ -666,7 +687,7 @@ interaction_body <- c(
   panel_header("Panel A: Staffing", 2),
   interaction_staffing_rows,
   "\\addlinespace[0.6em]",
-  panel_header("Panel B: Business model", 2),
+  panel_header("Panel B: Operating model", 2),
   interaction_business_rows,
   "\\addlinespace[0.6em]",
   panel_header("Panel C: Quality", 2),
@@ -678,29 +699,29 @@ interaction_tex <- wrap_table(
   caption = "Tests of Differences Between Chain-Affiliated and Independent Facilities",
   label = "tab:chain-interaction",
   colspec = "@{} l Y @{}",
-  header_row = "Outcome & Chain $-$ Non-chain \\\\",
+  header_row = "Outcome & Chain $-$ Independent \\\\",
   notes = c(
     paste0(
       "\\item \\textit{Notes:} Each cell reports the coefficient on the ",
       "interaction between \\textit{post} and baseline chain affiliation, with ",
-      "standard errors in parentheses. This coefficient is the difference ",
-      "between the chain and non-chain estimates reported elsewhere in the ",
-      "paper; a negative value indicates a smaller effect among chain-affiliated ",
-      "facilities."
+      "standard errors in parentheses. It equals the chain estimate minus the ",
+      "independent estimate in the staffing, operating-model, and quality tables, ",
+      "so a positive value means the estimate is higher (less negative) among ",
+      "chain-affiliated facilities."
     ),
     paste0(
-      "\\item Every right-hand-side term and the calendar-period fixed effects ",
-      "are interacted with chain affiliation, so the specification reproduces ",
-      "the separate subsample regressions exactly while yielding a standard ",
-      "error for their difference. All specifications include facility fixed ",
-      "effects and control for the number of certified beds. Standard errors ",
-      "are two-way clustered by facility and calendar period."
+      "\\item The post indicator, certified beds, and the calendar fixed effects are ",
+      "each interacted with baseline chain affiliation, so the specification ",
+      "reproduces the separate chain and independent estimates and provides a ",
+      "standard error for their difference. All specifications include facility ",
+      "fixed effects. Standard errors are two-way clustered by facility and ",
+      "calendar period. ", chain_def
     ),
     paste0(
       "\\item Panels A and B are estimated on the facility-month panel ",
       "excluding the anticipation window ($\\tau = -3, -2, -1$); Panel C on the ",
       "facility-quarter panel excluding the transition quarter ($\\tau = 0$). ",
-      "Facilities with no available chain classification are excluded."
+      ""
     ),
     sig_note
   )

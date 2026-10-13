@@ -287,15 +287,20 @@ notes <- c(
   paste0(
     "\\item \\textit{Notes:} $N$ is the number of non-missing observations ",
     "for each variable. HPRD denotes hours per resident day; monthly hours ",
-    "are the HPRD numerator. Chain affiliation is measured at the start of ",
-    "each facility's panel and held fixed. Acuity quartiles are within-state, ",
-    "within-period case-mix quartiles, with quartile 1 omitted. For every ",
-    "quality measure, lower values indicate better measured quality."
+    "are the HPRD numerator. CNA includes certified nursing assistants, aides ",
+    "in training, and medication aides. Chain affiliation is baseline ",
+    "affiliation: a facility is chain-affiliated if its cost report lists a ",
+    "home office, measured in January 2017 or at the facility's first ",
+    "observation if it is not observed then. Acuity quartiles are within-state, ",
+    "within-period case-mix quartiles, with quartile 1 omitted. Quality measures ",
+    "are percentages of long-stay residents; for each, lower values indicate ",
+    "better quality."
   ),
   sample_note,
   paste0(
-    "\\item Both samples exclude hospital-based facilities, facilities outside ",
-    "the 48 contiguous states, and any facility government-owned at any point ",
+    "\\item Both samples exclude hospital-based facilities, facilities in Alaska ",
+    "and Hawaii, facilities with fewer than 15 certified beds, facility-months ",
+    "with implausible staffing, and any facility government-owned at any point ",
     "during the study period."
   )
 )

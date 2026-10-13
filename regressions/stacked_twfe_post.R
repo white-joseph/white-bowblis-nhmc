@@ -30,7 +30,7 @@
 #
 # stack_id is a facility-by-cohort identifier (a facility appearing in
 # multiple cohort samples is treated as a distinct unit within each).
-# controls come from make_controls_rhs() (the legacy full control set).
+# controls: certified beds only, matching the main specification (Section 4).
 # Standard errors are two-way clustered by facility and calendar month.
 # The donut excludes tau in {-3,-2,-1} from the treated observations.
 #
@@ -92,7 +92,7 @@ df <- load_staffing_panel() %>%
     year_month = as.factor(year_month)
   )
 
-controls_rhs <- make_controls_rhs(df)
+controls_rhs <- "beds"  # same control set as the main TWFE specification
 
 outs_lvl <- c("rn_hprd", "lpn_hprd", "cna_hprd", "total_hprd")
 outs_log <- c(rn_hprd = "ln_rn", lpn_hprd = "ln_lpn", cna_hprd = "ln_cna", total_hprd = "ln_total")
@@ -324,7 +324,7 @@ tab <- c(
   "\\begin{table}[!ht]",
   "\\centering",
   "\\begin{threeparttable}",
-  "\\caption{TWFE DiD Estimates of \\textit{post} on Staffing Outcomes (Stacked Sample, Baseline Donut)}",
+  "\\caption{Stacked Difference-in-Differences Estimates for Staffing}",
   "\\label{tab:stacked-twfe-post}",
   "\\small",
   "\\setlength{\\tabcolsep}{6pt}",
@@ -346,7 +346,7 @@ tab <- c(
   "\\footnotesize",
   sprintf("\\item \\textit{Notes:} Each cell reports the coefficient on \\textit{post} with standard errors in parentheses. The stacked sample includes never-treated and not-yet-treated controls for each cohort; the donut excludes $\\tau\\in\\{-3,-2,-1\\}$. Sample sizes: $N_{\\mathrm{HPRD}}=%s$; $N_{\\mathrm{Log}}=%s$.",
           N_levels, N_logs),
-  "\\item Specifications include facility-by-cohort fixed effects (stack\\_id), calendar-month fixed effects, cohort fixed effects, and covariates: \\textit{government}, \\textit{non-profit}, \\textit{chain}, \\textit{beds}, \\textit{occupancy rate}, \\textit{percent Medicare}, \\textit{percent Medicaid}, and state case-mix quartile indicators.",
+  "\\item All specifications include facility-by-cohort, calendar-month, and cohort fixed effects and control for the number of certified beds.",
   "\\item Standard errors are clustered two ways by facility and calendar month.",
   "\\item Statistical significance: $^{***}p<0.01$, $^{**}p<0.05$, $^{*}p<0.10$.",
   "\\end{tablenotes}",
