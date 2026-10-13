@@ -789,25 +789,70 @@ if hprd_cols:
     print(f"[filter] drop rows with NaN in any HPRD: {before:,} -> {len(analytical):,}")
 
 # ---- HPRD cleaning rules ----
-if {"rn_hprd", "lpn_hprd", "cna_hprd", "total_hprd"}.issubset(analytical.columns):
-    for c in ["rn_hprd", "lpn_hprd", "cna_hprd", "total_hprd"]:
-        analytical[c] = pd.to_numeric(analytical[c], errors="coerce")
-
-    before = len(analytical)
-
-    m_joint_zero = (analytical["rn_hprd"] == 0) & (analytical["lpn_hprd"] == 0)
-    m_total_low = analytical["total_hprd"] < 1.5
-    m_total_high = analytical["total_hprd"] > 12
-    m_cna_high = analytical["cna_hprd"] > 5.25
-
-    zmask = m_joint_zero | m_total_low | m_total_high | m_cna_high
-    analytical = analytical.loc[~zmask].copy()
-
-    print(
-        f"[filter] drop implausible HPRD: {before:,} -> {len(analytical):,}  "
-        f"(joint_zero={m_joint_zero.sum():,}, total<1.5={m_total_low.sum():,}, "
-        f"total>12={m_total_high.sum():,}, cna>5.25={m_cna_high.sum():,})"
+# Plausibility screens are applied to the CMS Five-Star job-code definitions of
+# each staff type (CMS Five-Star Technical Users' Guide), which are the
+# definitions used for the analysis outcomes (see load_staffing_panel() in
+# regressions/_setup.R):
+#
+#   RN          job codes 5, 6, 7     rn + rndon + rnadmin
+#   LPN         job codes 8, 9        lpn + lpnadmin
+#   Nurse aide  job codes 10, 11, 12  cna + natrn + medaide
+#
+# A facility-month with no reported hours in a job code is a genuine zero in
+# PBJ rather than an unobserved value, so missing component hours are treated
+# as zero when the sums are formed. Thresholds: total nurse staffing below 1.5
+# or above 12 hours per resident day, nurse aide staffing above 5.25 (the CMS
+# aberrant-staffing rules), and RN and LPN hours both zero (an additional
+# screen).
+_component_cols = [
+    "rn_hours_month", "rndon_hours_month", "rnadmin_hours_month",
+    "lpn_hours_month", "lpnadmin_hours_month",
+    "cna_hours_month", "natrn_hours_month", "medaide_hours_month",
+    "resident_days",
+]
+_missing_components = [c for c in _component_cols if c not in analytical.columns]
+if _missing_components:
+    raise KeyError(
+        f"Cannot apply the Five-Star job-code plausibility screens: missing "
+        f"{_missing_components}. Rebuild pbj_nurse.csv with 02_clean_pbj_nurse.py "
+        f"so the component job-code hours are available."
     )
+
+
+def _z(col: str) -> pd.Series:
+    return pd.to_numeric(analytical[col], errors="coerce").fillna(0.0)
+
+
+_rn_h = _z("rn_hours_month") + _z("rndon_hours_month") + _z("rnadmin_hours_month")
+_lpn_h = _z("lpn_hours_month") + _z("lpnadmin_hours_month")
+_aide_h = _z("cna_hours_month") + _z("natrn_hours_month") + _z("medaide_hours_month")
+_days = pd.to_numeric(analytical["resident_days"], errors="coerce")
+_days = _days.where(_days > 0)
+
+_rn_hprd_fs = _rn_h / _days
+_lpn_hprd_fs = _lpn_h / _days
+_aide_hprd_fs = _aide_h / _days
+_total_hprd_fs = (_rn_h + _lpn_h + _aide_h) / _days
+
+before = len(analytical)
+
+m_joint_zero = (_rn_hprd_fs == 0) & (_lpn_hprd_fs == 0)
+m_total_low = _total_hprd_fs < 1.5
+m_total_high = _total_hprd_fs > 12
+m_cna_high = _aide_hprd_fs > 5.25
+
+zmask = m_joint_zero | m_total_low | m_total_high | m_cna_high
+analytical = analytical.loc[~zmask].copy()
+
+print(
+    f"[filter] drop implausible HPRD (Five-Star job-code definitions): "
+    f"{before:,} -> {len(analytical):,}  "
+    f"(joint_zero={m_joint_zero.sum():,}, total<1.5={m_total_low.sum():,}, "
+    f"total>12={m_total_high.sum():,}, aide>5.25={m_cna_high.sum():,})"
+)
+
+del _rn_h, _lpn_h, _aide_h, _days
+del _rn_hprd_fs, _lpn_hprd_fs, _aide_hprd_fs, _total_hprd_fs
 
 # ---- Drop implausible bed counts (<15) ----
 if "beds" in analytical.columns:

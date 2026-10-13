@@ -209,11 +209,13 @@ mcr_q = filter_to_window_quarter(mcr_q)
 #                                   training, medication aides/technicians
 #
 # pbj_nurse_quarterly.csv stores HPRD built from the direct-care categories
-# only, so HPRD is recomputed here from the component hours. The upstream
-# plausibility flags (pbj_implausible_hprd, pbj_invalid_quarter) are left as
-# computed upstream, on the direct-care definitions, so that the sample is
-# defined the same way as in the monthly panel, where 06_panel.py filters on
-# direct-care HPRD and the definitions are applied afterward.
+# only, so HPRD is recomputed here from the component hours. The plausibility
+# flags (pbj_zero_rn_lpn, pbj_implausible_hprd) are likewise recomputed here on
+# the job-code definitions, so the screens apply to the same measures used in
+# the analysis and match the screens 06_panel.py applies to the monthly panel.
+# pbj_invalid_quarter (hard-impossible rows: non-positive resident days,
+# out-of-range coverage) does not depend on the staffing definition and is left
+# as computed upstream.
 #
 # A facility-quarter with no reported hours in a job code is a genuine zero in
 # PBJ rather than an unobserved value, so missing component hours are treated
@@ -247,6 +249,18 @@ else:
     pbj_q["lpn_hprd"] = (lpn_hours / days).astype("float32")
     pbj_q["cna_hprd"] = (aide_hours / days).astype("float32")
     pbj_q["total_hprd"] = ((rn_hours + lpn_hours + aide_hours) / days).astype("float32")
+
+    # Plausibility flags on the job-code definitions: RN and LPN both zero, and
+    # total nurse staffing below 1.5 or above 12 or nurse aide staffing above
+    # 5.25 hours per resident day (CMS aberrant-staffing thresholds).
+    pbj_q["pbj_zero_rn_lpn"] = (
+        (pbj_q["rn_hprd"] == 0) & (pbj_q["lpn_hprd"] == 0)
+    ).fillna(False).astype("Int8")
+    pbj_q["pbj_implausible_hprd"] = (
+        (pbj_q["total_hprd"] < 1.5)
+        | (pbj_q["total_hprd"] > 12)
+        | (pbj_q["cna_hprd"] > 5.25)
+    ).fillna(False).astype("Int8")
 
     print("[staffing] quarterly HPRD recomputed on CMS job-code definitions")
 
@@ -505,6 +519,11 @@ if "pbj_implausible_hprd" in panel.columns:
     before = len(panel)
     panel = panel.loc[panel["pbj_implausible_hprd"] != 1].copy()
     print(f"[filter] drop pbj_implausible_hprd==1: {before:,} -> {len(panel):,}")
+
+if "pbj_zero_rn_lpn" in panel.columns:
+    before = len(panel)
+    panel = panel.loc[panel["pbj_zero_rn_lpn"] != 1].copy()
+    print(f"[filter] drop pbj_zero_rn_lpn==1: {before:,} -> {len(panel):,}")
 
 # Fallback if flags absent
 if (
