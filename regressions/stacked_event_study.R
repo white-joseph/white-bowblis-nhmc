@@ -355,4 +355,35 @@ for (y in outs_lvl) {
   cat("[write] ", normalizePath(plot_fp[[y]], winslash = "\\"), "\n", sep = "")
 }
 
+# -----------------------------------------------------------------------------
+# One-year-window plots (appendix). Same construction as the two-year plots
+# above; written to outputs/plots/appendix/ with a _w12 suffix.
+# -----------------------------------------------------------------------------
+appendix_plots_dir <- file.path(plots_dir, "appendix")
+dir.create(appendix_plots_dir, recursive = TRUE, showWarnings = FALSE)
+
+for (y in outs_lvl) {
+  coefs12 <- extract_es_coefs(win12$mods[[y]], ref_tau = REF) %>%
+    mutate(ci_lo = estimate - 1.96 * se, ci_hi = estimate + 1.96 * se)
+
+  p12 <- ggplot(coefs12, aes(x = event_time, y = estimate)) +
+    geom_hline(yintercept = 0, linetype = "dotted", color = "grey40") +
+    geom_vline(xintercept = -0.5, linetype = "dashed", color = "grey40") +
+    geom_errorbar(aes(ymin = ci_lo, ymax = ci_hi), width = 0.4, color = "steelblue") +
+    geom_point(color = "steelblue", size = 1.6) +
+    labs(
+      x = "Months relative to ownership change",
+      y = plot_ylab[[y]]
+    ) +
+    theme_minimal(base_size = 12, base_family = "sans") +
+    theme(
+      panel.border = element_rect(color = "black", fill = NA, linewidth = 1),
+      panel.grid.minor = element_blank()
+    )
+
+  fp12 <- file.path(appendix_plots_dir, sprintf("stacked_es_%s_w12.pdf", sub("_hprd$", "", y)))
+  ggsave(fp12, plot = p12, width = 7, height = 5, device = "pdf")
+  cat("[write] ", normalizePath(fp12, winslash = "\\"), "\n", sep = "")
+}
+
 cat("\nDone. Stacked event study (2-year and 1-year windows), Wald fragment, and plots all regenerated.\n")

@@ -145,16 +145,37 @@ rm(df_full); gc(verbose = FALSE)
 # -----------------------------------------------------------------------------
 df_baseline <- drop_anticipation_window(df)
 
+# Longest gap in PBJ reporting for each facility over the full sample period.
+# gap_from_prev_months is recorded on the first month after a gap, so a
+# facility's longest gap is the maximum of that variable across its months
+# (zero if it never has a gap). Rows (2)-(5) drop every observation of a
+# facility whose longest gap exceeds the stated length, rather than only the
+# facility-months that immediately follow a gap.
+max_gap <- df %>%
+  dplyr::group_by(cms_certification_number) %>%
+  dplyr::summarise(
+    max_gap = suppressWarnings(max(gap_from_prev_months, na.rm = TRUE)),
+    .groups = "drop"
+  ) %>%
+  dplyr::mutate(max_gap = dplyr::if_else(is.finite(max_gap), max_gap, 0))
+
+drop_gap_facilities <- function(dat, k) {
+  drop_ccns <- max_gap$cms_certification_number[max_gap$max_gap > k]
+  cat(sprintf("[gaps] longest gap > %d month(s): %s facilities dropped\n",
+              k, format(length(drop_ccns), big.mark = ",")))
+  dat %>% dplyr::filter(!(cms_certification_number %in% drop_ccns))
+}
+
 restriction_specs <- list(
   list(label = "(1) Baseline", data = df_baseline),
-  list(label = "(2) Drop months after PBJ gaps $> 6$ months",
-       data = df_baseline %>% dplyr::filter(is.na(gap_from_prev_months) | gap_from_prev_months <= 6)),
-  list(label = "(3) Drop months after PBJ gaps $> 3$ months",
-       data = df_baseline %>% dplyr::filter(is.na(gap_from_prev_months) | gap_from_prev_months <= 3)),
-  list(label = "(4) Drop months after PBJ gaps $> 1$ month",
-       data = df_baseline %>% dplyr::filter(is.na(gap_from_prev_months) | gap_from_prev_months <= 1)),
-  list(label = "(5) Drop months after any PBJ gap",
-       data = df_baseline %>% dplyr::filter(is.na(gap_from_prev_months) | gap_from_prev_months == 0)),
+  list(label = "(2) Drop facilities with PBJ gaps $> 6$ months",
+       data = drop_gap_facilities(df_baseline, 6)),
+  list(label = "(3) Drop facilities with PBJ gaps $> 3$ months",
+       data = drop_gap_facilities(df_baseline, 3)),
+  list(label = "(4) Drop facilities with PBJ gaps $> 1$ month",
+       data = drop_gap_facilities(df_baseline, 1)),
+  list(label = "(5) Drop facilities with any PBJ gap",
+       data = drop_gap_facilities(df_baseline, 0)),
   list(label = "(6) Exclude $\\tau \\in \\{-4,-3,-2,-1\\}$",
        data = df %>% dplyr::filter(is.na(event_time) | !(event_time %in% -4:-1))),
   list(label = "(7) Exclude $\\tau \\in \\{-2,-1\\}$ only",
@@ -258,8 +279,9 @@ rob_frag <- c(
     "\\item Rows (1)--(7) use the baseline specification (facility and calendar-month ",
     "fixed effects and certified beds) and vary the sample. Row (1) is the ",
     "baseline sample, which excludes $\\tau = -3, -2, -1$. Rows (2)--(5) also drop ",
-    "facility-months that follow a gap in PBJ reporting longer than the stated ",
-    "length. Rows (6) and (7) widen and narrow the excluded window before the ",
+    "every facility with a gap in PBJ reporting longer than the stated length at ",
+    "any point in the sample period; row (5) drops facilities with any gap. ",
+    "Rows (6) and (7) widen and narrow the excluded window before the ",
     "ownership change."
   ),
   paste0(

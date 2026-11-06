@@ -26,13 +26,13 @@
 \midrule
 (1) Baseline & 553,013 & $-0.0423^{***}$ $(0.0058)$ & $\phantom{-}0.0008$ $(0.0063)$ & $-0.0641^{***}$ $(0.0100)$ & $-0.1055^{***}$ $(0.0141)$ \\
 \addlinespace[0.35em]
-(2) Drop months after PBJ gaps $> 6$ months & 552,847 & $-0.0423^{***}$ $(0.0058)$ & $\phantom{-}0.0008$ $(0.0063)$ & $-0.0640^{***}$ $(0.0100)$ & $-0.1055^{***}$ $(0.0141)$ \\
+(2) Drop facilities with PBJ gaps $> 6$ months & 544,035 & $-0.0424^{***}$ $(0.0058)$ & $\phantom{-}0.0012$ $(0.0064)$ & $-0.0655^{***}$ $(0.0101)$ & $-0.1068^{***}$ $(0.0142)$ \\
 \addlinespace[0.35em]
-(3) Drop months after PBJ gaps $> 3$ months & 552,581 & $-0.0423^{***}$ $(0.0058)$ & $\phantom{-}0.0008$ $(0.0063)$ & $-0.0639^{***}$ $(0.0100)$ & $-0.1054^{***}$ $(0.0141)$ \\
+(3) Drop facilities with PBJ gaps $> 3$ months & 528,849 & $-0.0433^{***}$ $(0.0059)$ & $\phantom{-}0.0010$ $(0.0065)$ & $-0.0672^{***}$ $(0.0103)$ & $-0.1094^{***}$ $(0.0144)$ \\
 \addlinespace[0.35em]
-(4) Drop months after PBJ gaps $> 1$ month & 548,955 & $-0.0424^{***}$ $(0.0058)$ & $\phantom{-}0.0012$ $(0.0063)$ & $-0.0638^{***}$ $(0.0100)$ & $-0.1049^{***}$ $(0.0141)$ \\
+(4) Drop facilities with PBJ gaps $> 1$ month & 326,443 & $-0.0552^{***}$ $(0.0083)$ & $-0.0012$ $(0.0093)$ & $-0.0664^{***}$ $(0.0136)$ & $-0.1228^{***}$ $(0.0197)$ \\
 \addlinespace[0.35em]
-(5) Drop months after any PBJ gap & 548,955 & $-0.0424^{***}$ $(0.0058)$ & $\phantom{-}0.0012$ $(0.0063)$ & $-0.0638^{***}$ $(0.0100)$ & $-0.1049^{***}$ $(0.0141)$ \\
+(5) Drop facilities with any PBJ gap & 326,443 & $-0.0552^{***}$ $(0.0083)$ & $-0.0012$ $(0.0093)$ & $-0.0664^{***}$ $(0.0136)$ & $-0.1228^{***}$ $(0.0197)$ \\
 \addlinespace[0.35em]
 (6) Exclude $\tau \in \{-4,-3,-2,-1\}$ & 551,726 & $-0.0421^{***}$ $(0.0058)$ & $\phantom{-}0.0005$ $(0.0064)$ & $-0.0641^{***}$ $(0.0101)$ & $-0.1057^{***}$ $(0.0143)$ \\
 \addlinespace[0.35em]
@@ -52,7 +52,7 @@
 \begin{tablenotes}[flushleft]
 \footnotesize
 \item \textit{Notes:} Each cell reports the \textit{post} coefficient on staffing levels (HPRD), with two-way clustered standard errors (facility and calendar month) in parentheses. $N$ is the number of facility-months.
-\item Rows (1)--(7) use the baseline specification (facility and calendar-month fixed effects and certified beds) and vary the sample. Row (1) is the baseline sample, which excludes $\tau = -3, -2, -1$. Rows (2)--(5) also drop facility-months that follow a gap in PBJ reporting longer than the stated length. Rows (6) and (7) widen and narrow the excluded window before the ownership change.
+\item Rows (1)--(7) use the baseline specification (facility and calendar-month fixed effects and certified beds) and vary the sample. Row (1) is the baseline sample, which excludes $\tau = -3, -2, -1$. Rows (2)--(5) also drop every facility with a gap in PBJ reporting longer than the stated length at any point in the sample period; row (5) drops facilities with any gap. Rows (6) and (7) widen and narrow the excluded window before the ownership change.
 \item Rows (8)--(11) use the row (1) sample and add indicators for case-mix quartiles or deciles, defined within state or nationally, with the lowest bin omitted. The baseline specification includes no case-mix control because case mix may itself respond to ownership change.
 \item Statistical significance: $^{***}p<0.01$, $^{**}p<0.05$, $^{*}p<0.10$.
 \end{tablenotes}

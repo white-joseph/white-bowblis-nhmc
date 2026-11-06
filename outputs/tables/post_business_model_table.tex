@@ -1,7 +1,7 @@
 \begin{table}[!ht]
 \centering
 \begin{threeparttable}
-\caption{Effect of Ownership Change on Operating-Model Outcomes}
+\caption{Effect of Ownership Change on Operating Outcomes}
 \label{tab:post-business}
 \small
 \setlength{\tabcolsep}{6pt}
@@ -10,6 +10,7 @@
 \toprule
 Outcome & Pooled & Chain & Independent \\
 \midrule
+Resident days & \makecell[t]{$\phantom{-}89.3846^{***}$ \\ $(12.1280)$} & \makecell[t]{$\phantom{-}71.5045^{***}$ \\ $(14.5023)$} & \makecell[t]{$\phantom{-}120.2367^{***}$ \\ $(20.6905)$} \\
 Occupancy rate & \makecell[t]{$\phantom{-}2.7053^{***}$ \\ $(0.3506)$} & \makecell[t]{$\phantom{-}2.0236^{***}$ \\ $(0.4181)$} & \makecell[t]{$\phantom{-}3.9347^{***}$ \\ $(0.6030)$} \\
 Medicare share & \makecell[t]{$\phantom{-}1.5915^{***}$ \\ $(0.2160)$} & \makecell[t]{$\phantom{-}1.7716^{***}$ \\ $(0.2306)$} & \makecell[t]{$\phantom{-}1.4914^{***}$ \\ $(0.4204)$} \\
 Medicaid share & \makecell[t]{$-1.1789^{*}$ \\ $(0.5947)$} & \makecell[t]{$\phantom{-}0.1308$ \\ $(0.7349)$} & \makecell[t]{$-3.6001^{***}$ \\ $(0.9633)$} \\
@@ -20,7 +21,7 @@ Average length of stay & \makecell[t]{$-13.0413^{***}$ \\ $(4.4632)$} & \makecel
 \begin{tablenotes}[flushleft]
 \footnotesize
 \item \textit{Notes:} Each cell reports the coefficient on \textit{post}, with standard errors in parentheses. All specifications include facility and calendar-month fixed effects and control for the number of certified beds. Standard errors are two-way clustered by facility and calendar month. The three months before the ownership change ($\tau = -3, -2, -1$) are excluded.
-\item Occupancy rate is patient days as a percentage of available bed-days, and Medicare and Medicaid shares are percentages of patient days, so their coefficients are in percentage points; average length of stay is in days. All four outcomes come from annual cost reports assigned to each month of the reporting period.
+\item Resident days are monthly totals from the Payroll-Based Journal, the denominator of the HPRD measures in Table~\ref{tab:post-staffing}. Occupancy rate is cost-report resident days as a percentage of available bed-days, and Medicare and Medicaid shares are percentages of cost-report resident days, so their coefficients are in percentage points; average length of stay is in days. Occupancy, payer shares, and length of stay come from annual cost reports assigned to each month of the reporting period.
 \item The chain and independent columns re-estimate the pooled specification separately by baseline chain affiliation. A facility is chain-affiliated if its cost report lists a home office. Baseline affiliation is measured in January 2017, or at the facility's first observation if it is not observed then. N = 553,013 facility-months (pooled), 315,111 (chain), and 237,902 (independent).
 \item Statistical significance: $^{***}p<0.01$, $^{**}p<0.05$, $^{*}p<0.10$.
 \end{tablenotes}

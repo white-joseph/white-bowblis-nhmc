@@ -25,16 +25,13 @@
 # Tables
 # -----------------------------------------------------------------------------
 #   Table 1  Staffing. Panel A reports hours per resident day (HPRD) in levels
-#            and logs. Panel B reports the two components of HPRD separately:
-#            raw monthly hours (the numerator) and resident days (the
-#            denominator, i.e. facility census). Reporting the components
-#            separately distinguishes a change in labor purchased from a change
-#            in the census over which those hours are spread. Panels C and D
-#            repeat Panel A separately for facilities chain-affiliated and
-#            independent at baseline.
-#   Table 2  Business-model outcomes: occupancy rate, Medicare and Medicaid
-#            shares of patient days, and average length of stay, reported
-#            pooled and separately by baseline chain affiliation.
+#            and logs. Panel B reports raw monthly hours, the numerator of
+#            HPRD; its denominator, resident days, is reported in Table 2.
+#            Panels C and D repeat Panel A separately for facilities
+#            chain-affiliated and independent at baseline.
+#   Table 2  Operating outcomes: resident days, occupancy rate, Medicare and
+#            Medicaid shares of patient days, and average length of stay,
+#            reported pooled and separately by baseline chain affiliation.
 #   Table 3  Quality measures, long-stay and short-stay. Columns (1) and (2)
 #            report all facilities without and with staffing controls;
 #            columns (3) and (4) split the baseline specification by chain
@@ -150,6 +147,12 @@ panel_header <- function(label, ncols) {
   sprintf("\\multicolumn{%d}{@{}l}{\\textbf{%s}} \\\\[2pt]", ncols, label)
 }
 
+# Panel header set between two rules, used in the staffing and quality tables
+# so that each panel is visually separated.
+ruled_panel_header <- function(label, ncols) {
+  c(sprintf("\\multicolumn{%d}{@{}l}{\\textbf{%s}} \\\\", ncols, label), "\\midrule")
+}
+
 sig_note <- "\\item Statistical significance: $^{***}p<0.01$, $^{**}p<0.05$, $^{*}p<0.10$."
 
 spec_note <- paste0(
@@ -263,15 +266,14 @@ panel_a_rows <- list(
   list(label = "Log(HPRD)", vars = c("ln_rn", "ln_lpn", "ln_cna", "ln_total"),          digits = 4)
 )
 
-# Panel B: the components of HPRD. Hours is the numerator and is reported by
-# staff type, as in Panel A. Resident days is the denominator and is a single
-# facility-level census measure, identical across staff types by construction,
-# so it is estimated once and reported in a cell spanning all four columns.
+# Panel B: monthly hours, the numerator of HPRD, by staff type. The
+# denominator, resident days, is a facility-level census measure and is
+# reported with the operating outcomes in Table 2.
 panel_b_hours_row <- list(label = "Hours", vars = c("rn_hours_month", "lpn_hours_month", "cna_hours_month", "total_hours"), digits = 4)
 
 staffing_body <- character(0)
 
-staffing_body <- c(staffing_body, panel_header("Panel A: Hours per resident day (HPRD)", 5))
+staffing_body <- c(staffing_body, ruled_panel_header("Panel A: Hours per resident day (HPRD)", 5))
 for (i in seq_along(panel_a_rows)) {
   r <- panel_a_rows[[i]]
   cells <- character(4)
@@ -287,8 +289,8 @@ for (i in seq_along(panel_a_rows)) {
   }
 }
 
-staffing_body <- c(staffing_body, "\\addlinespace[0.7em]")
-staffing_body <- c(staffing_body, panel_header("Panel B: Hours and resident days", 5))
+staffing_body <- c(staffing_body, "\\midrule")
+staffing_body <- c(staffing_body, ruled_panel_header("Panel B: Hours", 5))
 
 hours_cells <- character(4)
 for (j in seq_along(panel_b_hours_row$vars)) {
@@ -298,25 +300,17 @@ for (j in seq_along(panel_b_hours_row$vars)) {
   rm(mod); gc(verbose = FALSE)
 }
 staffing_body <- c(staffing_body, paste0(paste(c(panel_b_hours_row$label, hours_cells), collapse = " & "), " \\\\"))
-staffing_body <- c(staffing_body, "\\addlinespace[0.4em]")
-
-mod_rd <- safe_fit(df_m_wo, "resident_days", vc_month, fe_month, label = "Resident days")
-rd_cell <- fmt_est(mod_rd, digits = 4)
-staffing_body <- c(staffing_body, paste0("Resident days & \\multicolumn{4}{c}{", rd_cell, "} \\\\"))
-rm(mod_rd); gc(verbose = FALSE)
 
 # ---------------------------------------------------------------------------
 # Panels C and D: the same HPRD specification estimated separately by baseline
 # chain affiliation. Reported as stacked panels rather than as a separate
 # table so that the pooled and split estimates share one set of outcome
-# columns and can be read against one another directly.
+# columns and can be read against one another directly. Panels are separated
+# by a rule; subsample sizes are reported in the table notes.
 # ---------------------------------------------------------------------------
 add_hprd_panel <- function(body, dat, panel_label) {
-  body <- c(body, "\\addlinespace[0.7em]")
-  body <- c(body, panel_header(
-    sprintf("%s (N = %s facility-months)", panel_label, format(nrow(dat), big.mark = ",")),
-    5
-  ))
+  body <- c(body, "\\midrule")
+  body <- c(body, ruled_panel_header(panel_label, 5))
   for (i in seq_along(panel_a_rows)) {
     r <- panel_a_rows[[i]]
     cells <- character(4)
@@ -358,8 +352,7 @@ staffing_tex <- wrap_table(
     spec_note_trimmed,
     paste0(
       "\\item Panel A reports hours per resident day (HPRD) in levels and logs. ",
-      "Panel B reports its numerator, monthly nursing hours, and its denominator, ",
-      "monthly resident days. RN includes RNs with administrative duties and ",
+      "Panel B reports its numerator, monthly nursing hours. RN includes RNs with administrative duties and ",
       "directors of nursing; LPN includes LPNs with administrative duties; CNA ",
       "includes certified nursing assistants, aides in training, and medication ",
       "aides. N = ", format(n_hprd, big.mark = ","), " facility-months for the ",
@@ -368,6 +361,8 @@ staffing_tex <- wrap_table(
     paste0(
       "\\item Panels C and D re-estimate Panel A separately for facilities that ",
       "were chain-affiliated and independent at baseline. ", chain_def,
+      " N = ", format(nrow(df_chain), big.mark = ","), " (chain) and ",
+      format(nrow(df_nonchain), big.mark = ","), " (independent) facility-months.",
       if (n_missing_chain > 0) paste0(" ", n_missing_chain, " facilities with ",
         "no chain classification are excluded.") else ""
     ),
@@ -378,10 +373,11 @@ staffing_tex <- wrap_table(
 write_fragment(staffing_tex, "post_staffing_table.tex")
 
 # =============================================================================
-# TABLE 2: Business model (single coefficient column)
+# TABLE 2: Operating outcomes (pooled, chain, independent)
 # =============================================================================
 business_spec <- tibble::tribble(
   ~var,              ~label,                       ~digits,
+  "resident_days",   "Resident days",              4,
   "occupancy_rate",  "Occupancy rate",             4,
   "pct_medicare",    "Medicare share",             4,
   "pct_medicaid",    "Medicaid share",             4,
@@ -405,18 +401,21 @@ for (i in seq_len(nrow(business_spec))) {
 
 business_tex <- wrap_table(
   business_body,
-  caption = "Effect of Ownership Change on Operating-Model Outcomes",
+  caption = "Effect of Ownership Change on Operating Outcomes",
   label = "tab:post-business",
   colspec = "@{} l Y Y Y @{}",
   header_row = "Outcome & Pooled & Chain & Independent \\\\",
   notes = c(
     spec_note_trimmed,
     paste0(
-      "\\item Occupancy rate is patient days as a percentage of available bed-days, and ",
-      "Medicare and Medicaid shares are percentages of patient days, so their ",
+      "\\item Resident days are monthly totals from the Payroll-Based Journal, the ",
+      "denominator of the HPRD measures in Table~\\ref{tab:post-staffing}. ",
+      "Occupancy rate is cost-report resident days as a percentage of available ",
+      "bed-days, and Medicare and Medicaid shares are percentages of cost-report ",
+      "resident days, so their ",
       "coefficients are in percentage points; average length of stay is in days. ",
-      "All four outcomes come from annual cost reports assigned to each month of ",
-      "the reporting period."
+      "Occupancy, payer shares, and length of stay come from annual cost reports ",
+      "assigned to each month of the reporting period."
     ),
     paste0(
       "\\item The chain and independent columns re-estimate the pooled specification ",
@@ -606,13 +605,13 @@ outc <- build_quality_block(quality_outcome_measures, long_stay_quality_measures
 short <- build_quality_block(names(short_stay_quality_measures), short_stay_quality_measures)
 
 quality_body <- c(
-  panel_header("Panel A: Long-stay care routines that can substitute for staff time", 5),
+  ruled_panel_header("Panel A: Long-stay care routines that can substitute for staff time", 5),
   mech$rows,
-  "\\addlinespace[0.6em]",
-  panel_header("Panel B: Long-stay resident outcome measures", 5),
+  "\\midrule",
+  ruled_panel_header("Panel B: Long-stay resident outcome measures", 5),
   outc$rows,
-  "\\addlinespace[0.6em]",
-  panel_header("Panel C: Short-stay measures", 5),
+  "\\midrule",
+  ruled_panel_header("Panel C: Short-stay measures", 5),
   short$rows
 )
 
@@ -626,9 +625,9 @@ quality_tex <- wrap_table(
     spec_note,
     paste0(
       "\\item Column (1) is the baseline specification. Column (2) adds RN, LPN, ",
-      "and CNA hours per resident day as controls; because staffing is itself ",
-      "affected by ownership change, column (2) is descriptive rather than an ",
-      "estimate of the total effect. Columns (3) and (4) re-estimate column (1) ",
+      "and CNA hours per resident day as controls; because staffing responds to ",
+      "ownership change, column (2) holds fixed one channel of the effect and is ",
+      "not an estimate of the total effect. Columns (3) and (4) re-estimate column (1) ",
       "separately for facilities that were chain-affiliated and independent at ",
       "baseline. ", chain_def
     ),
@@ -687,7 +686,7 @@ interaction_body <- c(
   panel_header("Panel A: Staffing", 2),
   interaction_staffing_rows,
   "\\addlinespace[0.6em]",
-  panel_header("Panel B: Operating model", 2),
+  panel_header("Panel B: Operating outcomes", 2),
   interaction_business_rows,
   "\\addlinespace[0.6em]",
   panel_header("Panel C: Quality", 2),
@@ -705,7 +704,7 @@ interaction_tex <- wrap_table(
       "\\item \\textit{Notes:} Each cell reports the coefficient on the ",
       "interaction between \\textit{post} and baseline chain affiliation, with ",
       "standard errors in parentheses. It equals the chain estimate minus the ",
-      "independent estimate in the staffing, operating-model, and quality tables, ",
+      "independent estimate in the staffing, operating-outcome, and quality tables, ",
       "so a positive value means the estimate is higher (less negative) among ",
       "chain-affiliated facilities."
     ),

@@ -268,3 +268,4 @@ Thumbs.db
 # what the paper actually depends on).
 outputs/tables/*.csv
 outputs/plots/*.csv
+outputs/plots/appendix/*.csv
