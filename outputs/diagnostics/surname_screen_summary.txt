@@ -1,0 +1,101 @@
+==============================================================================
+SURNAME-SCREEN SENSITIVITY: how the family screen changes the NHC sample
+==============================================================================
+Facilities in the HCRIS-and-NHC universe (chow.csv): 13,585
+
+Name format check (do co-owners share the first or the last token?):
+  records with 2+ person owners sampled : 2,392
+  ... sharing the FIRST token           : 985
+  ... sharing the LAST token            : 122
+  -> surname taken from the FIRST token in the 'fixed' rule
+     ('first' means names are stored 'Last First', e.g. 'Smith John')
+
+Building ownership snapshots and transitions (this can take several minutes)...
+
+------------------------------------------------------------------------------
+A. EVENT LEVEL (NHC transitions since 2017 with >= 50% turnover)
+------------------------------------------------------------------------------
+Candidate events: 13,034 across 7,129 facilities
+  suppressed by the baseline family screen : 766 (5.9%)
+  suppressed by the fixed family screen    : 140 (1.1%)
+  facilities with at least one baseline-suppressed event: 629
+  facilities with at least one fixed-suppressed event   : 132
+
+Events by how the two rules treat them, and how often HCRIS reports a
+change for the same facility within +/- 6 months (facilities in the universe only):
+                               events hcris_corroborated
+category                                                
+1 counted under both rules      12069              37.6%
+2 counted by baseline only        139               5.8%
+3 suppressed by baseline only     748              29.0%
+4 suppressed under both             1               0.0%
+
+How to read it: HCRIS reports legal changes, so corroboration is a diagnostic,
+not proof of a transfer of control. If category 3 (suppressed by baseline only)
+is corroborated about as often as category 1, the baseline screen is hiding
+events that look like substantive transfers. If category 2 (counted by baseline
+only) is corroborated rarely, the baseline screen is counting events that look
+like within-family restructuring.
+
+------------------------------------------------------------------------------
+B. FACILITY LEVEL (universe = facilities in both HCRIS and NHC)
+------------------------------------------------------------------------------
+Check: replicated baseline vs n_chow_nh_compare in chow.csv: 0 facilities differ out of 13,585
+
+BASELINE (as coded): ownership-change counts, rows = HCRIS, columns = NHC
+NHC       0     1    2+
+HCRIS                  
+0      6288  1874  1137
+1       499  1759  1377
+2+       15   101   535
+  treated 1,592 | control 6,288 | excluded 5,705
+
+FIXED (raw-name person test, correct surname end, no company matches): ownership-change counts, rows = HCRIS, columns = NHC
+NHC       0     1    2+
+HCRIS                  
+0      6192  1898  1209
+1       391  1803  1441
+2+        6    91   554
+  treated 1,652 | control 6,192 | excluded 5,741
+
+NO FAMILY SCREEN: ownership-change counts, rows = HCRIS, columns = NHC
+NHC       0     1    2+
+HCRIS                  
+0      6116  1955  1228
+1       390  1791  1454
+2+        6    91   554
+  treated 1,640 | control 6,116 | excluded 5,829
+
+Facilities whose sample status changes, baseline -> fixed (rows = baseline):
+status_fixed     treated  control  excluded
+status_baseline                            
+treated             1552        0        40
+control                0     6116       172
+excluded             100       76      5529
+  388 of 13,585 facilities (2.9%) change status
+  baseline control -> fixed excluded: 172  (the baseline screen hid an NHC-recorded
+    change, so these are possibly contaminated controls under the baseline rule)
+  baseline treated -> fixed excluded: 40  (the baseline screen counted an event
+    the fixed rule reads as within-family, or the fixed rule finds extra changes)
+
+------------------------------------------------------------------------------
+C. EFFECT ON THE FINAL ANALYTIC SAMPLE (facility_lookups.csv, non-government)
+------------------------------------------------------------------------------
+Facilities in the final analytic sample: 6,869  (treated 1,413, control 5,456)
+Their status under the fixed rule (rows = baseline status):
+status_fixed     treated  control  excluded
+status_baseline                            
+treated             1375        0        38
+control                0     5320       136
+  would leave the sample (become excluded): 174 (2.5%)
+  would switch between treated and control : 0 (0.0%)
+  facilities that would newly qualify (before the hospital/AK-HI/beds/etc. restrictions in 06_panel.py): 176
+    of which treated: 100
+
+------------------------------------------------------------------------------
+Caveat: the 'fixed' rule is a proposed correction, not ground truth. Its person-vs-company
+test is a word list (ENTITY_WORDS in this file); read the review sample and extend the
+list if company names are being read as people.
+Files written to C:\Repositories\white-bowblis-nhmc\outputs\diagnostics
+  Read surname_screen_review_sample.csv: for ~20 rows in each category, decide
+  whether the baseline or the fixed rule handled the transfer correctly.
