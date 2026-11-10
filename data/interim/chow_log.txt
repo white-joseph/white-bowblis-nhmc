@@ -1,0 +1,23 @@
+[settings] turnover >= 0.5; levels ('indirect', 'direct', 'partnership'); merge window 6 months; family screen True (>= 80.0%); date lookback 24 months; window 2017-01 to 2024-06
+[nhc] rows read: 5,011,914
+[nhc] facilities: 13,955; facility-months: 1,146,555
+[nhc] review file: C:\Repositories\white-bowblis-nhmc\data\interim\chow_nh_compare_review.csv (11,323 episodes)
+[nhc] date_source_archive_month: 2,907
+[nhc] date_source_association_date: 7,020
+[nhc] episodes_change: 9,927
+[nhc] episodes_family_screen: 263
+[nhc] episodes_outside_window: 924
+[nhc] episodes_reverted: 209
+[nhc] pairs_compared: 1,132,600
+[nhc] pairs_flagged: 12,484
+[nhc] pairs_flagged_level_fallback: 223
+[save] C:\Repositories\white-bowblis-nhmc\data\interim\chow_nh_compare.csv (13,955 facilities)
+[mcr] distinct change months: 5,826; inside study window: 4,888
+[save] C:\Repositories\white-bowblis-nhmc\data\interim\chow_mcr.csv (15,157 facilities)
+[save] C:\Repositories\white-bowblis-nhmc\data\interim\chow.csv (13,585 facilities in both sources)
+[crosstab] facilities in both sources, HCRIS rows by NHC columns:
+NHC       0     1    2+
+HCRIS                  
+0      6296  2394   705
+1       373  2196  1015
+2+       10    93   503

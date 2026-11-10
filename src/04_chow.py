@@ -1,24 +1,81 @@
 #!/usr/bin/env python
 # coding: utf-8
-# -----------------------------------------------------------------------------
-# chow.py —> CHOW exports, with universes + facility signatures
+# =============================================================================
+# src/04_chow.py
 #
-# Outputs:
-#   1) data/interim/chow_nh_compare.csv
-#   2) data/interim/chow_mcr.csv
-#   3) data/interim/chow.csv
-#   4) data/interim/facility_signatures_long.csv
-#   5) data/interim/facility_signatures_wide_preview.csv
+# Identifies changes of ownership (CHOWs) in two administrative sources and
+# writes one facility-level file per source plus their merge.
 #
-# Notes:
-# - Uses shared paths/helpers from config.py where applicable
-# - Preserves existing CHOW logic, thresholds, universes, and output names
-# - Refactor-only pass: no naming or logic changes
+#   NHC Archive  A change is a substantive turnover in a facility's monthly
+#                owner list: at least 50 percent of ownership shares differ
+#                between one archive month and the facility's previous
+#                archive month.
+#   HCRIS        A change is each distinct change-of-ownership month reported
+#                on a Medicare cost report (worksheet S-2, part II).
+#
+# Only changes dated inside the study window (config.START_YM to
+# config.END_YM) are counted.
+#
 # -----------------------------------------------------------------------------
+# NHC rule, step by step
+# -----------------------------------------------------------------------------
+#   1. Monthly owner list. For each facility and archive month, collect every
+#      owner listed at each ownership level (5%+ indirect, 5%+ direct,
+#      partnership interest). Shares are normalized to sum to 100 within a
+#      facility, month, and level. Owners with a missing share are dropped
+#      when other owners at that level report shares; when none do, owners
+#      receive equal shares.
+#   2. Comparison level. Consecutive months are compared at the highest level
+#      present in both months, in the order indirect, direct, partnership, so
+#      that a level appearing in one month and missing in the next is not read
+#      as turnover. If the two months share no level, each month's own highest
+#      level is used and the comparison is marked in the review file.
+#   3. Turnover. Turnover is 1 minus the share overlap between the two owner
+#      lists. A month is flagged when turnover is at least TURNOVER_THRESH.
+#   4. One sale, several flags. A sale can be listed over several archive
+#      months, and an owner list can drop out for a month and return. Flags
+#      within MERGE_WINDOW_MONTHS of one another are grouped into one episode,
+#      and the episode is judged on its net turnover: the owner list before
+#      the first flag against the owner list after the last flag. An episode
+#      whose net turnover is below the threshold is a reporting reversal, not
+#      a change.
+#   5. Family screen (optional). An episode is not counted when at least
+#      FAMILY_KEEP_THRESH percent of ownership is held by individuals with the
+#      same surname before and after. Only owners CMS lists as individuals
+#      enter the screen; organizations never count as family. NHC lists
+#      individuals as "LAST, FIRST", so the surname is the text before the
+#      comma.
+#   6. Dating. An episode is dated by the earliest association date among the
+#      owners who are new after it, rounded to the month, provided that date
+#      falls no more than DATE_LOOKBACK_MONTHS before the archive month in
+#      which the new owners first appear. Otherwise the archive month is used.
+#      The archive month lags the sale, often by several months.
+#
+# -----------------------------------------------------------------------------
+# Inputs
+# -----------------------------------------------------------------------------
+#   data/interim/ownership.csv            (03_clean_ownership.py)
+#   data/raw/medicare-cost-reports/mcr_flatfile_20??.*
+#
+# -----------------------------------------------------------------------------
+# Outputs
+# -----------------------------------------------------------------------------
+#   data/interim/chow_nh_compare.csv          one row per NHC facility
+#   data/interim/chow_mcr.csv                 one row per HCRIS facility
+#   data/interim/chow.csv                     facilities in both sources
+#   data/interim/chow_nh_compare_review.csv   one row per NHC episode, with
+#                                             the owner lists before and after,
+#                                             for hand review
+#   data/interim/chow_log.txt                 counts at each step and the
+#                                             source-by-source crosstab
+#
+# chow.csv keeps the columns read downstream (n_chow_nh_compare, n_chow_mcr,
+# nh_compare_chow_<k>_date, mcr_chow_<k>_date), so 06_panel.py and
+# quarterly_panel.py are unchanged.
+# =============================================================================
 
 from __future__ import annotations
 
-import json
 import re
 from collections import defaultdict
 from pathlib import Path
@@ -28,11 +85,21 @@ import pandas as pd
 
 import config as cfg
 
-# ============================== Paths / Config ================================
+# ============================== Settings ======================================
+TURNOVER_THRESH = 0.50          # share of ownership that must change
+LEVEL_PRIORITY = ("indirect", "direct", "partnership")
+MERGE_WINDOW_MONTHS = 6         # flags this close together form one episode
+USE_FAMILY_SCREEN = True
+FAMILY_KEEP_THRESH = 80.0       # percent retained by one surname
+DATE_LOOKBACK_MONTHS = 24       # how far back an association date may date a change
+
+WINDOW_START = pd.Period(cfg.START_YM.replace("/", "-"), "M")
+WINDOW_END = pd.Period(cfg.END_YM.replace("/", "-"), "M")
+
+# ============================== Paths =========================================
 INTERIM_DIR = cfg.ensure_dir(cfg.INTERIM_DIR)
 MCR_DIR = cfg.MCR_DIR
 
-# Inputs
 OWNERSHIP_FP = INTERIM_DIR / "ownership.csv"
 MCR_PATTERNS = [
     "mcr_flatfile_20??.csv",
@@ -41,205 +108,298 @@ MCR_PATTERNS = [
     "mcr_flatfile_20??.XPT",
 ]
 
-# Outputs
 OWN_OUT = INTERIM_DIR / "chow_nh_compare.csv"
 MCR_OUT = INTERIM_DIR / "chow_mcr.csv"
 MERGE_OUT = INTERIM_DIR / "chow.csv"
-SIG_LONG_OUT = INTERIM_DIR / "facility_signatures_long.csv"
-SIG_WIDE_OUT = INTERIM_DIR / "facility_signatures_wide_preview.csv"
+REVIEW_OUT = INTERIM_DIR / "chow_nh_compare_review.csv"
+LOG_OUT = INTERIM_DIR / "chow_log.txt"
 
-# Window & thresholds
-CUTOFF_DATE = pd.Timestamp("2017-01-01")
-TURNOVER_THRESH = 0.50
-SURNAME_MIN_FRACTION_KEEP = 0.80
-USE_SURNAME_OVERRIDE = True
-LEVEL_PRIORITY = ["indirect", "direct", "partnership"]
+LOG_LINES: list[str] = []
 
-# ============================== Helpers ======================================
-ORG_MARKERS_RE = re.compile(
-    r"\b(LLC|INC|CORP|CORPORATION|L\.L\.C\.|L\.P\.|LP|LLP|PLC|COMPANY|CO\.?|HOLDINGS?|GROUP|TRUST|FUND|CAPITAL|PARTNERS(hip)?|HEALTH|CARE|AUTHORITY|HOSPITAL|CENTER|NURSING|HOME|OPERATING|MANAGEMENT)\b",
-    re.I,
+
+def log(msg: str) -> None:
+    print(msg)
+    LOG_LINES.append(msg)
+
+
+# ============================== Name helpers ==================================
+SUFFIXES = (
+    r"\b(INC|INCORPORATED|CORP|CORPORATION|LLC|L\.L\.C\.|L\.P\.|LP|LLP|PLC|CO|"
+    r"COMPANY|HOLDINGS?|PARTNERS?|PARTNERSHIP|CAPITAL|INVESTMENTS?|TRUST|GROUP)\b"
 )
-TOKEN_RE = re.compile(r"[^\w\s]")
-SUFFIXES = r"\b(INC|INCORPORATED|CORP|CORPORATION|LLC|L\.L\.C\.|L\.P\.|LP|LLP|PLC|CO|COMPANY|HOLDINGS?|PARTNERS?|PARTNERSHIP|CAPITAL|INVESTMENTS?|TRUST|GROUP)\b"
 
 
-def clean_owner_name(s: str) -> str:
+def clean_owner_name(s) -> str:
+    """Matching key for an owner: upper case, punctuation and legal suffixes removed.
+
+    Used only to recognize the same owner across months. It is not used to
+    decide whether an owner is a person.
+    """
     if pd.isna(s) or not str(s).strip():
         return ""
     x = str(s).upper()
     x = re.sub(r"[.,&/()\-']", " ", x)
     x = re.sub(SUFFIXES, "", x)
-    x = re.sub(r"\s+", " ", x).strip()
-    return x
+    return re.sub(r"\s+", " ", x).strip()
 
 
-def level_bucket(role_val: str) -> str:
-    s = str(role_val).lower()
-    if "indirect" in s:
-        return "indirect"
-    if "direct" in s:
-        return "direct"
-    if "partner" in s:
-        return "partnership"
-    return ""
+def surname_of_individual(raw_name) -> str:
+    """Surname of an owner CMS lists as an individual ("LAST, FIRST")."""
+    if pd.isna(raw_name):
+        return ""
+    s = str(raw_name).strip().upper()
+    if not s:
+        return ""
+    last = s.split(",", 1)[0] if "," in s else s.split()[0]
+    return re.sub(r"[^A-Z]", "", last)
 
 
-def normalize_weights_allow_missing(df_block: pd.DataFrame) -> pd.DataFrame:
-    g = df_block.copy()
-    g["ownership_percentage"] = pd.to_numeric(g["ownership_percentage"], errors="coerce")
-    agg = g.groupby("owner_name_norm", as_index=False)["ownership_percentage"].sum(min_count=1)
-    has_num = agg["ownership_percentage"].notna().any()
-    tot = float(agg["ownership_percentage"].fillna(0).sum())
+def month_index(p: pd.Period) -> int:
+    return p.year * 12 + p.month - 1
 
-    if has_num and tot > 0:
-        vec = agg[agg["ownership_percentage"].notna()].copy()
-        vec["ownership_percentage"] = vec["ownership_percentage"] * (100.0 / tot)
-    else:
-        owners = agg["owner_name_norm"].tolist()
-        if not owners:
-            return pd.DataFrame(columns=["owner_name_norm", "ownership_percentage"])
-        equal = 100.0 / len(owners)
-        vec = pd.DataFrame(
-            {"owner_name_norm": owners, "ownership_percentage": [equal] * len(owners)}
-        )
 
-    vec["ownership_percentage"] = vec["ownership_percentage"].round(1)
-    tot2 = float(vec["ownership_percentage"].sum())
-    if tot2 > 0:
-        vec["ownership_percentage"] = (
-            vec["ownership_percentage"] * (100.0 / tot2)
-        ).round(1)
+def index_to_period(i: int) -> pd.Period:
+    return pd.Period(year=i // 12, month=i % 12 + 1, freq="M")
 
-    return (
-        vec[vec["ownership_percentage"] > 0]
-        .sort_values(["ownership_percentage", "owner_name_norm"], ascending=[False, True])
-        .reset_index(drop=True)
+
+# ============================== NHC: owner lists ==============================
+def load_owner_lists(fp: Path) -> pd.DataFrame:
+    """One row per facility, archive month, level, and owner, with a normalized share."""
+    usecols = [
+        "cms_certification_number", "role", "owner_type", "owner_name",
+        "ownership_percentage", "association_date", "year_month",
+    ]
+    own = pd.read_csv(fp, dtype=str, usecols=usecols, low_memory=False)
+    log(f"[nhc] rows read: {len(own):,}")
+
+    own["ccn"] = cfg.normalize_ccn_any(own["cms_certification_number"])
+    own["level"] = own["role"].str.strip().str.lower()
+    own = own[own["ccn"].notna() & own["level"].isin(LEVEL_PRIORITY)].copy()
+
+    ym = pd.to_datetime(own["year_month"].str.strip() + "/01", format="%Y/%m/%d", errors="coerce")
+    own = own[ym.notna()].copy()
+    ym = ym[ym.notna()]
+    own["ym"] = (ym.dt.year * 12 + ym.dt.month - 1).astype("int32")
+
+    # Clean each distinct name once rather than once per row.
+    names = pd.Series(own["owner_name"].unique())
+    key_map = dict(zip(names, names.map(clean_owner_name)))
+    own["owner"] = own["owner_name"].map(key_map)
+    own = own[own["owner"] != ""].copy()
+
+    own["indiv"] = own["owner_type"].str.strip().str.lower().eq("individual")
+    own["surname"] = np.where(own["indiv"], own["owner_name"].map(surname_of_individual), "")
+
+    own["pct"] = pd.to_numeric(own["ownership_percentage"], errors="coerce")
+    ad = pd.to_datetime(own["association_date"], errors="coerce")
+    own["assoc"] = (ad.dt.year * 12 + ad.dt.month - 1).astype("Int32")
+
+    keys = ["ccn", "ym", "level", "owner"]
+    g = own.groupby(keys, sort=False)
+    agg = g.agg(
+        pct=("pct", "sum"),
+        n_pct=("pct", "count"),
+        assoc=("assoc", "min"),
+        indiv=("indiv", "max"),
+        surname=("surname", "first"),
+        raw_name=("owner_name", "first"),
+    ).reset_index()
+    agg.loc[agg["n_pct"] == 0, "pct"] = np.nan
+
+    lvl = ["ccn", "ym", "level"]
+    has_pct = agg["pct"].notna()
+    tot = agg["pct"].where(has_pct, 0).groupby([agg[k] for k in lvl]).transform("sum")
+    any_pct = has_pct.groupby([agg[k] for k in lvl]).transform("max")
+    n_own = agg.groupby(lvl)["owner"].transform("size")
+
+    agg["w"] = np.where(
+        any_pct & (tot > 0),
+        agg["pct"].fillna(0) * 100.0 / tot.replace(0, np.nan),
+        100.0 / n_own,
     )
+    agg = agg[agg["w"] > 0].copy()
+
+    log(f"[nhc] facilities: {agg['ccn'].nunique():,}; facility-months: "
+        f"{agg[['ccn', 'ym']].drop_duplicates().shape[0]:,}")
+    return agg[["ccn", "ym", "level", "owner", "w", "assoc", "indiv", "surname", "raw_name"]]
 
 
-def pct_overlap(prev_map: dict, curr_map: dict) -> float:
-    names = set(prev_map) | set(curr_map)
-    overlap = 0.0
-    for n in names:
-        overlap += min(prev_map.get(n, 0.0), curr_map.get(n, 0.0))
-    return max(0.0, min(overlap / 100.0, 1.0))
+def build_rosters(agg: pd.DataFrame) -> dict:
+    """ccn -> {month -> {level -> {owner: (share, is_individual, surname, assoc_month, raw_name)}}}."""
+    rosters: dict = defaultdict(lambda: defaultdict(dict))
+    for r in agg.sort_values(["ccn", "ym"]).itertuples(index=False):
+        assoc = None if pd.isna(r.assoc) else int(r.assoc)
+        rosters[r.ccn][r.ym].setdefault(r.level, {})[r.owner] = (
+            float(r.w), bool(r.indiv), r.surname, assoc, r.raw_name
+        )
+    return rosters
 
 
-def parse_list(j):
-    try:
-        if pd.isna(j):
-            return []
-        out = json.loads(j)
-        return out if isinstance(out, list) else []
-    except Exception:
-        return []
+# ============================== NHC: comparisons ==============================
+def comparison_levels(prev: dict, curr: dict) -> tuple[str, str, bool]:
+    for lvl in LEVEL_PRIORITY:
+        if lvl in prev and lvl in curr:
+            return lvl, lvl, False
+    top_prev = next(l for l in LEVEL_PRIORITY if l in prev)
+    top_curr = next(l for l in LEVEL_PRIORITY if l in curr)
+    return top_prev, top_curr, True
 
 
-def weight_map(names_list, pcts_list):
-    wm = defaultdict(float)
-    for n, p in zip(names_list, pcts_list):
-        try:
-            f = float(p)
-        except Exception:
-            continue
-        if pd.isna(f):
-            continue
-        wm[str(n)] += f
-    return dict(wm)
+def turnover(a: dict, b: dict) -> float:
+    overlap = sum(min(a[o][0], b[o][0]) for o in a.keys() & b.keys())
+    return max(0.0, 1.0 - overlap / 100.0)
 
 
-def jaccard_names(prev_names, curr_names):
-    a, b = set(prev_names), set(curr_names)
-    if not a and not b:
-        return np.nan
-    inter = len(a & b)
-    union = len(a | b) or 1
-    return inter / union
+def family_keep(a: dict, b: dict) -> float:
+    """Percent of ownership held by the same surname before and after (individuals only)."""
+    sa: dict = defaultdict(float)
+    sb: dict = defaultdict(float)
+    for w, indiv, sn, _, _ in a.values():
+        if indiv and sn:
+            sa[sn] += w
+    for w, indiv, sn, _, _ in b.values():
+        if indiv and sn:
+            sb[sn] += w
+    return sum(min(sa[s], sb.get(s, 0.0)) for s in sa)
 
 
-def looks_like_person(name: str) -> bool:
-    if not name or ORG_MARKERS_RE.search(name):
-        return False
-    toks = TOKEN_RE.sub(" ", str(name)).split()
-    toks = [t for t in toks if t]
-    return 1 <= len(toks) <= 3
+def describe(owners: dict, k: int = 12) -> str:
+    items = sorted(owners.items(), key=lambda kv: -kv[1][0])[:k]
+    return "; ".join(f"{v[4]} ({v[0]:.0f}%)" for _, v in items)
 
 
-def surname_of(name: str) -> str:
-    toks = TOKEN_RE.sub(" ", str(name)).split()
-    toks = [t for t in toks if t]
-    return toks[-1].upper() if toks else ""
+def find_nhc_changes(rosters: dict) -> tuple[pd.DataFrame, dict]:
+    stats = defaultdict(int)
+    episodes = []
 
+    for ccn, months_dict in rosters.items():
+        months = sorted(months_dict)
 
-def surname_weight_map(wm: dict) -> dict:
-    agg = defaultdict(float)
-    for n, p in wm.items():
-        if looks_like_person(n):
-            s = surname_of(n)
-            if s:
-                agg[s] += p
+        # Flag each consecutive pair of archive months with turnover >= threshold.
+        flags = []
+        for prev_m, curr_m in zip(months, months[1:]):
+            stats["pairs_compared"] += 1
+            lp, lc, fallback = comparison_levels(months_dict[prev_m], months_dict[curr_m])
+            a, b = months_dict[prev_m][lp], months_dict[curr_m][lc]
+            if a == b:
+                continue
+            t = turnover(a, b)
+            if t >= TURNOVER_THRESH:
+                flags.append((prev_m, curr_m, t, fallback))
+                stats["pairs_flagged"] += 1
+                stats["pairs_flagged_level_fallback"] += int(fallback)
+
+        # Group nearby flags into episodes.
+        groups: list[list] = []
+        for f in flags:
+            if groups and f[1] - groups[-1][-1][1] <= MERGE_WINDOW_MONTHS:
+                groups[-1].append(f)
             else:
-                agg["_PERSON_"] += p
-        else:
-            agg["_ORG_"] += p
-    return dict(agg)
+                groups.append([f])
+
+        for gi, grp in enumerate(groups, start=1):
+            before_m, after_m = grp[0][0], grp[-1][1]
+            lp, lc, fallback = comparison_levels(months_dict[before_m], months_dict[after_m])
+            a, b = months_dict[before_m][lp], months_dict[after_m][lc]
+            net_t = turnover(a, b)
+            fam = family_keep(a, b) if USE_FAMILY_SCREEN else 0.0
+
+            # Date: earliest association date among owners new after the episode,
+            # bounded below by the lookback; otherwise the first flagged archive month.
+            first_seen = grp[0][1]
+            new_assoc = [b[o][3] for o in b.keys() - a.keys() if b[o][3] is not None]
+            cand = min(new_assoc) if new_assoc else None
+            if cand is not None and first_seen - DATE_LOOKBACK_MONTHS <= cand <= first_seen:
+                event_m, date_source = cand, "association_date"
+            else:
+                event_m, date_source = first_seen, "archive_month"
+            event_p = index_to_period(event_m)
+
+            if net_t < TURNOVER_THRESH:
+                outcome = "reverted"
+            elif USE_FAMILY_SCREEN and fam >= FAMILY_KEEP_THRESH:
+                outcome = "family_screen"
+            elif not (WINDOW_START <= event_p <= WINDOW_END):
+                outcome = "outside_window"
+            else:
+                outcome = "change"
+            stats[f"episodes_{outcome}"] += 1
+            if outcome == "change":
+                stats[f"date_source_{date_source}"] += 1
+
+            episodes.append({
+                "cms_certification_number": ccn,
+                "episode": gi,
+                "n_flagged_months": len(grp),
+                "month_before": str(index_to_period(before_m)),
+                "month_after": str(index_to_period(after_m)),
+                "level_before": lp,
+                "level_after": lc,
+                "level_fallback": bool(fallback),
+                "net_turnover": round(net_t, 4),
+                "family_keep_pct": round(fam, 1),
+                "event_month": str(event_p),
+                "date_source": date_source,
+                "outcome": outcome,
+                "owners_before": describe(a),
+                "owners_after": describe(b),
+            })
+
+    cols = [
+        "cms_certification_number", "episode", "n_flagged_months", "month_before",
+        "month_after", "level_before", "level_after", "level_fallback", "net_turnover",
+        "family_keep_pct", "event_month", "date_source", "outcome",
+        "owners_before", "owners_after",
+    ]
+    return pd.DataFrame(episodes, columns=cols), stats
 
 
-def surname_family_overlap(prev_wm: dict, curr_wm: dict) -> float:
-    ps = surname_weight_map(prev_wm)
-    cs = surname_weight_map(curr_wm)
-    owners = set(ps) | set(cs)
-    overlap = sum(min(ps.get(k, 0.0), cs.get(k, 0.0)) for k in owners)
-    denom = max(sum(ps.values()), sum(cs.values()), 100.0)
-    return max(0.0, min(100.0 * overlap / denom, 100.0))
+def summarize_changes(events: pd.DataFrame, universe: pd.Series, prefix: str, count_col: str) -> pd.DataFrame:
+    """Facility-level counts and wide date columns (<prefix>_chow_<k>_date, YYYY-MM-01)."""
+    base = pd.DataFrame({"cms_certification_number": universe.dropna().drop_duplicates()})
+    if events.empty:
+        base[count_col] = 0
+        return base
+
+    ev = events.sort_values(["cms_certification_number", "event_date"]).copy()
+    ev["k"] = ev.groupby("cms_certification_number").cumcount() + 1
+    wide = ev.pivot(index="cms_certification_number", columns="k", values="event_date")
+    wide.columns = [f"{prefix}_chow_{k}_date" for k in wide.columns]
+    wide = wide.reset_index()
+    n = ev.groupby("cms_certification_number").size().rename(count_col).reset_index()
+
+    out = base.merge(n, on="cms_certification_number", how="left").merge(
+        wide, on="cms_certification_number", how="left"
+    )
+    out[count_col] = out[count_col].fillna(0).astype("Int16")
+    return out.sort_values("cms_certification_number").reset_index(drop=True)
 
 
-def month_floor(d: pd.Timestamp | pd.Series) -> pd.Timestamp | pd.Series:
-    return pd.to_datetime(d, errors="coerce").dt.to_period("M").dt.to_timestamp()
+def build_chow_from_ownership() -> pd.DataFrame:
+    agg = load_owner_lists(OWNERSHIP_FP)
+    universe = agg["ccn"]
+    rosters = build_rosters(agg)
+    del agg
+
+    review, stats = find_nhc_changes(rosters)
+    cfg.atomic_overwrite_csv(review, REVIEW_OUT, index=False)
+    log(f"[nhc] review file: {REVIEW_OUT} ({len(review):,} episodes)")
+    for k in sorted(stats):
+        log(f"[nhc] {k}: {stats[k]:,}")
+
+    ch = review[review["outcome"] == "change"].copy()
+    ch["event_date"] = pd.PeriodIndex(ch["event_month"], freq="M").to_timestamp().strftime("%Y-%m-%d")
+    return summarize_changes(ch, universe, "nh_compare", "n_chow_nh_compare")
 
 
-def pivot_dates_wide(
-    df: pd.DataFrame,
-    id_col: str,
-    date_col: str,
-    prefix: str,
-    order_col: str | None = None,
-) -> pd.DataFrame:
-    if df.empty:
-        return pd.DataFrame(columns=[id_col])
-
-    g = df.copy()
-    if order_col:
-        g["_rank"] = g.groupby(id_col)[order_col].rank(method="first").astype(int)
-    else:
-        g["_rank"] = g.groupby(id_col)[date_col].rank(method="first").astype(int)
-
-    g = g[[id_col, date_col, "_rank"]].drop_duplicates().sort_values([id_col, "_rank"])
-    wide = g.pivot(index=id_col, columns="_rank", values=date_col).reset_index()
-
-    if wide.shape[1] > 1:
-        wide.columns = [id_col] + [f"{prefix}_chow_{k}_date" for k in wide.columns[1:]]
-    else:
-        wide.columns = [id_col]
-
-    for c in wide.columns:
-        if c.endswith("_date"):
-            wide[c] = pd.to_datetime(wide[c], errors="coerce").dt.strftime("%Y-%m-%d")
-
-    return wide
-
-
-# ============================== MCR helpers ==================================
+# ============================== HCRIS =========================================
 def read_mcr_three_cols() -> pd.DataFrame:
-    files = []
-    seen = set()
+    files, seen = [], set()
     for pat in MCR_PATTERNS:
         for f in sorted(MCR_DIR.glob(pat)):
             if f not in seen:
                 files.append(f)
                 seen.add(f)
-
     if not files:
         raise FileNotFoundError(f"No MCR files matched in {MCR_DIR}")
 
@@ -249,29 +409,18 @@ def read_mcr_three_cols() -> pd.DataFrame:
     except Exception:
         has_pyreadstat = False
 
-    def _sniff_csv(fp: Path):
-        seps = [",", "|", "\t", ";", "~"]
-        encs = ["utf-8", "utf-8-sig", "cp1252", "latin1"]
-        for enc in encs:
-            for sep in seps:
-                try:
-                    hdr = pd.read_csv(fp, sep=sep, nrows=0, engine="python", encoding=enc)
-                    if hdr.shape[1] > 0:
-                        return sep, enc
-                except Exception:
-                    pass
-        return ",", "utf-8"
+    targets = {
+        "PRVDR_NUM": ["prvdr_num", "provider_number", "provnum", "prvdrnum"],
+        "S2_2_CHOW": ["s2_2_chow", "s22_chow", "chow", "s2_2_chow_cd", "s2_2_chow_flag", "s2_2_chow_ind"],
+        "S2_2_CHOWDATE": ["s2_2_chowdate", "s2_2_chow_date", "s22_chow_date", "chow_date"],
+    }
 
-    def _select_three(df: pd.DataFrame) -> pd.DataFrame:
-        up = {c: c.upper().strip() for c in df.columns}
-        rev = {v: k for k, v in up.items()}
-        out = pd.DataFrame()
-        for t in ["PRVDR_NUM", "S2_2_CHOW", "S2_2_CHOWDATE"]:
-            src = rev.get(t)
-            if src is not None:
-                out[t] = df[src]
-            else:
-                out[t] = pd.NA
+    def select_three(df: pd.DataFrame) -> pd.DataFrame:
+        lower = {c.lower().strip(): c for c in df.columns}
+        out = pd.DataFrame(index=df.index)
+        for t, cands in targets.items():
+            src = next((lower[c] for c in [t.lower()] + cands if c in lower), None)
+            out[t] = df[src] if src is not None else pd.NA
         return out
 
     frames = []
@@ -279,82 +428,25 @@ def read_mcr_three_cols() -> pd.DataFrame:
         suffix = fp.suffix.lower()
         try:
             if suffix == ".csv":
-                sep, enc = _sniff_csv(fp)
-                df = pd.read_csv(
-                    fp,
-                    sep=sep,
-                    encoding=enc,
-                    dtype=str,
-                    low_memory=False,
-                    engine=("c" if sep == "," else "python"),
-                )
-                frames.append(_select_three(df))
-
+                df = cfg.read_csv_robust(fp, dtype=str, low_memory=False)
+            elif suffix in {".sas7bdat", ".xpt"} and has_pyreadstat:
+                reader = pyreadstat.read_sas7bdat if suffix == ".sas7bdat" else pyreadstat.read_xport
+                _, meta = reader(fp, metadataonly=True)
+                lower = {c.lower().strip(): c for c in meta.column_names}
+                use = [lower[c] for t, cands in targets.items()
+                       for c in [t.lower()] + cands if c in lower]
+                df, _ = reader(fp, usecols=list(dict.fromkeys(use)))
             elif suffix in {".sas7bdat", ".xpt"}:
-                if has_pyreadstat:
-                    try:
-                        if suffix == ".sas7bdat":
-                            _, meta = pyreadstat.read_sas7bdat(fp, metadataonly=True)
-                        else:
-                            _, meta = pyreadstat.read_xport(fp, metadataonly=True)
-
-                        avail = {c.lower().strip(): c for c in meta.column_names}
-
-                        def find_one(cands):
-                            for c in cands:
-                                if c in avail:
-                                    return avail[c]
-                            return None
-
-                        m = {
-                            "PRVDR_NUM": find_one(
-                                ["prvdr_num", "provider_number", "provnum", "prvdrnum"]
-                            ),
-                            "S2_2_CHOW": find_one(
-                                [
-                                    "s2_2_chow",
-                                    "s22_chow",
-                                    "chow",
-                                    "s2_2_chow_cd",
-                                    "s2_2_chow_flag",
-                                    "s2_2_chow_ind",
-                                ]
-                            ),
-                            "S2_2_CHOWDATE": find_one(
-                                ["s2_2_chowdate", "s2_2_chow_date", "s22_chow_date", "chow_date"]
-                            ),
-                        }
-
-                        usecols = [c for c in m.values() if c]
-                        if not usecols:
-                            raise RuntimeError("no mapped cols")
-
-                        if suffix == ".sas7bdat":
-                            df, _ = pyreadstat.read_sas7bdat(fp, usecols=usecols)
-                        else:
-                            df, _ = pyreadstat.read_xport(fp, usecols=usecols)
-
-                        inv = {v: k for k, v in m.items() if v}
-                        df = df.rename(columns=inv)
-                        frames.append(_select_three(df))
-
-                    except Exception:
-                        fmt = "sas7bdat" if suffix == ".sas7bdat" else "xport"
-                        df = pd.read_sas(fp, format=fmt, encoding="latin1")
-                        frames.append(_select_three(df))
-                else:
-                    fmt = "sas7bdat" if suffix == ".sas7bdat" else "xport"
-                    df = pd.read_sas(fp, format=fmt, encoding="latin1")
-                    frames.append(_select_three(df))
+                fmt = "sas7bdat" if suffix == ".sas7bdat" else "xport"
+                df = pd.read_sas(fp, format=fmt, encoding="latin1")
             else:
-                print(f"[skip] {fp.name}")
-
+                continue
+            frames.append(select_three(df))
         except Exception as e:
-            print(f"[warn] {fp.name}: {e}")
+            log(f"[warn] {fp.name}: {e}")
 
     if not frames:
-        return pd.DataFrame(columns=["PRVDR_NUM", "S2_2_CHOW", "S2_2_CHOWDATE"])
-
+        return pd.DataFrame(columns=list(targets))
     return pd.concat(frames, ignore_index=True)
 
 
@@ -362,472 +454,68 @@ def coerce_maybe_sas_date(s: pd.Series) -> pd.Series:
     if pd.api.types.is_datetime64_any_dtype(s):
         return s
     num = pd.to_numeric(s, errors="coerce")
-    has_num = num.notna().sum()
-    if has_num and has_num >= max(1, int(0.5 * s.notna().sum())):
-        base = pd.Timestamp("1960-01-01")
-        return (base + pd.to_timedelta(num, unit="D")).astype("datetime64[ns]")
+    if num.notna().sum() and num.notna().sum() >= max(1, int(0.5 * s.notna().sum())):
+        return (pd.Timestamp("1960-01-01") + pd.to_timedelta(num, unit="D")).astype("datetime64[ns]")
     return pd.to_datetime(s.astype("string").str.strip(), errors="coerce")
 
 
-# ============================== Ownership CHOW ================================
-def build_chow_from_ownership() -> tuple[pd.DataFrame, pd.DataFrame]:
-    if not OWNERSHIP_FP.exists():
-        raise FileNotFoundError(f"{OWNERSHIP_FP} not found (run ownership pipeline first).")
-
-    own = pd.read_csv(OWNERSHIP_FP, low_memory=False)
-    need = {"cms_certification_number", "role", "owner_name", "ownership_percentage", "association_date"}
-    miss = need - set(own.columns)
-    if miss:
-        raise ValueError(f"ownership.csv missing {miss}")
-
-    own["cms_certification_number"] = cfg.normalize_ccn_any(own["cms_certification_number"])
-    own_ccns = own["cms_certification_number"].dropna().drop_duplicates().to_frame(name="cms_certification_number")
-
-    own["association_date"] = pd.to_datetime(own["association_date"], errors="coerce")
-    own = own.dropna(subset=["association_date"]).copy()
-
-    own["owner_name_norm"] = own["owner_name"].map(clean_owner_name)
-    own["level"] = own["role"].map(level_bucket)
-
-    rows = []
-    for (ccn, adate), g in own.groupby(["cms_certification_number", "association_date"], sort=True):
-        chosen = None
-        for lvl in LEVEL_PRIORITY:
-            gl = g[g["level"] == lvl]
-            if len(gl):
-                chosen = (lvl, gl)
-                break
-        if chosen is None:
-            continue
-
-        lvl, gl = chosen
-        vec = normalize_weights_allow_missing(gl[["owner_name_norm", "ownership_percentage"]])
-
-        if vec.empty:
-            owners = gl["owner_name_norm"].dropna().unique().tolist()
-            if not owners:
-                continue
-            equal = 100.0 / len(owners)
-            vec = pd.DataFrame(
-                {"owner_name_norm": owners, "ownership_percentage": [equal] * len(owners)}
-            )
-
-        wm = dict(zip(vec["owner_name_norm"], vec["ownership_percentage"].astype(float)))
-        rows.append(
-            {
-                "cms_certification_number": ccn,
-                "association_date": adate,
-                "source_level": lvl,
-                "weights": wm,
-            }
-        )
-
-    snaps = (
-        pd.DataFrame(rows)
-        .sort_values(["cms_certification_number", "association_date"])
-        .reset_index(drop=True)
-    )
-
-    if snaps.empty:
-        return pd.DataFrame(columns=["cms_certification_number", "n_chow_nh_compare"]), own_ccns
-
-    trans_rows = []
-    for ccn, g in snaps.groupby("cms_certification_number", sort=True):
-        g = g.sort_values("association_date").reset_index(drop=True)
-        if g.empty or len(g) == 1:
-            continue
-
-        prev_w = g.loc[0, "weights"]
-        for i in range(1, len(g)):
-            curr_w = g.loc[i, "weights"]
-            to_start = g.loc[i, "association_date"]
-
-            ov = pct_overlap(prev_w, curr_w)
-            turnover = 1.0 - ov if ov is not None else None
-            method = 0
-
-            if turnover is None or np.isnan(turnover):
-                prev_names = list(prev_w.keys())
-                curr_names = list(curr_w.keys())
-                j = jaccard_names(prev_names, curr_names)
-                turnover = None if pd.isna(j) else (1.0 - float(j))
-                method = 1
-
-            surname_keep_pct = surname_family_overlap(prev_w, curr_w)
-            surname_override = (
-                USE_SURNAME_OVERRIDE
-                and pd.notna(turnover)
-                and surname_keep_pct >= 100.0 * SURNAME_MIN_FRACTION_KEEP
-            )
-
-            is_in_window = pd.notna(to_start) and (to_start >= CUTOFF_DATE)
-            is_chow = bool(
-                is_in_window
-                and (turnover is not None)
-                and (turnover >= TURNOVER_THRESH)
-                and (not surname_override)
-            )
-
-            trans_rows.append(
-                {
-                    "cms_certification_number": ccn,
-                    "to_start": to_start,
-                    "turnover": None if turnover is None else float(turnover),
-                    "method": method,
-                    "surname_keep_pct": float(surname_keep_pct) if pd.notna(surname_keep_pct) else np.nan,
-                    "surname_override": bool(surname_override),
-                    "is_chow": is_chow,
-                }
-            )
-            prev_w = curr_w
-
-    trans = pd.DataFrame(trans_rows)
-    if trans.empty:
-        return pd.DataFrame(columns=["cms_certification_number", "n_chow_nh_compare"]), own_ccns
-
-    ch = trans[trans["is_chow"] == True].copy()
-    ch["event_month"] = pd.to_datetime(ch["to_start"]).dt.to_period("M").dt.to_timestamp()
-
-    meth = (
-        ch.assign(method_name=lambda d: d["method"].map({0: "percent", 1: "names"}))
-        .groupby(["cms_certification_number", "method_name"], as_index=False)
-        .size()
-        .pivot(index="cms_certification_number", columns="method_name", values="size")
-        .fillna(0)
-        .astype(int)
-        .reset_index()
-    )
-
-    if "percent" not in meth.columns:
-        meth["percent"] = 0
-    if "names" not in meth.columns:
-        meth["names"] = 0
-
-    meth = meth.rename(
-        columns={
-            "percent": "n_chow_nh_compare_percent",
-            "names": "n_chow_nh_compare_names",
-        }
-    )
-
-    wide = pivot_dates_wide(
-        ch[["cms_certification_number", "event_month"]],
-        "cms_certification_number",
-        "event_month",
-        "nh_compare",
-    )
-    n = (
-        ch.groupby("cms_certification_number", as_index=False)
-        .size()
-        .rename(columns={"size": "n_chow_nh_compare"})
-    )
-
-    out = (
-        n.merge(wide, on="cms_certification_number", how="left")
-        .merge(meth, on="cms_certification_number", how="left")
-    )
-    out["n_chow_nh_compare"] = out["n_chow_nh_compare"].astype("Int16")
-    for c in ["n_chow_nh_compare_percent", "n_chow_nh_compare_names"]:
-        if c in out.columns:
-            out[c] = out[c].fillna(0).astype("Int16")
-
-    out = out.sort_values("cms_certification_number").reset_index(drop=True)
-    return out, own_ccns
-
-
-# ============================== Facility signatures ===========================
-def build_facility_signatures() -> tuple[pd.DataFrame, pd.DataFrame]:
-    """
-    Pure add-on for manual review: constructs long owner-group regimes + a wide preview.
-    Does NOT change CHOW logic or outputs.
-    """
-    if not OWNERSHIP_FP.exists():
-        raise FileNotFoundError(f"{OWNERSHIP_FP} not found (run ownership pipeline first).")
-
-    df = pd.read_csv(OWNERSHIP_FP, low_memory=False)
-    need = {"cms_certification_number", "role", "owner_name", "ownership_percentage", "association_date"}
-    miss = need - set(df.columns)
-    if miss:
-        raise ValueError(f"ownership.csv missing {miss}")
-
-    df["cms_certification_number"] = cfg.normalize_ccn_any(df["cms_certification_number"])
-    df["association_date"] = pd.to_datetime(df["association_date"], errors="coerce")
-    df = df.dropna(subset=["association_date"]).copy()
-
-    df["owner_name_norm"] = df["owner_name"].map(clean_owner_name)
-    df["level"] = df["role"].map(level_bucket)
-
-    snapshots = []
-    for (ccn, adate), g in df.groupby(["cms_certification_number", "association_date"], sort=True):
-        chosen = None
-        for lvl in LEVEL_PRIORITY:
-            gl = g[g["level"] == lvl]
-            if len(gl):
-                chosen = (lvl, gl)
-                break
-        if chosen is None:
-            continue
-
-        lvl, gl = chosen
-        vec = normalize_weights_allow_missing(gl[["owner_name_norm", "ownership_percentage"]].copy())
-        if vec.empty:
-            owners = gl["owner_name_norm"].dropna().unique().tolist()
-            if not owners:
-                continue
-            equal = 100.0 / len(owners)
-            vec = pd.DataFrame(
-                {"owner_name_norm": owners, "ownership_percentage": [equal] * len(owners)}
-            )
-
-        weights = dict(zip(vec["owner_name_norm"], vec["ownership_percentage"].astype(float)))
-        snapshots.append(
-            {
-                "cms_certification_number": ccn,
-                "association_date": adate,
-                "source_level": lvl,
-                "weights": weights,
-            }
-        )
-
-    snaps_df = (
-        pd.DataFrame(snapshots)
-        .sort_values(["cms_certification_number", "association_date"])
-        .reset_index(drop=True)
-    )
-
-    if snaps_df.empty:
-        empty_long = pd.DataFrame(
-            columns=[
-                "cms_certification_number",
-                "group_n",
-                "start",
-                "end",
-                "source_level",
-                "names_list",
-                "pcts_list",
-                "owner_count",
-                "hhi",
-            ]
-        )
-        cfg.atomic_overwrite_csv(empty_long, SIG_LONG_OUT, index=False)
-        cfg.atomic_overwrite_csv(pd.DataFrame(columns=["cms_certification_number"]), SIG_WIDE_OUT, index=False)
-        print(f"[save] signatures long → {SIG_LONG_OUT}  rows=0")
-        print(f"[save] signatures wide → {SIG_WIDE_OUT}  rows=0")
-        return empty_long, pd.DataFrame(columns=["cms_certification_number"])
-
-    def hhi_from_map(wm: dict) -> float:
-        return round(sum((p / 100.0) ** 2 for p in wm.values()), 4)
-
-    long_rows = []
-    for ccn, g in snaps_df.groupby("cms_certification_number", sort=True):
-        g = g.sort_values("association_date").reset_index(drop=True)
-        if g.empty:
-            continue
-
-        group_n = 1
-        group_start = g.loc[0, "association_date"]
-        group_level = g.loc[0, "source_level"]
-        prev_w = g.loc[0, "weights"]
-
-        long_rows.append(
-            {
-                "cms_certification_number": ccn,
-                "group_n": group_n,
-                "start": group_start,
-                "end": pd.NaT,
-                "source_level": group_level,
-                "names_list": json.dumps(list(prev_w.keys()), separators=(",", ":")),
-                "pcts_list": json.dumps(list(prev_w.values()), separators=(",", ":")),
-                "owner_count": len(prev_w),
-                "hhi": hhi_from_map(prev_w),
-            }
-        )
-
-        for i in range(1, len(g)):
-            curr_w = g.loc[i, "weights"]
-            ov = pct_overlap(prev_w, curr_w)
-            turnover = 1.0 - ov
-
-            if turnover >= TURNOVER_THRESH:
-                long_rows[-1]["end"] = g.loc[i - 1, "association_date"]
-                group_n += 1
-                group_start = g.loc[i, "association_date"]
-                group_level = g.loc[i, "source_level"]
-
-                long_rows.append(
-                    {
-                        "cms_certification_number": ccn,
-                        "group_n": group_n,
-                        "start": group_start,
-                        "end": pd.NaT,
-                        "source_level": group_level,
-                        "names_list": json.dumps(list(curr_w.keys()), separators=(",", ":")),
-                        "pcts_list": json.dumps(list(curr_w.values()), separators=(",", ":")),
-                        "owner_count": len(curr_w),
-                        "hhi": hhi_from_map(curr_w),
-                    }
-                )
-                prev_w = curr_w
-            else:
-                prev_w = curr_w
-
-        long_rows[-1]["end"] = g.loc[len(g) - 1, "association_date"]
-
-    long_df = (
-        pd.DataFrame(long_rows)
-        .sort_values(["cms_certification_number", "group_n"])
-        .reset_index(drop=True)
-    )
-
-    def as_label(names_json, pcts_json, k=12):
-        names = json.loads(names_json)
-        pcts = json.loads(pcts_json)
-        pairs = [f"{n} ({int(round(p, 0))}%)" for n, p in zip(names, pcts)]
-        return "; ".join(pairs[:k])
-
-    if not long_df.empty:
-        wide_blocks = []
-        for ccn, g in long_df.groupby("cms_certification_number"):
-            g = g.sort_values("group_n")
-            row = {"cms_certification_number": ccn}
-            for _, r in g.head(8).iterrows():
-                n = int(r["group_n"])
-                row[f"group{n}_start"] = pd.to_datetime(r["start"]).date()
-                row[f"group{n}_end"] = pd.to_datetime(r["end"]).date()
-                row[f"group{n}_level"] = r["source_level"]
-                row[f"group{n}_names"] = as_label(r["names_list"], r["pcts_list"])
-                row[f"group{n}_pcts"] = ",".join(
-                    map(lambda x: str(int(round(x, 0))), json.loads(r["pcts_list"]))
-                )
-            wide_blocks.append(row)
-
-        wide_df = (
-            pd.DataFrame(wide_blocks)
-            .sort_values("cms_certification_number")
-            .reset_index(drop=True)
-        )
-    else:
-        wide_df = pd.DataFrame(columns=["cms_certification_number"])
-
-    cfg.atomic_overwrite_csv(long_df, SIG_LONG_OUT, index=False)
-    cfg.atomic_overwrite_csv(wide_df, SIG_WIDE_OUT, index=False)
-    print(f"[save] signatures long → {SIG_LONG_OUT}  rows={len(long_df):,}")
-    print(f"[save] signatures wide → {SIG_WIDE_OUT}  rows={len(wide_df):,}")
-
-    return long_df, wide_df
-
-
-# ============================== MCR CHOW =====================================
-def build_chow_from_mcr() -> tuple[pd.DataFrame, pd.DataFrame]:
+def build_chow_from_mcr() -> pd.DataFrame:
     raw = read_mcr_three_cols()
-    if raw.empty:
-        return (
-            pd.DataFrame(columns=["cms_certification_number", "n_chow_mcr"]),
-            pd.DataFrame(columns=["cms_certification_number"]),
-        )
+    raw["ccn"] = cfg.normalize_ccn_any(raw["PRVDR_NUM"])
+    universe = raw["ccn"]
 
-    df = raw.rename(columns={c: c.upper().strip() for c in raw.columns})
-    df["PRVDR_NUM"] = cfg.normalize_ccn_any(df["PRVDR_NUM"])
-    mcr_ccns = df["PRVDR_NUM"].dropna().drop_duplicates().to_frame(name="cms_certification_number")
+    raw["date"] = coerce_maybe_sas_date(raw["S2_2_CHOWDATE"])
+    ev = raw.loc[raw["ccn"].notna() & raw["date"].notna(), ["ccn", "date"]].copy()
+    ev["event_p"] = ev["date"].dt.to_period("M")
+    # One change per facility and month: amended or overlapping reports often
+    # repeat the same change with slightly different day-level dates.
+    ev = ev.drop_duplicates(["ccn", "event_p"])
+    n_all = len(ev)
+    ev = ev[(ev["event_p"] >= WINDOW_START) & (ev["event_p"] <= WINDOW_END)].copy()
+    log(f"[mcr] distinct change months: {n_all:,}; inside study window: {len(ev):,}")
 
-    df["S2_2_CHOWDATE"] = coerce_maybe_sas_date(df["S2_2_CHOWDATE"])
-    events = (
-        df.loc[df["S2_2_CHOWDATE"].notna(), ["PRVDR_NUM", "S2_2_CHOWDATE"]]
-        .drop_duplicates()
-        .rename(columns={"PRVDR_NUM": "cms_certification_number"})
-    )
-
-    if events.empty:
-        return pd.DataFrame(columns=["cms_certification_number", "n_chow_mcr"]), mcr_ccns
-
-    events["event_month"] = month_floor(events["S2_2_CHOWDATE"])
-    events = events.loc[events["event_month"] >= CUTOFF_DATE].copy()
-
-    if events.empty:
-        return pd.DataFrame(columns=["cms_certification_number", "n_chow_mcr"]), mcr_ccns
-
-    n = (
-        events.groupby("cms_certification_number", as_index=False)
-        .size()
-        .rename(columns={"size": "n_chow_mcr"})
-        .astype({"n_chow_mcr": "Int16"})
-    )
-
-    wide = pivot_dates_wide(
-        events[["cms_certification_number", "event_month"]],
-        "cms_certification_number",
-        "event_month",
-        "mcr",
-    )
-
-    out = (
-        n.merge(wide, on="cms_certification_number", how="left")
-        .sort_values("cms_certification_number")
-        .reset_index(drop=True)
-    )
-    return out, mcr_ccns
+    ev = ev.rename(columns={"ccn": "cms_certification_number"})
+    ev["event_date"] = ev["event_p"].dt.to_timestamp().dt.strftime("%Y-%m-%d")
+    return summarize_changes(ev[["cms_certification_number", "event_date"]], universe, "mcr", "n_chow_mcr")
 
 
-# ============================== MERGE & SAVE =================================
+# ============================== Merge & save ==================================
+def crosstab_lines(merged: pd.DataFrame) -> list[str]:
+    def bin_(x):
+        return x.clip(upper=2).map({0: "0", 1: "1", 2: "2+"})
+    tab = pd.crosstab(bin_(merged["n_chow_mcr"].astype(int)).rename("HCRIS"),
+                      bin_(merged["n_chow_nh_compare"].astype(int)).rename("NHC"))
+    return ["[crosstab] facilities in both sources, HCRIS rows by NHC columns:"] + \
+        tab.to_string().splitlines()
+
+
 def main():
-    try:
-        build_facility_signatures()
-    except Exception as e:
-        print(f"[warn] facility signatures step skipped: {e}")
+    log(f"[settings] turnover >= {TURNOVER_THRESH}; levels {LEVEL_PRIORITY}; "
+        f"merge window {MERGE_WINDOW_MONTHS} months; family screen {USE_FAMILY_SCREEN} "
+        f"(>= {FAMILY_KEEP_THRESH}%); date lookback {DATE_LOOKBACK_MONTHS} months; "
+        f"window {WINDOW_START} to {WINDOW_END}")
 
-    own_wide, own_ccns = build_chow_from_ownership()
-    mcr_wide, mcr_ccns = build_chow_from_mcr()
-
-    # Ownership universe base
-    own_full = own_ccns.merge(own_wide, on="cms_certification_number", how="left")
-    if "n_chow_nh_compare" not in own_full.columns:
-        own_full["n_chow_nh_compare"] = 0
-    own_full["n_chow_nh_compare"] = (
-        pd.to_numeric(own_full["n_chow_nh_compare"], errors="coerce")
-        .fillna(0)
-        .astype("Int16")
-    )
-
-    for c in ["n_chow_nh_compare_percent", "n_chow_nh_compare_names"]:
-        if c in own_full.columns:
-            own_full[c] = pd.to_numeric(own_full[c], errors="coerce").fillna(0).astype("Int16")
-
-    for c in [c for c in own_full.columns if c.endswith("_date")]:
-        own_full[c] = own_full[c].astype("string")
-
-    own_full = own_full.sort_values("cms_certification_number").reset_index(drop=True)
+    own_full = build_chow_from_ownership()
     cfg.atomic_overwrite_csv(own_full, OWN_OUT, index=False)
-    print(f"[saved] ownership CHOWs → {OWN_OUT}  (rows={len(own_full):,})")
+    log(f"[save] {OWN_OUT} ({len(own_full):,} facilities)")
 
-    # MCR universe base
-    mcr_full = mcr_ccns.merge(mcr_wide, on="cms_certification_number", how="left")
-    if "n_chow_mcr" not in mcr_full.columns:
-        mcr_full["n_chow_mcr"] = 0
-    mcr_full["n_chow_mcr"] = (
-        pd.to_numeric(mcr_full["n_chow_mcr"], errors="coerce")
-        .fillna(0)
-        .astype("Int16")
-    )
-
-    for c in [c for c in mcr_full.columns if c.endswith("_date")]:
-        mcr_full[c] = mcr_full[c].astype("string")
-
-    mcr_full = mcr_full.sort_values("cms_certification_number").reset_index(drop=True)
+    mcr_full = build_chow_from_mcr()
     cfg.atomic_overwrite_csv(mcr_full, MCR_OUT, index=False)
-    print(f"[saved] MCR CHOWs → {MCR_OUT}  (rows={len(mcr_full):,})")
+    log(f"[save] {MCR_OUT} ({len(mcr_full):,} facilities)")
 
-    # Intersection of universes
     merged = own_full.merge(mcr_full, on="cms_certification_number", how="inner")
     for c in ["n_chow_nh_compare", "n_chow_mcr"]:
         merged[c] = pd.to_numeric(merged[c], errors="coerce").fillna(0).astype("Int16")
-
-    merged["n_chow_any"] = (
-        (merged["n_chow_nh_compare"] > 0) | (merged["n_chow_mcr"] > 0)
-    ).astype("Int8")
-
+    merged["n_chow_any"] = ((merged["n_chow_nh_compare"] > 0) | (merged["n_chow_mcr"] > 0)).astype("Int8")
     merged = merged.sort_values("cms_certification_number").reset_index(drop=True)
     cfg.atomic_overwrite_csv(merged, MERGE_OUT, index=False)
-    print(f"[saved] merged CHOWs  → {MERGE_OUT}  (rows={len(merged):,})")
+    log(f"[save] {MERGE_OUT} ({len(merged):,} facilities in both sources)")
+
+    for line in crosstab_lines(merged):
+        log(line)
+
+    LOG_OUT.write_text("\n".join(LOG_LINES) + "\n", encoding="utf-8")
+    print(f"[save] {LOG_OUT}")
 
 
 if __name__ == "__main__":
