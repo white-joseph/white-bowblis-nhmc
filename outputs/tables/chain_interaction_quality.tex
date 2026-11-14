@@ -1,0 +1,45 @@
+\begin{table}[!ht]
+\centering
+\begin{threeparttable}
+\caption{Effect of Ownership Change on Quality Measures by Baseline Chain Affiliation}
+\label{tab:chain-interaction-quality}
+\small
+\setlength{\tabcolsep}{6pt}
+
+\begin{tabularx}{\textwidth}{@{} l Y Y Y @{}}
+\toprule
+Outcome & Chain & Independent & Difference \\
+\midrule
+Catheter use & $-0.07$ & $-0.33^{***}$ & $\phantom{-}0.26^{**}$ \\
+ & (0.06) & (0.09) & (0.10) \\[3pt]
+Anti-psychotic medication use & $-0.16$ & $-0.68^{*}$ & $\phantom{-}0.51$ \\
+ & (0.27) & (0.39) & (0.46) \\[3pt]
+Anti-anxiety/hypnotic medication use & $-0.33$ & $\phantom{-}0.11$ & $-0.44$ \\
+ & (0.25) & (0.35) & (0.43) \\[3pt]
+Pressure injuries & $\phantom{-}0.35$ & $\phantom{-}0.06$ & $\phantom{-}0.29$ \\
+ & (0.21) & (0.25) & (0.30) \\[3pt]
+Falls with major injury & $\phantom{-}0.05$ & $-0.07$ & $\phantom{-}0.13$ \\
+ & (0.08) & (0.11) & (0.14) \\[3pt]
+Weight loss & $\phantom{-}0.01$ & $\phantom{-}0.58^{***}$ & $-0.58^{**}$ \\
+ & (0.13) & (0.19) & (0.23) \\[3pt]
+Decline in physical functioning & $\phantom{-}0.51^{*}$ & $\phantom{-}0.04$ & $\phantom{-}0.47$ \\
+ & (0.30) & (0.42) & (0.46) \\[3pt]
+Urinary tract infections & $-0.26^{***}$ & $-0.45^{***}$ & $\phantom{-}0.18$ \\
+ & (0.09) & (0.13) & (0.15) \\[3pt]
+New antipsychotic medication & $-0.05$ & $\phantom{-}0.04$ & $-0.09$ \\
+ & (0.05) & (0.10) & (0.11) \\[3pt]
+Improved function & $-0.27$ & $\phantom{-}0.15$ & $-0.42$ \\
+ & (0.57) & (1.00) & (1.15) \\[3pt]
+\bottomrule
+\end{tabularx}
+
+\begin{tablenotes}[flushleft]
+\footnotesize
+\item \textit{Notes:} Each row reports the effect of ownership change among facilities that were chain-affiliated and independent at baseline, and the difference between them (chain minus independent), with standard errors in parentheses. A positive difference means the estimate is higher (less negative) among chain-affiliated facilities.
+\item The post indicator, certified beds, and the calendar fixed effects are each interacted with baseline chain affiliation, so the specification reproduces the separate chain and independent estimates and provides a standard error for their difference. Standard errors for the chain and independent columns can differ slightly from the split-sample tables because both groups are estimated in one model. All specifications include facility fixed effects. Standard errors are two-way clustered by facility and calendar period. A facility is chain-affiliated if its cost report lists a home office. Baseline affiliation is measured in January 2017, or at the facility's first observation if it is not observed then.
+\item Outcomes are in percentage points. Estimated on the facility-quarter panel excluding the transition quarter ($\tau = 0$), without staffing controls.
+\item Statistical significance: $^{***}p<0.01$, $^{**}p<0.05$, $^{*}p<0.10$.
+\end{tablenotes}
+
+\end{threeparttable}
+\end{table}

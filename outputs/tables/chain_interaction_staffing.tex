@@ -1,0 +1,33 @@
+\begin{table}[!ht]
+\centering
+\begin{threeparttable}
+\caption{Effect of Ownership Change on Nursing Staffing by Baseline Chain Affiliation}
+\label{tab:chain-interaction}
+\small
+\setlength{\tabcolsep}{6pt}
+
+\begin{tabularx}{\textwidth}{@{} l Y Y Y @{}}
+\toprule
+Outcome & Chain & Independent & Difference \\
+\midrule
+RN HPRD & $-0.041^{***}$ & $-0.040^{***}$ & $-0.001$ \\
+ & (0.007) & (0.010) & (0.012) \\[3pt]
+LPN HPRD & $\phantom{-}0.011$ & $-0.016$ & $\phantom{-}0.027^{*}$ \\
+ & (0.008) & (0.011) & (0.014) \\[3pt]
+CNA HPRD & $-0.048^{***}$ & $-0.092^{***}$ & $\phantom{-}0.044^{**}$ \\
+ & (0.011) & (0.019) & (0.022) \\[3pt]
+Total HPRD & $-0.079^{***}$ & $-0.149^{***}$ & $\phantom{-}0.070^{**}$ \\
+ & (0.016) & (0.026) & (0.031) \\[3pt]
+\bottomrule
+\end{tabularx}
+
+\begin{tablenotes}[flushleft]
+\footnotesize
+\item \textit{Notes:} Each row reports the effect of ownership change among facilities that were chain-affiliated and independent at baseline, and the difference between them (chain minus independent), with standard errors in parentheses. A positive difference means the estimate is higher (less negative) among chain-affiliated facilities.
+\item The post indicator, certified beds, and the calendar fixed effects are each interacted with baseline chain affiliation, so the specification reproduces the separate chain and independent estimates and provides a standard error for their difference. Standard errors for the chain and independent columns can differ slightly from the split-sample tables because both groups are estimated in one model. All specifications include facility fixed effects. Standard errors are two-way clustered by facility and calendar period. A facility is chain-affiliated if its cost report lists a home office. Baseline affiliation is measured in January 2017, or at the facility's first observation if it is not observed then.
+\item Outcomes are in hours per resident day. Estimated on the facility-month panel excluding the anticipation window ($\tau = -3, -2, -1$).
+\item Statistical significance: $^{***}p<0.01$, $^{**}p<0.05$, $^{*}p<0.10$.
+\end{tablenotes}
+
+\end{threeparttable}
+\end{table}

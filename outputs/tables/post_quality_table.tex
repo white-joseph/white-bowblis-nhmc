@@ -28,13 +28,15 @@ Urinary tract infections & \makecell[t]{$-0.3299^{***}$ \\ $(0.0756)$} & \makece
 \midrule
 New antipsychotic medication & \makecell[t]{$-0.0208$ \\ $(0.0431)$} & \makecell[t]{$-0.0239$ \\ $(0.0430)$} & \makecell[t]{$-0.0480$ \\ $(0.0519)$} & \makecell[t]{$\phantom{-}0.0396$ \\ $(0.0954)$} \\
 Improved function & \makecell[t]{$-0.0533$ \\ $(0.4896)$} & \makecell[t]{$-0.0609$ \\ $(0.4913)$} & \makecell[t]{$-0.2711$ \\ $(0.5658)$} & \makecell[t]{$\phantom{-}0.1539$ \\ $(1.0014)$} \\
+\midrule
+Staffing controls & No & Yes & No & No \\
 \bottomrule
 \end{tabularx}
 
 \begin{tablenotes}[flushleft]
 \footnotesize
 \item \textit{Notes:} Each cell reports the coefficient on \textit{post}, with standard errors in parentheses. All specifications include facility and calendar-quarter fixed effects and control for the number of certified beds. Standard errors are two-way clustered by facility and calendar quarter. The ownership-change quarter ($\tau = 0$) is excluded.
-\item Column (1) is the baseline specification. Column (2) adds RN, LPN, and CNA hours per resident day as controls; because staffing responds to ownership change, column (2) holds fixed one channel of the effect and is not an estimate of the total effect. Columns (3) and (4) re-estimate column (1) separately for facilities that were chain-affiliated and independent at baseline. A facility is chain-affiliated if its cost report lists a home office. Baseline affiliation is measured in January 2017, or at the facility's first observation if it is not observed then.
+\item Column (1) is the baseline specification. Column (2) adds RN, LPN, and CNA hours per resident day as controls; because staffing responds to ownership change, column (2) holds fixed one channel of the effect and is not an estimate of the total effect. Columns (3) and (4) re-estimate column (1) separately for facilities that were chain-affiliated and independent at baseline, without staffing controls. A facility is chain-affiliated if its cost report lists a home office. Baseline affiliation is measured in January 2017, or at the facility's first observation if it is not observed then.
 \item Each measure is a percentage of residents, so coefficients are in percentage points. Long-stay measures (Panels A and B) and short-stay measures (Panel C) come from different resident populations. Lower values indicate better quality for every measure except improved function, for which higher values are better.
 \item Pressure injuries are estimated on 2018--2023 and improved function on 2017--2022, the years in which each is reported.
 \item Statistical significance: $^{***}p<0.01$, $^{**}p<0.05$, $^{*}p<0.10$.

@@ -14,6 +14,9 @@
 #   with_anticipation  Full pre-period retained, reference tau = -1.
 #   one_year           Event window tau in [-12, 12], donut {-3,-2,-1},
 #                      reference tau = -4, endpoints binned at +/-12.
+#                      This is also the main-text Figure 1.
+#   two_year           Event window tau in [-24, 24], same donut and
+#                      reference, endpoints binned at +/-24.
 #   narrow_donut       Drops tau in {-2,-1}, reference tau = -4.
 #   wide_donut         Drops tau in {-4,-3,-2,-1}, reference tau = -5.
 #   pre_pandemic       January 2017 to December 2019, baseline donut.
@@ -180,6 +183,13 @@ staffing_specs <- list(
   one_year = list(
     run = RUN$staffing_one_year, sample = sample_full,
     window = 12L, drop = c(-3L, -2L, -1L), ref = -4L
+  ),
+  # Two-year window with the baseline donut. The main-text figure uses the
+  # one-year window (where pre-trend tests pass); this is its appendix
+  # counterpart over the longer window.
+  two_year = list(
+    run = RUN$staffing_one_year, sample = sample_full,
+    window = 24L, drop = c(-3L, -2L, -1L), ref = -4L
   ),
   narrow_donut = list(
     run = RUN$staffing_narrow_donut, sample = sample_full,

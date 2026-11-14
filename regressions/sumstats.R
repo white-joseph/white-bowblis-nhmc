@@ -162,10 +162,7 @@ facility_spec_monthly <- tibble::tribble(
   "occupancy_rate",  "Occupancy rate (\\%)",                "pct",
   "pct_medicare",    "\\% Medicare",                        "pct",
   "pct_medicaid",    "\\% Medicaid",                        "pct",
-  "avg_los_total",   "Average length of stay (days)",       "beds",
-  "cm_q_state_2",    "Acuity quartile 2",                   "binary",
-  "cm_q_state_3",    "Acuity quartile 3",                   "binary",
-  "cm_q_state_4",    "Acuity quartile 4",                   "binary"
+  "avg_los_total",   "Average length of stay (days)",       "beds"
 )
 
 facility_spec_quarterly <- tibble::tribble(
@@ -175,10 +172,7 @@ facility_spec_quarterly <- tibble::tribble(
   "beds",            "Beds",                                "beds",
   "occupancy_rate",  "Occupancy rate (\\%)",                "pct",
   "pct_medicare",    "\\% Medicare",                        "pct",
-  "pct_medicaid",    "\\% Medicaid",                        "pct",
-  "cm_q_state_2",    "Acuity quartile 2",                   "binary",
-  "cm_q_state_3",    "Acuity quartile 3",                   "binary",
-  "cm_q_state_4",    "Acuity quartile 4",                   "binary"
+  "pct_medicaid",    "\\% Medicaid",                        "pct"
 )
 
 # Quality-measure labels and groupings are taken from _setup.R so that they
@@ -247,23 +241,19 @@ cat(sprintf("Facility-count difference:   %d\n\n",
 # -----------------------------------------------------------------------------
 body <- c(
   panelheader("Panel A: Staffing sample (facility--month)"),
-  subheader("Staffing outcomes"),
   build_rows(df_m, staffing_hprd_spec),
   "\\addlinespace[0.4em]",
   build_rows(df_m, staffing_hours_spec),
-  "\\addlinespace[0.6em]",
-  subheader("Facility characteristics"),
+  "\\addlinespace[0.4em]",
   build_rows(df_m, facility_spec_monthly),
 
   "\\addlinespace[0.9em]",
 
   panelheader("Panel B: Quality sample (facility--quarter)"),
-  subheader("Quality measures"),
   build_rows(df_q, mechanism_spec),
   "\\addlinespace[0.4em]",
   build_rows(df_q, outcome_spec),
-  "\\addlinespace[0.6em]",
-  subheader("Staffing and facility characteristics"),
+  "\\addlinespace[0.4em]",
   build_rows(df_q, staffing_hprd_spec),
   "\\addlinespace[0.4em]",
   build_rows(df_q, facility_spec_quarterly)
@@ -291,8 +281,7 @@ notes <- c(
     "in training, and medication aides. Chain affiliation is baseline ",
     "affiliation: a facility is chain-affiliated if its cost report lists a ",
     "home office, measured in January 2017 or at the facility's first ",
-    "observation if it is not observed then. Acuity quartiles are within-state, ",
-    "within-period case-mix quartiles, with quartile 1 omitted. Quality measures ",
+    "observation if it is not observed then. Quality measures ",
     "are percentages of long-stay residents; for each, lower values indicate ",
     "better quality."
   ),

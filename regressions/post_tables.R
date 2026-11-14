@@ -484,26 +484,51 @@ fit_interaction <- function(dat, lhs, vc, time_var) {
   out
 }
 
-interaction_row <- function(dat, v, label, vc, time_var, digits = 4) {
+# Decimal places for the chain-difference table, chosen per outcome so that
+# each row is readable in its own units rather than forced to four decimals.
+interaction_digits <- function(v) {
+  if (grepl("hprd$", v)) return(3L)
+  if (v %in% c("resident_days", "avg_los_total")) return(1L)
+  2L
+}
+
+# Returns two table lines for one outcome: the chain estimate, the independent
+# estimate, and their difference, with standard errors on the line below.
+# All three come from the saturated interaction model: the independent effect
+# is the coefficient on post, the difference is the coefficient on post_chain,
+# and the chain effect is their sum (standard error from the joint covariance).
+# These reproduce the separately estimated chain and independent columns.
+interaction_row <- function(dat, v, label, vc, time_var, digits = NULL) {
+  if (is.null(digits) || digits == 4) digits <- interaction_digits(v)
   mod <- fit_interaction(dat, v, vc, time_var)
-  cell <- "\\makecell[t]{-- \\\\ (--)}"
-  # fmt_est() reports the coefficient on post; the quantity of interest here
-  # is the interaction term, so the cell is formatted directly.
-  if (!is.null(mod)) {
-    s <- coef_se_star(mod, term = "post_chain")
-    if (!is.na(s$coef)) {
-      b <- formatC(s$coef, format = "f", digits = digits)
-      if (s$coef > 0) b <- paste0("\\phantom{-}", b)
-      se <- formatC(s$se, format = "f", digits = digits)
-      cell <- if (s$stars == "") {
-        paste0("\\makecell[t]{$", b, "$ \\\\ $(", se, ")$}")
-      } else {
-        paste0("\\makecell[t]{$", b, "^{", s$stars, "}$ \\\\ $(", se, ")$}")
-      }
-    }
-  }
+  empty <- c(paste0(label, " & -- & -- & -- \\\\"), " & & & \\\\[3pt]")
+  if (is.null(mod)) return(empty)
+
+  b <- coef(mod); V <- vcov(mod)
+  if (!all(c("post", "post_chain") %in% names(b))) { rm(mod); return(empty) }
+  dft <- tryCatch(fixest::degrees_freedom(mod, "t"), error = function(e) Inf)
+
+  est <- list(
+    chain = c(b[["post"]] + b[["post_chain"]],
+              sqrt(V["post", "post"] + V["post_chain", "post_chain"] + 2 * V["post", "post_chain"])),
+    indep = c(b[["post"]], sqrt(V["post", "post"])),
+    diff  = c(b[["post_chain"]], sqrt(V["post_chain", "post_chain"]))
+  )
   rm(mod); gc(verbose = FALSE)
-  paste0(label, " & ", cell, " \\\\")
+
+  fmt_b <- function(x) {
+    p <- 2 * stats::pt(abs(x[1] / x[2]), df = dft, lower.tail = FALSE)
+    st <- if (p < 0.01) "***" else if (p < 0.05) "**" else if (p < 0.10) "*" else ""
+    s <- formatC(x[1], format = "f", digits = digits, big.mark = ",")
+    if (x[1] >= 0) s <- paste0("\\phantom{-}", s)
+    if (st == "") paste0("$", s, "$") else paste0("$", s, "^{", st, "}$")
+  }
+  fmt_se <- function(x) paste0("(", formatC(x[2], format = "f", digits = digits, big.mark = ","), ")")
+
+  c(
+    paste0(label, " & ", paste(vapply(est, fmt_b, character(1)), collapse = " & "), " \\\\"),
+    paste0(" & ", paste(vapply(est, fmt_se, character(1)), collapse = " & "), " \\\\[3pt]")
+  )
 }
 
 interaction_staffing_rows <- c(
@@ -612,7 +637,9 @@ quality_body <- c(
   outc$rows,
   "\\midrule",
   ruled_panel_header("Panel C: Short-stay measures", 5),
-  short$rows
+  short$rows,
+  "\\midrule",
+  "Staffing controls & No & Yes & No & No \\\\"
 )
 
 quality_tex <- wrap_table(
@@ -629,7 +656,7 @@ quality_tex <- wrap_table(
       "ownership change, column (2) holds fixed one channel of the effect and is ",
       "not an estimate of the total effect. Columns (3) and (4) re-estimate column (1) ",
       "separately for facilities that were chain-affiliated and independent at ",
-      "baseline. ", chain_def
+      "baseline, without staffing controls. ", chain_def
     ),
     paste0(
       "\\item Each measure is a percentage of residents, so coefficients are in ",
@@ -682,51 +709,65 @@ rm(df_q_post); gc(verbose = FALSE)
 # =============================================================================
 # TABLE 5: Chain vs. non-chain differences (appendix)
 # =============================================================================
-interaction_body <- c(
-  panel_header("Panel A: Staffing", 2),
-  interaction_staffing_rows,
-  "\\addlinespace[0.6em]",
-  panel_header("Panel B: Operating outcomes", 2),
-  interaction_business_rows,
-  "\\addlinespace[0.6em]",
-  panel_header("Panel C: Quality", 2),
-  interaction_quality_rows
+# Split into three appendix tables (staffing, operating outcomes, quality),
+# one for each main-text table, so that none runs longer than a page.
+chain_tables <- list(
+  list(rows = interaction_staffing_rows, file = "chain_interaction_staffing.tex",
+       label = "tab:chain-interaction", what = "Nursing Staffing",
+       units = "Outcomes are in hours per resident day.",
+       sample = paste0("Estimated on the facility-month panel excluding the ",
+                       "anticipation window ($\\tau = -3, -2, -1$).")),
+  list(rows = interaction_business_rows, file = "chain_interaction_operating.tex",
+       label = "tab:chain-interaction-operating", what = "Operating Outcomes",
+       units = paste0("Resident days are per month; occupancy rate and payer ",
+                      "shares are in percentage points; length of stay is in days."),
+       sample = paste0("Estimated on the facility-month panel excluding the ",
+                       "anticipation window ($\\tau = -3, -2, -1$).")),
+  list(rows = interaction_quality_rows, file = "chain_interaction_quality.tex",
+       label = "tab:chain-interaction-quality", what = "Quality Measures",
+       units = "Outcomes are in percentage points.",
+       sample = paste0("Estimated on the facility-quarter panel excluding the ",
+                       "transition quarter ($\\tau = 0$), without staffing controls."))
 )
 
-interaction_tex <- wrap_table(
-  interaction_body,
-  caption = "Tests of Differences Between Chain-Affiliated and Independent Facilities",
-  label = "tab:chain-interaction",
-  colspec = "@{} l Y @{}",
-  header_row = "Outcome & Chain $-$ Independent \\\\",
-  notes = c(
+chain_notes_common <- c(
     paste0(
-      "\\item \\textit{Notes:} Each cell reports the coefficient on the ",
-      "interaction between \\textit{post} and baseline chain affiliation, with ",
-      "standard errors in parentheses. It equals the chain estimate minus the ",
-      "independent estimate in the staffing, operating-outcome, and quality tables, ",
-      "so a positive value means the estimate is higher (less negative) among ",
-      "chain-affiliated facilities."
+      "\\item \\textit{Notes:} Each row reports the effect of ownership change ",
+      "among facilities that were chain-affiliated and independent at baseline, ",
+      "and the difference between them (chain minus independent), with standard ",
+      "errors in parentheses. A positive difference means the estimate is higher ",
+      "(less negative) among chain-affiliated facilities."
     ),
     paste0(
       "\\item The post indicator, certified beds, and the calendar fixed effects are ",
       "each interacted with baseline chain affiliation, so the specification ",
       "reproduces the separate chain and independent estimates and provides a ",
-      "standard error for their difference. All specifications include facility ",
+      "standard error for their difference. Standard errors for the chain and ",
+      "independent columns can differ slightly from the split-sample tables because ",
+      "both groups are estimated in one model. All specifications include facility ",
       "fixed effects. Standard errors are two-way clustered by facility and ",
       "calendar period. ", chain_def
-    ),
-    paste0(
-      "\\item Panels A and B are estimated on the facility-month panel ",
-      "excluding the anticipation window ($\\tau = -3, -2, -1$); Panel C on the ",
-      "facility-quarter panel excluding the transition quarter ($\\tau = 0$). ",
-      ""
-    ),
-    sig_note
-  )
+    )
 )
 
-write_fragment(interaction_tex, "chain_interaction_tests.tex")
+interaction_tex <- character(0)
+for (ct in chain_tables) {
+  tex <- wrap_table(
+    ct$rows,
+    caption = paste0("Effect of Ownership Change on ", ct$what,
+                     " by Baseline Chain Affiliation"),
+    label = ct$label,
+    colspec = "@{} l Y Y Y @{}",
+    header_row = "Outcome & Chain & Independent & Difference \\\\",
+    notes = c(
+      chain_notes_common,
+      paste0("\\item ", ct$units, " ", ct$sample),
+      sig_note
+    )
+  )
+  write_fragment(tex, ct$file)
+  interaction_tex <- c(interaction_tex, tex, "\\clearpage")
+}
 
 # =============================================================================
 # Preview document
