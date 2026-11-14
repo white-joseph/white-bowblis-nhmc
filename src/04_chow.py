@@ -24,7 +24,10 @@
 #      partnership interest). Shares are normalized to sum to 100 within a
 #      facility, month, and level. Owners with a missing share are dropped
 #      when other owners at that level report shares; when none do, owners
-#      receive equal shares.
+#      receive equal shares. Owners are matched across months on a name key
+#      that ignores legal form, trust wording, word order, initials, and
+#      plurals (see clean_owner_name), so renaming an owner or moving it into
+#      a trust is not turnover.
 #   2. Comparison level. Consecutive months are compared at the highest level
 #      present in both months, in the order indirect, direct, partnership, so
 #      that a level appearing in one month and missing in the next is not read
@@ -123,24 +126,47 @@ def log(msg: str) -> None:
 
 
 # ============================== Name helpers ==================================
-SUFFIXES = (
-    r"\b(INC|INCORPORATED|CORP|CORPORATION|LLC|L\.L\.C\.|L\.P\.|LP|LLP|PLC|CO|"
-    r"COMPANY|HOLDINGS?|PARTNERS?|PARTNERSHIP|CAPITAL|INVESTMENTS?|TRUST|GROUP)\b"
-)
+# Words removed before owner names are compared. They describe the legal form
+# of an owner or the wrapper it is held in, not who the owner is, so an owner
+# who reorganizes ("Acme Care LLP" to "Acme Care LLC") or moves a stake into
+# a trust ("Estes, James" to "James Estes Revocable Trust") is treated as the
+# same owner rather than as turnover.
+NAME_STRIP_WORDS = {
+    # legal forms
+    "INC", "INCORPORATED", "CORP", "CORPORATION", "LLC", "LLLP", "LLP", "LP",
+    "PLC", "CO", "COMPANY", "LTD", "PC", "PLLC",
+    "HOLDING", "HOLDINGS", "PARTNER", "PARTNERS", "PARTNERSHIP", "CAPITAL",
+    "INVESTMENT", "INVESTMENTS", "GROUP",
+    # trust and estate wording
+    "TRUST", "TRUSTS", "TR", "TRS", "TRUSTEE", "TRUSTEES", "REVOCABLE",
+    "IRREVOCABLE", "IRREV", "LIVING", "FAMILY", "ESTATE", "UAD", "UTD", "DTD",
+    "DATED", "FBO", "GST", "GRAT",
+    # filler
+    "THE", "OF", "AND",
+}
+
+
+def _singular(tok: str) -> str:
+    """Drop a plural S (SYSTEMS -> SYSTEM) so number does not create a new owner."""
+    return tok[:-1] if len(tok) > 3 and tok.endswith("S") and not tok.endswith("SS") else tok
 
 
 def clean_owner_name(s) -> str:
-    """Matching key for an owner: upper case, punctuation and legal suffixes removed.
+    """Matching key for an owner, insensitive to wording that does not change who it is.
 
-    Used only to recognize the same owner across months. It is not used to
-    decide whether an owner is a person.
+    Upper case; punctuation, numbers (trust dates), single letters (initials,
+    and the pieces of L.L.C.), and NAME_STRIP_WORDS removed; plurals made
+    singular; remaining words sorted, so "ESTES, JAMES" and "JAMES ESTES"
+    give the same key. Used only to recognize the same owner across months.
+    It is not used to decide whether an owner is a person.
     """
     if pd.isna(s) or not str(s).strip():
         return ""
     x = str(s).upper()
-    x = re.sub(r"[.,&/()\-']", " ", x)
-    x = re.sub(SUFFIXES, "", x)
-    return re.sub(r"\s+", " ", x).strip()
+    x = re.sub(r"[^A-Z0-9 ]", " ", x)
+    x = re.sub(r"\d+", " ", x)
+    toks = {_singular(t) for t in x.split() if len(t) > 1 and t not in NAME_STRIP_WORDS}
+    return " ".join(sorted(toks))
 
 
 def surname_of_individual(raw_name) -> str:
