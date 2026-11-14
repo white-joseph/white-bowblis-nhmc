@@ -1,0 +1,506 @@
+% ======================================================================
+% TRIMMED WRITING-SAMPLE VERSION (source: ma_thesis.tex, not modified)
+% CUT: placeholder \thanks/keywords/JEL; literature-review paragraphs in
+%   the Background; most of the Discussion; discordant-records table;
+%   heat-map figure; quality event-study figures; the unfinished
+%   "Defining Ownership Change" robustness subsection.
+% EDITED: removed "Acuity????", "(Include?)", "Appendix Table X", and all
+%   acuity claims (no acuity table exists); replaced stale numbers in the
+%   Reporting Gaps paragraph with Table 11 values; reworded the pre-trend
+%   sentence to match the Wald tests; "slightly more total nursing labor"
+%   -> "statistically similar" and "nurse aide hours rise" -> removed
+%   (CNA and total hours are not significant in Table 3); fixed undefined
+%   section references and typos.
+% ======================================================================
+\documentclass[12pt]{article}
+
+\usepackage{amsmath,amssymb,amsfonts}
+\usepackage{eurosym}
+\usepackage[margin=1in,top=1in,bottom=1in]{geometry}
+\usepackage{booktabs}
+\usepackage{tabularx}
+\usepackage{threeparttable}
+\usepackage{array}
+\usepackage{makecell}
+\usepackage[USenglish]{datetime2}
+
+\usepackage{graphicx}
+\usepackage{caption}
+\usepackage{subcaption} % preferred over subfigure
+\usepackage[section]{placeins}
+\usepackage{pdflscape}
+\usepackage{pdfcomment}
+\usepackage{adjustbox}
+
+%\usepackage{newtxtext}
+%\usepackage{newtxmath}
+\usepackage[colorinlistoftodos,prependcaption,textsize=scriptsize]{todonotes}
+\definecolor{pastelyellow}{rgb}{1.0, 1.0, 0.53}
+\usepackage{verbatim}
+
+\usepackage{soul,xcolor}
+\usepackage[normalem]{ulem}
+\usepackage{setspace}
+\usepackage{sectsty}
+\usepackage{comment}
+\usepackage{footmisc}
+\interfootnotelinepenalty=10000
+\usepackage[authoryear]{natbib}
+\usepackage{hyperref}
+\hypersetup{
+    colorlinks=true,
+    linkcolor=blue,
+    citecolor=blue,     
+    urlcolor=cyan,
+    }
+    
+\normalem
+
+\onehalfspacing
+\newtheorem{theorem}{Theorem}
+\newtheorem{corollary}[theorem]{Corollary}
+\newtheorem{proposition}{Proposition}
+\newenvironment{proof}[1][Proof]{\noindent\textbf{#1.} }{\ \rule{0.5em}{0.5em}}
+
+\newtheorem{hyp}{Hypothesis}
+\newtheorem{subhyp}{Hypothesis}[hyp]
+\renewcommand{\thesubhyp}{\thehyp\alph{subhyp}}
+
+\newcommand{\red}[1]{{\color{red} #1}}
+\newcommand{\blue}[1]{{\color{blue} #1}}
+
+\newcolumntype{L}[1]{>{\raggedright\let\newline\\arraybackslash\hspace{0pt}}m{#1}}
+\newcolumntype{C}[1]{>{\centering\let\newline\\arraybackslash\hspace{0pt}}m{#1}}
+\newcolumntype{R}[1]{>{\raggedleft\let\newline\\arraybackslash\hspace{0pt}}m{#1}}
+
+\captionsetup{labelfont=bf, font=small}
+\newcolumntype{Y}{>{\centering\arraybackslash}X}
+\newcommand{\sym}[1]{\rlap{$^{#1}$}}
+\newcommand{\est}[3]{\makecell[c]{#1\sym{#3}\\ \footnotesize(#2)}}
+
+\newcommand{\jcomment}[1]{%
+  \todo[inline,color=yellow!25]{\textbf{Comment:} #1}%
+}
+
+\newcommand{\question}[1]{%
+  \todo[inline,color=blue!15]{\textbf{Question:} #1}%
+}
+
+\newcommand{\revise}[1]{%
+  \todo[inline,color=red!15]{\textbf{Revise:} #1}%
+}
+
+\geometry{left=1.0in,right=1.0in,top=1.0in,bottom=1.0in}
+
+\begin{document}
+
+\begin{titlepage}
+\title{Measuring Ownership Changes and Operating Responses in Nursing Homes}
+
+\author{
+  Joseph White
+  \and
+  John Bowblis
+  \and
+  Charles C. Moul
+}
+
+\date{\DTMtoday}
+
+\maketitle
+
+\begin{abstract}
+\noindent A reported nursing home ownership change need not represent a change in control. We combine transfer dates from Medicare cost reports with monthly records of owners and ownership shares to identify substantive ownership transitions. Among 6,869 U.S. skilled nursing facilities observed from 2017 to 2024, 1,413 meet our transfer definition. Following a transfer, hours per resident day fall for registered nurses and nursing assistants but change little for licensed practical nurses. Total nursing hours change little as the resident census grows, although registered nurse hours fall even in absolute terms. Facilities also become fuller, the Medicare share of resident days rises, the Medicaid share falls, and stays shorten. Measured quality does not broadly worsen. These findings suggest that ownership change alters both nursing skill mix and whom facilities serve; the decline in staffing per resident is one part of a broader change in how facilities operate.
+
+\bigskip
+\end{abstract}
+\setcounter{page}{0}
+\thispagestyle{empty}
+\end{titlepage}
+\pagebreak \newpage
+
+\doublespacing
+
+\section{Introduction} \label{sec:introduction}
+
+When a nursing home changes owners, the facility generally remains in the same location, under the same Medicare certification, and subject to the same Medicare and Medicaid payment rules. What changes is control over its operating decisions: whom to admit, how intensively to use nursing labor, how long residents stay, and how to allocate capacity across types of care. These decisions matter because skilled nursing facilities (SNFs) provide two distinct forms of care under very different reimbursement systems. Medicare primarily finances short-term post-acute care, while Medicaid is the principal payer for long-term residential care. Nursing labor is the facility's largest operating cost, and registered nurses (RNs) are substantially more expensive than other nursing staff. An ownership change therefore leaves many external constraints in place while potentially changing how the facility combines residents, labor, and capacity.
+
+Ownership change is common in this sector \citep{prusynski_humbert_mroz_2023, OliveiraBlanco2024}\footnote{In our sample roughly one in five SNFs experiences a verified ownership change over seven and a half years.} and has drawn growing policy \citep{Khan2024PrivateCapital,MurphyScanlon2026} and public concern \citep{AFREF2026PEPolling, HealthcareDive2025PEReport}, but its effects are not obvious. Facilities change hands for many reasons, including financial distress, succession, and strategic acquisition, and these motives have different implications for staffing, admissions, and quality \citep{bowblis_2011, lu_lu_2022}. The direction of the average effect across these motives is therefore theoretically ambiguous. Existing evidence is mixed, and much of it concerns specific forms of ownership change, such as private equity acquisition \citep{GuptaEtAl2024, NBERw34306}, chain mergers \citep{Hirth2019EffectsOfChains, Grabowski2016LowQualityNH}, or for-profit acquisitions \citep{grabowski_stevenson_2008, sutton_et_al_2024}.
+
+Identifying ownership changes is itself less straightforward than it appears. Administrative datasets identify reported changes in ownership, but a reported change may not represent a substantive transfer of economic control. Changes in legal entities, ownership layers, or reporting arrangements can present as ownership changes while effective control is unchanged. We combine reported ownership-change dates from Medicare cost reports with monthly records of owners and ownership shares to verify substantive transfers of control, and we restrict attention to facilities with at most one verified ownership change. This allows us to study ownership change broadly rather than a particular type of buyer or transaction.
+
+We examine staffing, resident census, payer mix, length of stay, and quality together, and our results reveal a consistent change in how a facility operates after an ownership change. We find that occupancy rises, the census shifts toward Medicare and away from Medicaid, and length of stay shortens. Nursing staff levels, measured in hours per resident day, decline for RNs, certified nursing assistants (CNAs), and in total, and are unchanged for licensed practical nurses (LPNs). Measured in raw hours, only RN hours decline; LPN hours rise, and CNA and total nursing hours are unchanged, so facilities are spreading comparable labor across a larger census. Across quality measures, we see little evidence of broad worsening. Most measures are unchanged, catheter use and urinary tract infections improve, and only weight loss worsens.
+
+This paper makes two contributions. First, it distinguishes reported from substantive ownership changes, which addresses a measurement problem that has constrained this literature. Second, by observing staffing, census, payer mix, and length of stay jointly, it shows that ownership change is better understood as a reorientation of the facility's operating model than as a reduction in nursing labor, and that the standard staffing measure can overstate labor reductions when the census responds. Since the building, certification, and local market are unchanged, these results show how a change in control is associated with a change in how care is produced, holding the local set of providers fixed.
+
+\section{Institutional Background} \label{sec:background}
+
+An SNF is a healthcare facility that provides skilled nursing care or rehabilitative services and participates in Medicare, Medicaid, or both \citep{eCFR42CFR476.1}. It provides two forms of care. Short-term post-acute care consists of high-intensity rehabilitation, performed by or under the supervision of professional personnel, to help a patient return home after a hospital stay \citep{CMSBenefitManualCh8}. Long-term residential care consists of low-intensity custodial care focused on personal needs and activities of daily living \citep{CMSBenefitManualCh16}. The two are financed by different public payers, both of which set payment rates through legislative or regulatory processes, making SNFs price-takers. Medicare Part A is the primary payer for post-acute care, covering up to 100 days per spell of illness; however, the typical Medicare-covered stay was about 31 days in 2024 \citep{MedPAC2026Report}. Medicaid is the primary payer for long-term residential care, and accounts for the majority of SNF resident days. Rates are set at the state level and are low relative to the cost of care. Some residents initially pay for long-term care themselves, but because of its high cost, most spend down their assets and become eligible for Medicaid early in their stay.
+
+Medicare and Medicaid compensate facilities very differently. The aggregate Medicare margin for freestanding SNFs was 24 percent in 2024, the twenty-fifth consecutive year it exceeded 10 percent, while the non-Medicare margin, driven primarily by Medicaid, was negative 2.3 percent \citep{MedPAC2026Report}. Medicare revenue therefore cross-subsidizes Medicaid losses, and facilities with a higher Medicaid share of patient days face correspondingly weaker finances and staffing capacity \citep{bowblis_brunt_2025}. With prices fixed, a facility's main levers to move profit are how full it is, which payers its residents have, and how quickly it turns residents over.
+
+An ownership change unfolds over several months. A buyer and seller agree to a sale, and closing typically waits for state regulatory approval. During this period, the buyer often has some degree of influence over operations, while the seller has an incentive to keep the census and finances stable. A transferred facility may change its name, but nearly all buyers keep the seller's existing CMS Certification Number (CCN) \citep{CMS2024AppendixPP, eCFR42CFR489.18}.
+
+\section{Measuring Ownership Change} \label{sec:measuring-ownership}
+
+Ownership change is difficult to measure because ownership structures are frequently layered, with an operating entity held by other corporations, trusts, or partnerships. A change in the listed owner of an SNF may not actually correspond to a change in who controls day to day operations of a facility. Legal restructuring, transfers among family members, and changes in reporting conventions can all appear as ownership changes in administrative data without any transfer of operational control.\footnote{For example, state Medicaid supplemental payment frameworks in Texas \citep{tex_admin_code_353_1302}, Utah \citep{utah_admin_code_r414_505_5}, and Indiana \citep{ind_code_12_15_14} allow private nursing homes to transfer their licenses to non-state government entities to secure higher reimbursement rates. These are recorded as a change to government ownership in administrative databases, yet the managerial control and operations remain with the original private operators \citep{utah_auditor_2026_snf_upl, kffhn_2017_indiana_nh, kxan_2021_qipp}.}
+
+Studies on SNF ownership changes generally use one of three administrative sources, and each, when used alone, can misclassify ownership changes. The Healthcare Cost Report Information System (HCRIS) records whether a facility reported a change in ownership during the reporting period and the effective date of that change. It does not, however, establish transfer of control, so some flagged transfers are changes within the same ownership group. The Provider Enrollment, Chain, and Ownership System (PECOS) records changes of ownership processed through Medicare enrollment. Like HCRIS, it can record reported legal changes rather than changes in control, and it dates them by a tie-in notice that can lag the effective date by several months \citep{CMS2022SNFCHOWGuidance}.\footnote{PECOS also releases snapshots at points in time that only identify the most recent ownership changes. Therefore, any studies using PECOS \citep[e.g.,][]{prusynski_et_al_2025, StevensonEtAl2023, OliveiraBlanco2024} can miss ownership changes that may have taken place before the most recently identified change.} The Nursing Home Compare (NHC) archive reports monthly owner names, roles, types, and shares, making it possible to observe who owns a facility over time. Its detail, however, can record changes in legal entities that generate false positives. 
+
+An approach that other literature takes to sidestep this measurement problem is to study a particular form of ownership change that may be easier to observe. These studies are informative about particular transfers which account for only a portion of ownership change in the sector, and cannot speak to SNF ownership changes as a whole.
+
+We adopt a two-step approach to identify substantive transfers of control. We use HCRIS for the reported change and its date, since its effective date is not subject to the PECOS tie-in lag, and use the NHC Archive to verify that the ownership structure actually changed. Because ownership is layered, we measure changes at the highest ownership level observed for each facility, starting with indirect owners, then direct owners, then partnership-interest owners. We classify a month as an ownership change when more than 50 percent of ownership shares turn over from the previous month. Where ownership percentages are partially or entirely missing, we normalize the reported shares and, where necessary, assign equal weights across the remaining owners. To avoid flagging restructuring within a family, we do not count a change when at least 80 percent of the ownership stake remains within the same family. 
+
+Our final sample includes nursing homes that either have no ownership change in either source or have exactly one ownership change in both sources, with the HCRIS and NHC ownership-change dates occurring within six months of one another. For treated facilities, we define the ownership-change month as the month in which HCRIS identifies the change.\footnote{All dates are converted to calendar months, so changes occurring at the beginning or end of a month are treated identically.} Table~\ref{tab:ownership-classification-sample} classifies facilities by the number of ownership changes in each source. Bold cells are facilities that our sample is drawn from. The additional restrictions described in Section~\ref{sec:dataandsample} are applied to these facilities to construct our final sample of 6,869 facilities.
+
+\begin{table}[!htbp]
+\centering
+\caption{Ownership-Change Classification by Source}
+\label{tab:ownership-classification-sample}
+
+\begin{threeparttable}
+\small
+\begin{tabularx}{\textwidth}{lccc}
+\toprule
+& \multicolumn{3}{c}{NHC ownership records} \\
+\cmidrule(lr){2-4}
+HCRIS ownership-change status 
+& 0 
+& 1 
+& 2+ \\
+\midrule
+0          & \textbf{6,288} & 1,874 & 1,137 \\
+1          & 499 & \textbf{1,759} & 1,377 \\
+2+ changes & 15 & 101 & 535 \\
+\bottomrule
+\end{tabularx}
+
+\begin{tablenotes}
+\footnotesize
+\item Notes: Each cell reports the number of facilities by the number of ownership changes recorded in HCRIS (rows) and identified in the NHC Archive (columns) from January 2017 to June 2024. Counts are before the additional sample restrictions described in Section~\ref{sec:dataandmethods}.
+\end{tablenotes}
+
+\end{threeparttable}
+\end{table}
+
+\section{Data and Methods} \label{sec:dataandmethods}
+
+\subsection{Data and Sample} \label{sec:dataandsample}
+
+We combine three administrative data sources. The Payroll-Based Journal (PBJ) reports daily hours worked by staff type and daily resident census derived from the Minimum Data Set (MDS). We aggregate both to the facility-month level. The NHC Archive reports monthly ownership information and chain affiliation, and quarterly CMS quality measures. HCRIS provides occupancy, payer mix, length of stay, certified beds, and reported ownership-change dates. Cost reports are filed once per fiscal year, so we assign each report's values to every month of its reporting year.  When a facility's outgoing and incoming cost reports both cover the same calendar month, which occurs around an ownership transfer, we average the reported values for that month.
+
+Our sample covers January 2017 through June 2024, classifying ownership changes as described in Section~\ref{sec:measuring-ownership}. We exclude hospital-based facilities,\footnote{Hospital-based nursing homes differ from freestanding facilities in their structure and financing. Because they are within hospitals, staffing policies and resource allocation may be jointly determined with hospital operations and respond to hospital shocks and regulations rather than SNF specific incentives \citep{MedPAC2026Report}.} facilities in Alaska and Hawaii, facilities with fewer than 15 certified beds, and any facility government-owned at any point during the sample.\footnote{We exclude government-owned facilities since transfers to government ownership can reflect supplemental-payment arrangements rather than changes in control (Section~\ref{sec:measuring-ownership}). Government-owned SNFs also operate in a different financial context \citep{MedPAC2026Report}.} We also drop facility-months with implausible staffing: RN and LPN hours both zero, total hours per resident day below 1.5 or above 12, or nurse aide hours per resident day above 5.25 \citep{cms_fivestar_2026}. Our final monthly sample contains 6,869 facilities and 556,747 facility-months; 1,413 facilities experience a verified ownership change. Our quarterly sample covers 6,857 facilities, 12 less than the monthly sample.
+
+\subsection{Outcomes}
+
+We measure staffing for three categories using PBJ job codes \citep{cms_fivestar_2026}: RNs, including RNs with administrative duties and directors of nursing; LPNs, including LPNs with administrative duties; and nurse aides, including certified nursing assistants, aides in training, and medication aides. For facility \(i\) in month \(t\), hours per resident day (HPRD) is
+
+\begin{equation}
+  \label{eq:hprd}
+  \text{HPRD}_{it}
+  =
+  \frac{\displaystyle\sum_{d \in t} H_{id}}
+       {\displaystyle\sum_{d \in t} R_{id}},
+\end{equation}
+where \(H_{id}\) is the number of hours worked by the staff type in facility \(i\) on day \(d\), and \(R_{id}\) is the number of resident days on that day. Total HPRD is the sum of the three staff categories. We decompose this ratio and estimate effects on both monthly hours and resident days. Quarterly staffing measures for the quality specifications sum hours and resident days over the quarter.
+
+Occupancy is patient days divided by available bed-days; where available bed-days are not reported, we use certified beds times days in the fiscal year. Payer mix is the Medicare and Medicaid shares of patient days, and average length of stay is taken directly from HCRIS.
+
+We use MDS-based quality measures from the NHC Archive. We use eight long-stay measures that fall into two groups. The first reflects care routines that can substitute for staff time. These include: catheter use, antipsychotic medication use, and anti-anxiety or hypnotic medication use. The second group covers resident outcomes: pressure injuries, falls with major injury, weight loss, decline in physical functioning, and urinary tract infections. We also estimate effects on two short-stay measures that come from a different population: new antipsychotic medication and improvement in physical function.\footnote{Pressure injuries are estimated on 2018–2023 and improvement in function on 2017–2022, the years in which each is reported.}
+
+Table~\ref{tab:sumstats} reports summary statistics for the staffing sample and the quality sample.
+
+\input{C:/Repositories/white-bowblis-nhmc/outputs/tables/sumstats_combined.tex}
+\FloatBarrier
+
+\subsection{Empirical Strategy}
+
+We employ a staggered event-study design that compares changes within facilities before and after an ownership change with contemporaneous changes among never-treated facilities and a treated facility's own pre-period months. We estimate the following set of event-study regressions,
+
+\begin{equation}
+\label{eq:event-study}
+Y_{it}
+=
+\sum_{\substack{\tau=-24\\ \tau\notin\{-4,-3,-2,-1\}}}^{24}
+\beta_{\tau}\mathbf{1}[T_{it}=\tau]
++
+X_{it}\gamma
++
+\mu_i
++
+\lambda_t
++
+\varepsilon_{it}.
+\end{equation}
+where \(T_{it}\) is months relative to the ownership change, \(X_{it}\) is a vector of controls, \(\mu_i\) and \(\lambda_t\) are facility and calendar-month fixed effects, and event time runs from \(-24\) to \(24\), with the endpoints absorbing all earlier and later periods. In our quality specification, \(t\) indexes quarters, \(\lambda_t\) are calendar-quarter fixed effects, and event time runs from \(-8\) to \(8\), omitting \(\tau=-1\) and \(\tau=0\). We also estimate the following regression,
+
+\begin{equation}
+\label{eq:twfe-post}
+Y_{it}
+=
+\delta \textit{Post}_{it}
++
+X_{it}\gamma
++
+\mu_i
++
+\lambda_t
++
+\varepsilon_{it}.
+\end{equation}
+to summarize each outcome with a single post-change coefficient, where \(\textit{Post}_{it}\) equals one for facility-months after the ownership change and \(\delta\) is the coefficient of interest. Both regressions are estimated on the same samples. Standard errors are two-way clustered by facility and calendar period. Log specifications drop zero values.
+
+Because two-way fixed-effects estimates can be biased by comparisons with already-treated facilities when effects vary over time \citep{goodman_bacon_2021}, we also estimate a stacked design that compares each treated cohort only to never-treated and not-yet-treated facilities.
+
+The recorded date of ownership change is the closing date, but as described in Section~\ref{sec:background}, the buyer may influence operations while the sale awaits approval. Because staffing can adjust within weeks, the months before closing may already reflect the transfer. We therefore exclude \(\tau=-3,-2,-1\) and use \(\tau=-4\) as the reference period in our monthly sample, and exclude \(\tau=0\) and use \(\tau=-1\) as the reference period in the quarterly sample. Appendix Tables~\ref{tab:wald-test-staffing} and~\ref{tab:wald-test-quality} report joint Wald tests, which support these choices.
+
+Our choice of controls differs from much of the related literature. Ownership changes plausibly affect facility characteristics that would normally be controlled for, such as occupancy, payer mix, length of stay, acuity, profit status, and chain affiliation. Instead, we treat these characteristics as outcomes, rather than conditioning on them. The only control we use for all specifications is certified beds, which requires state approval to change and rarely does. For quality outcomes, we report specifications that condition on RN, LPN, and CNA HPRD. Because staffing responds to ownership change, these specifications are descriptive rather than estimates of the total effect.
+
+We examine heterogeneity by baseline chain affiliation at the start of our sample.\footnote{If unavailable, we define it as the facility's first observation.} We use the baseline because chain status frequently changes around the ownership transfer, so the contemporaneous measure is partly a result of treatment. We estimate Equation~\ref{eq:twfe-post} separately for chain-affiliated and independent facilities. Facilities with no chain classification are excluded from these comparisons.
+
+\section{Results} \label{sec:results}
+
+\subsection{Staffing and Resident Census}
+
+Figure~\ref{fig:event_study_main_landscape} presents event study estimates for nursing HPRD. Before ownership change, the coefficients are small and mostly statistically indistinguishable from zero relative to \(\tau=-4\), although the joint pre-trend tests still reject for some RN and LPN specifications (Appendix Table~\ref{tab:wald-test-staffing}). After the change, RN, CNA, and total HPRD fall and stay below their pre-transfer levels. LPN HPRD shows little change. The decline appears in the first few months and does not revert, suggesting a lasting change in how facilities staff, rather than just a short disruption around the event.
+
+\newgeometry{left=1.2cm,right=1.2cm,top=1.5cm,bottom=1.5cm}
+
+\begin{figure}[p]
+\centering
+\begin{adjustbox}{angle=-90,center}
+\begin{minipage}{0.9\textheight}
+\centering
+
+% Row 1
+\begin{subfigure}[t]{0.49\linewidth}
+  \centering
+  \caption{Registered Nurses (RN)}
+  \includegraphics[width=\linewidth]{C:/Repositories/white-bowblis-nhmc/outputs/plots/twfe_es_rn_without_anticipation.pdf}
+\end{subfigure}\hfill
+\begin{subfigure}[t]{0.49\linewidth}
+  \centering
+  \caption{Licensed Practical Nurses (LPN)}
+  \includegraphics[width=\linewidth]{C:/Repositories/white-bowblis-nhmc/outputs/plots/twfe_es_lpn_without_anticipation.pdf}
+\end{subfigure}
+
+\vspace{1em}
+
+% Row 2
+\begin{subfigure}[t]{0.49\linewidth}
+  \centering
+  \caption{Certified Nursing Assistants (CNA)}
+  \includegraphics[width=\linewidth]{C:/Repositories/white-bowblis-nhmc/outputs/plots/twfe_es_cna_without_anticipation.pdf}
+\end{subfigure}\hfill
+\begin{subfigure}[t]{0.49\linewidth}
+  \centering
+  \caption{Total Nursing Hours}
+  \includegraphics[width=\linewidth]{C:/Repositories/white-bowblis-nhmc/outputs/plots/twfe_es_total_without_anticipation.pdf}
+\end{subfigure}
+
+\caption{
+Dynamic Effects of Ownership Change on Nursing Staffing.
+Event study estimates of the effect of a change in ownership on nursing staff levels in hours per resident day (HPRD).
+Points show coefficient estimates relative to the reference period $\tau=-4$;
+vertical bars denote 95\% confidence intervals.
+The three months prior to the ownership change ($\tau=-3,-2,-1$) are excluded.
+All specifications include control variables and facility and month fixed effects.
+}
+\label{fig:event_study_main_landscape}
+
+\end{minipage}
+\end{adjustbox}
+\end{figure}
+
+\FloatBarrier
+\restoregeometry
+
+\normalsize
+\doublespacing
+
+Table~\ref{tab:post-staffing} summarizes these patterns with a single coefficient. HPRD falls by 0.042 for RNs, 0.064 for CNAs, and 0.106 in total, or 6.6, 2.8, and 2.8 percent of their sample means. LPN HPRD shows little change, 0.001 and not significant.
+
+The remaining rows of this table separate HPRD into its numerator and denominator, hours and resident census. Resident days rise by 89 per month, or roughly 3.5 percent. Total nursing hours (+82, SE 52) and CNA hours (+52, SE 37) are not statistically distinguishable from zero. LPN hours rise by 95 per month (4.3 percent). Most of the decline in staffing per resident therefore reflects a similar amount of nursing labor spread across more residents. The exception is RN hours, which fall by 64 per month (4.3 percent), even as census grows. RNs are the only staff type whose absolute hours decline, which is why their HPRD reduction is larger than the other staff types.
+
+The staffing response differs by baseline chain affiliation. Total HPRD falls by 0.149 among independent facilities and by 0.079 among chain-affiliated facilities, and the gap comes mainly from CNA staffing (−0.092 versus −0.048). The decline in RN HPRD, by contrast, is similar in the two groups (−0.041 and −0.040), and the difference is not statistically significant (Appendix Table~\ref{tab:chain-interaction}).
+
+\input{C:/Repositories/white-bowblis-nhmc/outputs/tables/post_staffing_table.tex}
+\FloatBarrier
+
+\subsection{The Operating Model}
+
+While there is a rise in resident days, that is one part of a broader change in how facilities operate after undergoing an ownership change. Table~\ref{tab:post-business} reports estimates for the operating model outcomes. Occupancy rises by 2.7 percentage points. The resident mix shifts towards Medicare, as its share of patient days increases by 1.6 percentage points (roughly 12 percent of its mean). The Medicaid share falls by 1.2 percentage points, although only significant at the 10 percent level. Average length of stay falls by 13 days (about 8 percent).
+
+These results are consistent with the payment environment described in Section~\ref{sec:background}. Since SNFs are price-takers and those prices are set administratively, the main ways a facility can change its revenues are how full it is, who pays for its residents, and how quickly it turns residents over. After an ownership change, all of these outcomes are consistent with an increase in Medicare resident mix. The facility is fuller, has a larger Medicare share, and has shorter stays. Since these outcomes come from annual cost reports, their timing is less precise than the monthly staffing estimates. 
+
+Most of the change in the operating model occurs at facilities that were independent at baseline. Occupancy rises by 3.9 percentage points among independent facilities and by 2.0 among chains. The Medicaid share falls by 3.6 percentage points among independent facilities but does not change among chains, and length of stay falls by 22.8 days among independent facilities, compared with a smaller 8.3 among chains. The Medicare share, however, rises by a similar amount in both groups (1.5 and 1.8).
+
+\input{C:/Repositories/white-bowblis-nhmc/outputs/tables/post_business_model_table.tex}
+\FloatBarrier
+
+\subsection{Quality}
+
+Table~\ref{tab:post-quality} reports coefficient estimates for the quality measures.
+
+Of the measures that reflect care routines that can substitute for staff time, catheter use falls by 0.17 percentage points (10 percent of its mean). Antipsychotic (−0.33, SE 0.23) and anti-anxiety or hypnotic medication use (−0.21, SE 0.20) also fall, but not significantly. Of the resident outcome measures, urinary tract infections fall by 0.33 percentage points (about 13 percent of its mean). Pressure injuries, falls with major injury, and decline in physical functioning show no significant difference. Weight loss is the only measure that worsens, rising by 0.21 percentage points. Neither short-stay measure changes significantly. Adding RN, LPN, and CNA HPRD as controls has little effect on the estimates. Because staffing is itself affected by ownership change, these specifications are descriptive rather than estimates of the total effect.
+
+Catheter use falls by 0.33 percentage points among independent facilities. Weight loss rises by 0.58 among independents and is flat among chains. UTIs fall in both groups (−0.26 and −0.45). Antipsychotic use falls by 0.68 among independents and functional decline rises by 0.51 among chains.
+
+Overall, measured quality does not broadly worsen after an ownership change. However, these measures are imperfect, and we are not able to observe hospitalization, mortality, or resident experience. 
+
+\input{C:/Repositories/white-bowblis-nhmc/outputs/tables/post_quality_table.tex}
+\FloatBarrier
+
+\subsection{Robustness}
+
+We assess our results in several ways, and Appendix~\ref{app:robustness} describes each robustness check in detail. A stacked design that compares each treated cohort only to never-treated and not-yet-treated facilities gives similar estimates and dynamics. The estimates change very little when we change the width of our donut window. They also hold when we exclude facility months that follow gaps in PBJ reporting. In all cases our estimates are similar. 
+
+\section{Discussion}\label{sec:discussion}
+
+This paper studies ownership changes in nursing homes as moments of organizational disruption in care production. Our central finding is that ownership transfer is business-model reorientation rather than simple cost containment. Facilities emerge from the transition fuller, shifted toward Medicare, with shorter stays. They employ statistically similar total nursing labor in absolute terms but spread it across a larger resident census, so staffing per resident falls. Within that labor, composition shifts away from registered nurses, whose hours decline outright while LPN hours grow. Measured quality does not broadly deteriorate. Taken together, these patterns indicate that ownership changes do more than alter the legal identity of the owner: they change what the facility does and who it serves.
+
+\subsection{Interpreting the Staffing Response}
+
+The staffing results are frequently summarized in this literature as reductions in nursing labor; however, following that interpretation is incomplete here. Per resident day staffing falls for every category except LPNs. Measured in raw hours, only registered nurse hours decline. LPN hours rise, CNA hours are not statistically distinguishable from unchanged, and total nursing hours are statistically indistinguishable from unchanged or marginally higher.
+
+The two sets of estimates are reconciled by the census. Because hours per resident day is hours divided by resident days, the difference between the log-hours and log-HPRD coefficients gives the implied change in the denominator. Estimating separately for each staff category returns census growth of four percent in every case, matching the occupancy increase we show above. Per-resident staffing falls because facilities add residents faster than they add labor, not because they purchase less labor.
+
+\subsection{Limitations}
+
+Several limitations can shape the interpretation of these results.
+
+First, the timing of ownership change may be measured with error despite our two-source verification. The recorded date is the closing date, and contract negotiation, transition planning, and operational change can precede it. Our preferred staffing specification excludes the three months before closing and our preferred quality specification excludes the transition quarter, but residual timing error may remain.
+
+Second, ownership changes are not randomly assigned. The design addresses time-invariant facility differences and common shocks, but ownership transfer may coincide with unobserved facility-level shocks such as financial distress, management turnover, or local labor market conditions that independently affect staffing and quality.
+
+Third, the business-model outcomes are drawn from annual cost reports and expanded across the months of each fiscal year. They therefore change at most once per fiscal year and are constant within it by construction. This limits the time resolution of any event study estimated on these outcomes and induces serial correlation within facility-year. The direction and magnitude of the average post-change estimates are informative, but the dynamic path of occupancy, payer mix, and length of stay around the transfer is not identified at monthly frequency.
+
+Fourth, the staffing and quality measures are imperfect. PBJ data may contain reporting gaps or measurement error, although the robustness checks indicate that reporting gaps do not drive the staffing results. CMS quality measures capture selected process and resident outcomes but do not measure resident welfare, resident experience, deficiencies, hospitalizations, or mortality.
+
+Finally, these results should not be read as establishing that ownership change improves welfare. The evidence shows that facilities serve more residents with approximately constant labor while measured quality does not broadly worsen. That pattern is consistent with efficiency-enhancing reorganization, but it is also consistent with a change in the composition of care that our measures do not fully capture, and unmeasured dimensions of resident welfare may behave differently.
+
+\section{Conclusion} \label{sec:conclusion}
+
+Ownership changes are common in U.S. nursing homes, yet their consequences for care production remain poorly understood. This paper uses CMS administrative panel data from 2017 through 2024 to identify transfers of substantive economic control, verified across two independent sources, and estimates how facilities change afterwards.
+
+Ownership transfer is followed by a reorientation of the operating model. Occupancy rises, the resident census shifts toward Medicare and away from Medicaid, and length of stay shortens. Facilities respond by employing statistically similar total nursing labor while serving a census that grows, so staffing per resident falls. The composition of that labor shifts: registered nurse hours decline in absolute terms while licensed practical nurse hours rise. Measured quality does not broadly deteriorate, and two measures, catheter use and urinary tract infections, improve.
+
+Facilities produce care for more residents with approximately constant total nursing labor and without broad measured deterioration in quality. That is consistent with the transfer disrupting established routines and reallocating labor across tasks. It is also consistent with a shift in the kind of care being produced, from long-stay custodial toward short-stay post-acute, that our measures only partly capture. Distinguishing between these is the natural next step for this literature.
+
+The contribution is to treat ownership change as a shock to the internal organization of production rather than to market structure. A facility that changes hands remains in the same location, under the same certification, serving the same local market. What changes is who decides how many residents to admit, from which payer, for how long, and with what mix of nursing labor. In a sector where prices are administratively fixed and labor is the dominant cost, those decisions are where ownership makes itself felt. Future work should examine which types of transfers generate efficiency-enhancing reorganization and which produce quality-reducing cost containment, and whether the reorientation documented here changes outcomes this paper does not observe, including hospitalization, resident experience, and mortality.
+
+\singlespacing
+\setlength\bibsep{0pt}
+\bibliographystyle{apalike}
+\bibliography{refs}
+
+\clearpage
+
+\onehalfspacing
+
+\section*{Tables} \label{sec:tab}
+\addcontentsline{toc}{section}{Tables}
+
+\input{C:/Repositories/white-bowblis-nhmc/outputs/tables/wald-test-staffing.tex}
+\FloatBarrier
+\input{C:/Repositories/white-bowblis-nhmc/outputs/tables/wald-test-quality.tex}
+\FloatBarrier
+
+\input{C:/Repositories/white-bowblis-nhmc/outputs/tables/chain_interaction_tests.tex}
+\FloatBarrier
+
+\input{C:/Repositories/white-bowblis-nhmc/outputs/tables/stacked_twfe_post_full.tex}
+\FloatBarrier
+
+\input{C:/Repositories/white-bowblis-nhmc/outputs/tables/twfe_robustness_summary_code.tex}
+\FloatBarrier
+
+\input{C:/Repositories/white-bowblis-nhmc/outputs/tables/pretrend_wald_tests_stacked_levels_fragment.tex}
+\FloatBarrier
+
+\clearpage
+\appendix
+\section{Robustness Checks} \label{app:robustness}
+This section reports robustness checks for our staffing results, which are the main input-side estimates in the paper. These checks assess the validity of our identifying assumptions and the sensitivity of our results to alternative modeling and sample choices. Table~\ref{tab:twfe-robustness-summary} collects the sample-restriction and control-set exercises; row 1 reproduces the baseline estimates for comparison. Across all exercises the estimated effects retain their sign, statistical significance, and approximate magnitude.
+
+\subsection{Alternative Comparison Groups}
+
+Our main event-study specification is estimated using two-way fixed effects (TWFE) with staggered treatment timing. In this setting, TWFE can implicitly use already-treated facilities as controls for cohorts treated later, which may distort event-study estimates when treatment effects are dynamic or heterogeneous across cohorts \citep{goodman_bacon_2021}. To assess sensitivity to this issue, we re-estimate the event study using a stacked difference-in-differences design.
+
+In the stacked approach, we construct cohort-specific samples for each treatment month $g$. For a given cohort, treated facilities are those with an ownership change in month $g$, and the control group consists only of facilities that are never treated or not-yet-treated relative to $g$. We restrict each cohort-specific sample to a symmetric event window around $g$, apply the same donut exclusion used in the baseline, and then stack these cohort datasets into a single panel. Estimation includes facility-by-cohort fixed effects, calendar-month fixed effects, and cohort fixed effects, with standard errors clustered two ways by facility and calendar month.
+
+Appendix Figures~\ref{fig:stacked-es-rn} through \ref{fig:stacked-es-total} show that the stacked event-study estimates closely follow the baseline TWFE results: the post-transition dynamics and the relative magnitudes across staffing types are qualitatively unchanged. Appendix Table~\ref{tab:stacked-twfe-post} reports the corresponding average post-change estimates, and Appendix Table~\ref{tab:pretrend-wald-tests-stacked-levels} reports joint Wald tests of pre-treatment coefficients under the stacked design, which are consistent with flat pre-trends in the remaining pre-period. Together these results indicate that the main findings are not driven by treated-as-control comparisons.
+
+\subsection{The Anticipation Window}
+
+As described in Section~\ref{sec:background}, the recorded ownership-change date is the closing date, and operational adjustment can begin during the months between contract signing and closing. Our baseline specifications therefore exclude $\tau\in\{-3,-2,-1\}$ from the estimation sample. Because this exclusion is a modeling choice rather than something the data dictates, we assess it in two ways.
+
+First, the pre-trend evidence in Appendix Table~\ref{tab:wald-test-staffing} indicates that the departure from parallel trends is concentrated in the excluded months rather than diffused across the pre-period. Joint Wald tests of the pre-treatment coefficients improve markedly once these months are removed from the estimation sample. A violation localized to the months immediately preceding closing is what the institutional timeline predicts, and is distinct from a general divergence between treated and untreated facilities that would call the design itself into question.
+
+Second, the estimates are stable to the width of the excluded window. Row 6 of Table~\ref{tab:twfe-robustness-summary} widens the exclusion to $\tau\in\{-4,-3,-2,-1\}$ and row 7 narrows it to $\tau\in\{-2,-1\}$. Across both, the estimated effects move by less than 0.001 hours per resident day for every staff category and retain their significance levels. The results are therefore not driven by the width of the window.
+
+\subsection{Reporting Gaps}
+
+PBJ staffing data are occasionally missing or reported with gaps between consecutive observations. If facilities with intermittent reporting differ systematically in their staffing responses, our estimates could reflect reporting behavior rather than staffing behavior. Rows 2 through 5 of Table~\ref{tab:twfe-robustness-summary} progressively restrict the sample to facilities with more continuous reporting, excluding facility-months preceded by a gap exceeding six, three, and one months, and finally excluding any facility-month preceded by a gap at all.
+
+The estimates are unchanged across all four restrictions. RN staffing declines by 0.0422 hours per resident day in the baseline and between 0.0422 and 0.0424 across the restricted samples; total staffing declines by 0.1041 hours in the baseline and by between 0.1041 and 0.1045 in every restriction. This is unsurprising given that the strictest restriction removes fewer than one percent of facility-months. Reporting gaps do not drive the staffing results.
+
+\section*{Figures} \label{sec:fig}
+\addcontentsline{toc}{section}{Figures}
+
+\newgeometry{left=1.2cm,right=1.2cm,top=1.5cm,bottom=1.5cm}
+
+\begin{figure}[p]
+\centering
+\begin{adjustbox}{angle=-90,center}
+\begin{minipage}{0.9\textheight}
+\centering
+
+% Row 1
+\begin{subfigure}[t]{0.49\linewidth}
+  \centering
+  \caption{Registered Nurses (RN)}
+  \includegraphics[width=\linewidth]{C:/Repositories/white-bowblis-nhmc/outputs/plots/stacked_es_rn_baseline.pdf}
+  \label{fig:stacked-es-rn}
+\end{subfigure}\hfill
+\begin{subfigure}[t]{0.49\linewidth}
+  \centering
+  \caption{Licensed Practical Nurses (LPN)}
+  \includegraphics[width=\linewidth]{C:/Repositories/white-bowblis-nhmc/outputs/plots/stacked_es_lpn_baseline.pdf}
+  \label{fig:stacked-es-lpn}
+\end{subfigure}
+
+\vspace{1em}
+
+% Row 2
+\begin{subfigure}[t]{0.49\linewidth}
+  \centering
+  \caption{Certified Nursing Assistants (CNA)}
+  \includegraphics[width=\linewidth]{C:/Repositories/white-bowblis-nhmc/outputs/plots/stacked_es_cna_baseline.pdf}
+  \label{fig:stacked-es-cna}
+\end{subfigure}\hfill
+\begin{subfigure}[t]{0.49\linewidth}
+  \centering
+  \caption{Total Nursing Hours}
+  \includegraphics[width=\linewidth]{C:/Repositories/white-bowblis-nhmc/outputs/plots/stacked_es_total_baseline.pdf}
+  \label{fig:stacked-es-total}
+\end{subfigure}
+
+\caption{
+Stacked Event-Study Estimates of Ownership Change on Nursing Staffing.
+The stacked design compares each treated cohort only to never-treated and not-yet-treated facilities within the event window, preventing already-treated facilities from serving as controls.
+The donut excludes $\tau\in\{-3,-2,-1\}$; the reference period is $\tau=-4$.
+}
+\label{fig:stacked-es-staffing}
+
+\end{minipage}
+\end{adjustbox}
+\end{figure}
+
+\FloatBarrier
+\restoregeometry
+
+\normalsize
+\doublespacing
+
+\end{document}

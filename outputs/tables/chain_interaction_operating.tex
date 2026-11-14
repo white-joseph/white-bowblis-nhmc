@@ -1,0 +1,35 @@
+\begin{table}[!ht]
+\centering
+\begin{threeparttable}
+\caption{Effect of Ownership Change on Operating Outcomes by Baseline Chain Affiliation}
+\label{tab:chain-interaction-operating}
+\small
+\setlength{\tabcolsep}{6pt}
+
+\begin{tabularx}{\textwidth}{@{} l Y Y Y @{}}
+\toprule
+Outcome & Chain & Independent & Difference \\
+\midrule
+Resident days & $\phantom{-}71.5^{***}$ & $\phantom{-}120.2^{***}$ & $-48.7^{*}$ \\
+ & (14.5) & (20.7) & (24.7) \\[3pt]
+Occupancy rate & $\phantom{-}2.02^{***}$ & $\phantom{-}3.93^{***}$ & $-1.91^{***}$ \\
+ & (0.42) & (0.60) & (0.72) \\[3pt]
+Medicare share & $\phantom{-}1.77^{***}$ & $\phantom{-}1.49^{***}$ & $\phantom{-}0.28$ \\
+ & (0.23) & (0.42) & (0.47) \\[3pt]
+Medicaid share & $\phantom{-}0.13$ & $-3.60^{***}$ & $\phantom{-}3.73^{***}$ \\
+ & (0.73) & (0.96) & (1.20) \\[3pt]
+Average length of stay & $-8.3$ & $-22.8^{**}$ & $\phantom{-}14.5$ \\
+ & (5.2) & (9.0) & (10.7) \\[3pt]
+\bottomrule
+\end{tabularx}
+
+\begin{tablenotes}[flushleft]
+\footnotesize
+\item \textit{Notes:} Each row reports the effect of ownership change among facilities that were chain-affiliated and independent at baseline, and the difference between them (chain minus independent), with standard errors in parentheses. A positive difference means the estimate is higher (less negative) among chain-affiliated facilities.
+\item The post indicator, certified beds, and the calendar fixed effects are each interacted with baseline chain affiliation, so the specification reproduces the separate chain and independent estimates and provides a standard error for their difference. Standard errors for the chain and independent columns can differ slightly from the split-sample tables because both groups are estimated in one model. All specifications include facility fixed effects. Standard errors are two-way clustered by facility and calendar period. A facility is chain-affiliated if its cost report lists a home office. Baseline affiliation is measured in January 2017, or at the facility's first observation if it is not observed then.
+\item Resident days are per month; occupancy rate and payer shares are in percentage points; length of stay is in days. Estimated on the facility-month panel excluding the anticipation window ($\tau = -3, -2, -1$).
+\item Statistical significance: $^{***}p<0.01$, $^{**}p<0.05$, $^{*}p<0.10$.
+\end{tablenotes}
+
+\end{threeparttable}
+\end{table}
